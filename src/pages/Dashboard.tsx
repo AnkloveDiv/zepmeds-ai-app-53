@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,6 +9,8 @@ import ServiceCard from "@/components/ServiceCard";
 import CategoryCard from "@/components/CategoryCard";
 import ProductCard from "@/components/ProductCard";
 import BottomNavigation from "@/components/BottomNavigation";
+import { useToast } from "@/components/ui/use-toast";
+import useBackNavigation from "@/hooks/useBackNavigation";
 import {
   Pill,
   FileUp,
@@ -24,35 +27,31 @@ import {
 } from "lucide-react";
 
 const placeholderImg = "/placeholder.svg";
+const medicineImg = "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
+const thermometerImg = "https://images.unsplash.com/photo-1588613254750-bc14209ae7ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
+const painReliefImg = "https://images.unsplash.com/photo-1558956546-130eb5b8ba93?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
+const multivitaminImg = "https://images.unsplash.com/photo-1579165466741-7f35e4755183?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { isLoggedIn } = useAuth();
+  const { toast } = useToast();
+  const [cartCount, setCartCount] = useState(0);
+
+  // Use the custom hook for back navigation
+  useBackNavigation();
 
   useEffect(() => {
     if (!isLoggedIn) {
       navigate("/login");
     }
     
-    // Handle back button
-    const handleBackButton = (e: PopStateEvent) => {
-      e.preventDefault();
-      if (window.confirm("Do you wish to exit?")) {
-        // Exit app logic would go here for a mobile app
-        // For web, we'd typically do nothing and let the browser handle it
-      } else {
-        // Stay in app - push a new entry to cancel the back
-        window.history.pushState(null, "", window.location.pathname);
-      }
-    };
-    
-    // Push an initial state
-    window.history.pushState(null, "", window.location.pathname);
-    window.addEventListener("popstate", handleBackButton);
-    
-    return () => {
-      window.removeEventListener("popstate", handleBackButton);
-    };
+    // Load cart count on mount
+    const savedCart = localStorage.getItem("cart");
+    if (savedCart) {
+      const cartItems = JSON.parse(savedCart);
+      setCartCount(cartItems.length);
+    }
   }, [isLoggedIn, navigate]);
 
   const services = [
@@ -98,10 +97,10 @@ const Dashboard = () => {
   ];
 
   const products = [
-    { id: "prod1", name: "Vitamin C Tablets", image: placeholderImg, price: 350, discountPrice: 280, rating: 4.5, description: "Immunity Booster" },
-    { id: "prod2", name: "Digital Thermometer", image: placeholderImg, price: 500, discountPrice: 399, rating: 4.2, description: "Accurate Reading" },
-    { id: "prod3", name: "Pain Relief Gel", image: placeholderImg, price: 220, discountPrice: null, rating: 4.0, description: "Fast Relief" },
-    { id: "prod4", name: "Multivitamin Capsules", image: placeholderImg, price: 450, discountPrice: 410, rating: 4.7, description: "Daily Nutrition" }
+    { id: "prod1", name: "Vitamin C Tablets", image: medicineImg, price: 350, discountPrice: 280, rating: 4.5, description: "Immunity Booster" },
+    { id: "prod2", name: "Digital Thermometer", image: thermometerImg, price: 500, discountPrice: 399, rating: 4.2, description: "Accurate Reading" },
+    { id: "prod3", name: "Pain Relief Gel", image: painReliefImg, price: 220, discountPrice: null, rating: 4.0, description: "Fast Relief" },
+    { id: "prod4", name: "Multivitamin Capsules", image: multivitaminImg, price: 450, discountPrice: 410, rating: 4.7, description: "Daily Nutrition" }
   ];
 
   const handleProductClick = (product: any) => {
@@ -125,14 +124,17 @@ const Dashboard = () => {
     
     // Save updated cart
     localStorage.setItem("cart", JSON.stringify(existingCart));
+    setCartCount(existingCart.length);
     
-    // Navigate to medicine delivery
-    navigate("/medicine-delivery");
+    toast({
+      title: "Added to cart",
+      description: `${product.name} has been added to your cart`,
+    });
   };
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <Header />
+      <Header cartCount={cartCount} />
 
       <main className="px-4 py-4">
         <AnimatedSearchBar />
@@ -208,7 +210,6 @@ const Dashboard = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 + 0.4 }}
-                onClick={() => handleProductClick(product)}
               >
                 <ProductCard
                   name={product.name}
@@ -217,6 +218,7 @@ const Dashboard = () => {
                   discountPrice={product.discountPrice}
                   rating={product.rating}
                   description={product.description}
+                  onAddToCart={() => handleProductClick(product)}
                 />
               </motion.div>
             ))}

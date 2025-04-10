@@ -1,7 +1,7 @@
 
 import { Link } from "react-router-dom";
 import { MapPin, Bell, ShoppingCart, Menu } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,12 +9,27 @@ import { useAuth } from "@/contexts/AuthContext";
 interface HeaderProps {
   showBackButton?: boolean;
   title?: string;
+  cartCount?: number;
 }
 
-const Header = ({ showBackButton, title }: HeaderProps) => {
+const Header = ({ showBackButton, title, cartCount = 0 }: HeaderProps) => {
   const [location, setLocation] = useState("Current Location");
   const [showNotifications, setShowNotifications] = useState(false);
+  const [localCartCount, setLocalCartCount] = useState(cartCount);
   const { user } = useAuth();
+
+  useEffect(() => {
+    // Update local cart count when prop changes
+    setLocalCartCount(cartCount);
+    
+    // Also check localStorage in case the cart was updated elsewhere
+    if (cartCount === 0) {
+      const savedCart = localStorage.getItem("cart");
+      if (savedCart) {
+        setLocalCartCount(JSON.parse(savedCart).length);
+      }
+    }
+  }, [cartCount]);
 
   const getInitials = () => {
     if (user?.name) {
@@ -126,9 +141,14 @@ const Header = ({ showBackButton, title }: HeaderProps) => {
 
           <Link
             to="/cart"
-            className="rounded-full w-9 h-9 flex items-center justify-center bg-black/20 text-white"
+            className="rounded-full w-9 h-9 flex items-center justify-center bg-black/20 text-white relative"
           >
             <ShoppingCart className="h-5 w-5" />
+            {localCartCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+                {localCartCount}
+              </span>
+            )}
           </Link>
         </div>
       </div>

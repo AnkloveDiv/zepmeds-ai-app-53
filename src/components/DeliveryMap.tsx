@@ -1,8 +1,11 @@
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
-const DeliveryMap = () => {
+const DeliveryMap = ({ showRider = true }) => {
   const mapRef = useRef<HTMLDivElement>(null);
+  const [distance, setDistance] = useState(2.4);
+  const [eta, setEta] = useState(15);
+  const [animating, setAnimating] = useState(false);
 
   useEffect(() => {
     // This is a placeholder for a real map integration
@@ -52,7 +55,7 @@ const DeliveryMap = () => {
         
         // Draw delivery path
         ctx.strokeStyle = "#9b87f5";
-        ctx.lineWidth = 4;
+        ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.moveTo(canvas.width * 0.2, canvas.height * 0.3);
         ctx.lineTo(canvas.width * 0.4, canvas.height * 0.3);
@@ -76,12 +79,64 @@ const DeliveryMap = () => {
         // Draw distance indicator
         ctx.fillStyle = "#FFFFFF";
         ctx.font = "14px Arial Bold";
-        ctx.fillText("2.4 km", canvas.width * 0.45, canvas.height * 0.45);
+        ctx.fillText(`${distance.toFixed(1)} km`, canvas.width * 0.45, canvas.height * 0.45);
+        
+        if (showRider) {
+          // Draw rider (simple icon)
+          let riderX = canvas.width * 0.3;
+          let riderY = canvas.height * 0.3;
+
+          // Draw rider head
+          ctx.fillStyle = "#FF9500";
+          ctx.beginPath();
+          ctx.arc(riderX, riderY, 6, 0, Math.PI * 2);
+          ctx.fill();
+          
+          // Draw helmet
+          ctx.fillStyle = "#2E3345";
+          ctx.beginPath();
+          ctx.arc(riderX, riderY, 7, Math.PI, Math.PI * 2);
+          ctx.fill();
+          
+          // ETA indicator
+          ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+          ctx.roundRect(riderX - 25, riderY - 25, 50, 20, 5);
+          ctx.fill();
+          
+          ctx.fillStyle = "#FFFFFF";
+          ctx.font = "12px Arial";
+          ctx.fillText(`${eta} min`, riderX - 15, riderY - 12);
+        }
       }
     }
-  }, []);
+    
+    // Animation for decreasing distance and ETA
+    if (showRider && !animating) {
+      setAnimating(true);
+      const distanceInterval = setInterval(() => {
+        setDistance(prevDistance => {
+          const newDistance = prevDistance - 0.1;
+          return newDistance > 0.1 ? newDistance : 0.1;
+        });
+        
+        setEta(prevEta => {
+          const newEta = prevEta - 1;
+          return newEta > 1 ? newEta : 1;
+        });
+      }, 10000); // Update every 10 seconds
+      
+      return () => clearInterval(distanceInterval);
+    }
+  }, [distance, eta, animating, showRider]);
 
-  return <div ref={mapRef} className="w-full h-full"></div>;
+  return (
+    <div className="relative w-full h-full">
+      <div ref={mapRef} className="w-full h-full"></div>
+      <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+        ETA: {eta} min
+      </div>
+    </div>
+  );
 };
 
 export default DeliveryMap;

@@ -7,6 +7,7 @@ import SearchBar from "@/components/SearchBar";
 import ProductCard from "@/components/ProductCard";
 import BottomNavigation from "@/components/BottomNavigation";
 import { useToast } from "@/components/ui/use-toast";
+import useBackNavigation from "@/hooks/useBackNavigation";
 import {
   MapPin,
   Cloud,
@@ -22,7 +23,19 @@ import {
   ShoppingCart
 } from "lucide-react";
 
-const placeholderImg = "/placeholder.svg";
+// Use actual images for products
+const vitaminCImg = "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
+const thermometerImg = "https://images.unsplash.com/photo-1588613254750-bc14209ae7ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
+const painReliefImg = "https://images.unsplash.com/photo-1558956546-130eb5b8ba93?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
+const multivitaminImg = "https://images.unsplash.com/photo-1579165466741-7f35e4755183?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
+const bpMonitorImg = "https://images.unsplash.com/photo-1631815588090-d4bfec5b9a1e?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
+const sanitizerImg = "https://images.unsplash.com/photo-1584483720412-ce931f4aefa8?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
+const eyeDropsImg = "https://images.unsplash.com/photo-1616668983570-a971f3e35c62?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
+const dentalFlossImg = "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
+const sunscreenImg = "https://images.unsplash.com/photo-1521223619409-8071a04a1b78?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
+const memorySupplementImg = "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
+const readingGlassesImg = "https://images.unsplash.com/photo-1483412468200-72182a492cdb?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
+const musclePainImg = "https://images.unsplash.com/photo-1616091238995-af68d2711aec?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
 
 const MedicineDelivery = () => {
   const navigate = useNavigate();
@@ -34,6 +47,9 @@ const MedicineDelivery = () => {
   const [temperature] = useState("28°C");
   const [weather] = useState("Sunny");
   const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
+  
+  // Use our custom hook for back navigation
+  useBackNavigation();
 
   const categories = [
     { name: "All", icon: <Pill className="h-5 w-5" /> },
@@ -46,18 +62,18 @@ const MedicineDelivery = () => {
   ];
 
   const allProducts = [
-    { id: "1", name: "Vitamin C Tablets", image: placeholderImg, price: 350, discountPrice: 280, rating: 4.5, description: "Immunity Booster", category: "Popular" },
-    { id: "2", name: "Digital Thermometer", image: placeholderImg, price: 500, discountPrice: 399, rating: 4.2, description: "Accurate Reading", category: "Summer" },
-    { id: "3", name: "Pain Relief Gel", image: placeholderImg, price: 220, discountPrice: null, rating: 4.0, description: "Fast Relief", category: "Pain" },
-    { id: "4", name: "Multivitamin Capsules", image: placeholderImg, price: 450, discountPrice: 410, rating: 4.7, description: "Daily Nutrition", category: "Popular" },
-    { id: "5", name: "Blood Pressure Monitor", image: placeholderImg, price: 1800, discountPrice: 1499, rating: 4.3, description: "Digital Monitor", category: "Brain" },
-    { id: "6", name: "Hand Sanitizer", image: placeholderImg, price: 150, discountPrice: 120, rating: 4.1, description: "99.9% Germ Protection", category: "Popular" },
-    { id: "7", name: "Eye Drops", image: placeholderImg, price: 180, discountPrice: 150, rating: 4.2, description: "Relieves Dryness", category: "Eye Care" },
-    { id: "8", name: "Dental Floss", image: placeholderImg, price: 120, discountPrice: null, rating: 4.0, description: "Complete Care", category: "Dental" },
-    { id: "9", name: "Sunscreen Lotion", image: placeholderImg, price: 280, discountPrice: 250, rating: 4.6, description: "SPF 50+", category: "Summer" },
-    { id: "10", name: "Memory Supplement", image: placeholderImg, price: 450, discountPrice: 399, rating: 4.3, description: "Cognitive Support", category: "Brain" },
-    { id: "11", name: "Reading Glasses", image: placeholderImg, price: 800, discountPrice: 650, rating: 4.1, description: "Anti-Glare", category: "Eye Care" },
-    { id: "12", name: "Muscle Pain Cream", image: placeholderImg, price: 190, discountPrice: 160, rating: 4.4, description: "Fast Acting", category: "Pain" }
+    { id: "1", name: "Vitamin C Tablets", image: vitaminCImg, price: 350, discountPrice: 280, rating: 4.5, description: "Immunity Booster", category: "Popular" },
+    { id: "2", name: "Digital Thermometer", image: thermometerImg, price: 500, discountPrice: 399, rating: 4.2, description: "Accurate Reading", category: "Summer" },
+    { id: "3", name: "Pain Relief Gel", image: painReliefImg, price: 220, discountPrice: null, rating: 4.0, description: "Fast Relief", category: "Pain" },
+    { id: "4", name: "Multivitamin Capsules", image: multivitaminImg, price: 450, discountPrice: 410, rating: 4.7, description: "Daily Nutrition", category: "Popular" },
+    { id: "5", name: "Blood Pressure Monitor", image: bpMonitorImg, price: 1800, discountPrice: 1499, rating: 4.3, description: "Digital Monitor", category: "Brain" },
+    { id: "6", name: "Hand Sanitizer", image: sanitizerImg, price: 150, discountPrice: 120, rating: 4.1, description: "99.9% Germ Protection", category: "Popular" },
+    { id: "7", name: "Eye Drops", image: eyeDropsImg, price: 180, discountPrice: 150, rating: 4.2, description: "Relieves Dryness", category: "Eye Care" },
+    { id: "8", name: "Dental Floss", image: dentalFlossImg, price: 120, discountPrice: null, rating: 4.0, description: "Complete Care", category: "Dental" },
+    { id: "9", name: "Sunscreen Lotion", image: sunscreenImg, price: 280, discountPrice: 250, rating: 4.6, description: "SPF 50+", category: "Summer" },
+    { id: "10", name: "Memory Supplement", image: memorySupplementImg, price: 450, discountPrice: 399, rating: 4.3, description: "Cognitive Support", category: "Brain" },
+    { id: "11", name: "Reading Glasses", image: readingGlassesImg, price: 800, discountPrice: 650, rating: 4.1, description: "Anti-Glare", category: "Eye Care" },
+    { id: "12", name: "Muscle Pain Cream", image: musclePainImg, price: 190, discountPrice: 160, rating: 4.4, description: "Fast Acting", category: "Pain" }
   ];
 
   useEffect(() => {
@@ -140,7 +156,7 @@ const MedicineDelivery = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <Header showBackButton title="Medicine Delivery" />
+      <Header showBackButton title="Medicine Delivery" cartCount={cartItems.length} />
 
       <main className="px-4 py-4">
         <div className="flex items-center justify-between mb-4">

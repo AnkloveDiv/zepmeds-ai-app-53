@@ -24,6 +24,8 @@ import OrderTracking from "./pages/OrderTracking";
 import PatientDetails from "./pages/PatientDetails";
 import ManageAddresses from "./pages/ManageAddresses";
 import OrderHistory from "./pages/OrderHistory";
+import MedicalReports from "./pages/MedicalReports";
+import EmergencyServices from "./pages/EmergencyServices";
 
 const queryClient = new QueryClient();
 
@@ -68,10 +70,12 @@ const App = () => {
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/order-tracking" element={<OrderTracking />} />
               
-              {/* New Profile Section Routes */}
+              {/* Profile Section Routes */}
               <Route path="/patient-details" element={<PatientDetails />} />
               <Route path="/addresses" element={<ManageAddresses />} />
               <Route path="/orders" element={<OrderHistory />} />
+              <Route path="/reports" element={<MedicalReports />} />
+              <Route path="/emergency" element={<EmergencyServices />} />
               
               <Route path="*" element={<NotFound />} />
             </Routes>
