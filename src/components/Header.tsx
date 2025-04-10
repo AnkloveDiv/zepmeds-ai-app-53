@@ -1,6 +1,5 @@
-
-import { Link } from "react-router-dom";
-import { MapPin, Bell, ShoppingCart, Menu } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { MapPin, Bell, ShoppingCart, Menu, ArrowLeft } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -13,6 +12,7 @@ interface HeaderProps {
 }
 
 const Header = ({ showBackButton, title, cartCount = 0 }: HeaderProps) => {
+  const navigate = useNavigate();
   const [location, setLocation] = useState("Current Location");
   const [showNotifications, setShowNotifications] = useState(false);
   const [localCartCount, setLocalCartCount] = useState(cartCount);
@@ -38,29 +38,24 @@ const Header = ({ showBackButton, title, cartCount = 0 }: HeaderProps) => {
     return user?.phoneNumber?.slice(-2) || "ZM";
   };
 
+  const handleBackClick = () => {
+    // Use navigate instead of Link to ensure our back navigation hook works
+    navigate("/dashboard");
+  };
+
   return (
     <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-white/10 px-4 py-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center">
           {showBackButton ? (
-            <Link to="/dashboard" className="mr-3">
+            <button
+              onClick={handleBackClick}
+              className="mr-3"
+            >
               <div className="rounded-full w-8 h-8 flex items-center justify-center bg-black/20 text-white">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
+                <ArrowLeft className="h-5 w-5" />
               </div>
-            </Link>
+            </button>
           ) : (
             <Link to="/profile" className="mr-3">
               <Avatar>

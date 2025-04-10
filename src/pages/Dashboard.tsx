@@ -20,8 +20,8 @@ const Dashboard = () => {
   const { toast } = useToast();
   const [cartCount, setCartCount] = useState(0);
 
-  // Use the custom hook for back navigation
-  useBackNavigation();
+  // Use the custom hook for back navigation with the exit dialog
+  const { ExitConfirmDialog } = useBackNavigation();
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -50,6 +50,9 @@ const Dashboard = () => {
       </main>
 
       <BottomNavigation />
+      
+      {/* Exit confirmation dialog */}
+      <ExitConfirmDialog />
     </div>
   );
 };

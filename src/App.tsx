@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -35,7 +35,25 @@ import Support from "./pages/Support";
 
 const queryClient = new QueryClient();
 
+// App wrapper that includes router
 const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AppContent />
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+};
+
+// Separate component for app content so we can use hooks inside
+const AppContent = () => {
   const [showPermissions, setShowPermissions] = React.useState(false);
 
   // Check if user is logged in and needs to show permissions
@@ -54,47 +72,39 @@ const App = () => {
   };
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          {showPermissions && <PermissionsModal onGranted={handlePermissionsGranted} />}
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/verify" element={<PhoneVerification />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/medicine-delivery" element={<MedicineDelivery />} />
-              <Route path="/doctor" element={<DoctorConsultation />} />
-              <Route path="/activity" element={<Activity />} />
-              <Route path="/symptom-checker" element={<AISymptomChecker />} />
-              <Route path="/prescription-upload" element={<PrescriptionUpload />} />
-              <Route path="/cart" element={<Cart />} />
-              <Route path="/checkout" element={<Checkout />} />
-              <Route path="/order-tracking" element={<OrderTracking />} />
-              <Route path="/app-guide" element={<AppGuide />} />
-              <Route path="/support" element={<Support />} />
-              
-              {/* Profile Section Routes */}
-              <Route path="/patient-details" element={<PatientDetails />} />
-              <Route path="/addresses" element={<ManageAddresses />} />
-              <Route path="/orders" element={<OrderHistory />} />
-              <Route path="/reports" element={<MedicalReports />} />
-              <Route path="/emergency" element={<EmergencyServices />} />
-              <Route path="/wallet" element={<Wallet />} />
-              <Route path="/coupons" element={<Coupons />} />
-              <Route path="/offers" element={<Offers />} />
-              <Route path="/about-developers" element={<DeveloperInfo />} />
-              
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <>
+      {showPermissions && <PermissionsModal onGranted={handlePermissionsGranted} />}
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/verify" element={<PhoneVerification />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/medicine-delivery" element={<MedicineDelivery />} />
+        <Route path="/doctor" element={<DoctorConsultation />} />
+        <Route path="/activity" element={<Activity />} />
+        <Route path="/symptom-checker" element={<AISymptomChecker />} />
+        <Route path="/prescription-upload" element={<PrescriptionUpload />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/order-tracking" element={<OrderTracking />} />
+        <Route path="/app-guide" element={<AppGuide />} />
+        <Route path="/support" element={<Support />} />
+        
+        {/* Profile Section Routes */}
+        <Route path="/patient-details" element={<PatientDetails />} />
+        <Route path="/addresses" element={<ManageAddresses />} />
+        <Route path="/orders" element={<OrderHistory />} />
+        <Route path="/reports" element={<MedicalReports />} />
+        <Route path="/emergency" element={<EmergencyServices />} />
+        <Route path="/wallet" element={<Wallet />} />
+        <Route path="/coupons" element={<Coupons />} />
+        <Route path="/offers" element={<Offers />} />
+        <Route path="/about-developers" element={<DeveloperInfo />} />
+        
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
   );
 };
 
