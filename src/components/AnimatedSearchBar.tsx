@@ -6,6 +6,7 @@ import AnimatedSearchInput from './AnimatedSearchInput';
 
 const AnimatedSearchBar = () => {
   const [isFocused, setIsFocused] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleFocus = () => {
     setIsFocused(true);
@@ -13,6 +14,12 @@ const AnimatedSearchBar = () => {
 
   const handleBlur = () => {
     setIsFocused(false);
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    // Add search functionality here if needed
+    console.log("Searching for:", query);
   };
 
   return (
@@ -23,7 +30,11 @@ const AnimatedSearchBar = () => {
       className="w-full"
     >
       <div className="relative w-full">
-        <AnimatedSearchInput />
+        <AnimatedSearchInput 
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          onSearch={handleSearch}
+        />
       </div>
     </motion.div>
   );
