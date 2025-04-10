@@ -14,7 +14,7 @@ import {
   Heart,
   Brain,
   Stethoscope,
-  Tooth,
+  Stethoscope as DentalIcon,
   Baby,
   User
 } from "lucide-react";
@@ -96,7 +96,7 @@ const DoctorConsultation = () => {
     { name: "All", icon: <Stethoscope className="h-5 w-5" /> },
     { name: "Cardiologist", icon: <Heart className="h-5 w-5" /> },
     { name: "Neurologist", icon: <Brain className="h-5 w-5" /> },
-    { name: "Dentist", icon: <Tooth className="h-5 w-5" /> },
+    { name: "Dentist", icon: <DentalIcon className="h-5 w-5" /> },
     { name: "Pediatrician", icon: <Baby className="h-5 w-5" /> },
     { name: "Dermatologist", icon: <User className="h-5 w-5" /> }
   ];

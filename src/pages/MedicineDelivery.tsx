@@ -14,7 +14,7 @@ import {
   Heart,
   Brain,
   Eye,
-  Tooth,
+  Stethoscope as DentalIcon,
   Bone,
   Sun,
   Pill,
@@ -34,7 +34,7 @@ const MedicineDelivery = () => {
     { name: "Popular", icon: <Heart className="h-5 w-5" />, active: false },
     { name: "Brain", icon: <Brain className="h-5 w-5" />, active: false },
     { name: "Eye Care", icon: <Eye className="h-5 w-5" />, active: false },
-    { name: "Dental", icon: <Tooth className="h-5 w-5" />, active: false },
+    { name: "Dental", icon: <DentalIcon className="h-5 w-5" />, active: false },
     { name: "Pain", icon: <Bone className="h-5 w-5" />, active: false },
     { name: "Summer", icon: <Sun className="h-5 w-5" />, active: false }
   ];
