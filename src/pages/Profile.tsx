@@ -11,16 +11,8 @@ import { getProfileMenuItems } from "@/utils/profileMenuItems";
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { user, completeProfile } = useAuth();
+  const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [name, setName] = useState(user?.name || "");
-  const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber || "");
-  const [address, setAddress] = useState(user?.address || "");
-
-  const handleSaveProfile = () => {
-    completeProfile(name, address);
-    setIsEditing(false);
-  };
 
   const menuItems = getProfileMenuItems();
 
@@ -32,13 +24,6 @@ const Profile = () => {
         <ProfileHeader 
           isEditing={isEditing}
           setIsEditing={setIsEditing}
-          name={name}
-          setName={setName}
-          phoneNumber={phoneNumber}
-          setPhoneNumber={setPhoneNumber}
-          address={address}
-          setAddress={setAddress}
-          handleSaveProfile={handleSaveProfile}
         />
 
         <ProfileMenu menuItems={menuItems} />

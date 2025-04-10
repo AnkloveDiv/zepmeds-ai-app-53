@@ -3,32 +3,18 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Camera, Edit } from "lucide-react";
+import EditProfileForm from "@/components/profile/EditProfileForm";
 
 interface ProfileHeaderProps {
   isEditing: boolean;
   setIsEditing: (value: boolean) => void;
-  name: string;
-  setName: (value: string) => void;
-  phoneNumber: string;
-  setPhoneNumber: (value: string) => void;
-  address: string;
-  setAddress: (value: string) => void;
-  handleSaveProfile: () => void;
 }
 
 const ProfileHeader = ({
   isEditing,
   setIsEditing,
-  name,
-  setName,
-  phoneNumber,
-  setPhoneNumber,
-  address,
-  setAddress,
-  handleSaveProfile
 }: ProfileHeaderProps) => {
   const { user } = useAuth();
 
@@ -37,6 +23,10 @@ const ProfileHeader = ({
       return user.name.split(" ").map((n) => n[0]).join("");
     }
     return user?.phoneNumber?.slice(-2) || "ZM";
+  };
+
+  const handleSaveProfile = () => {
+    setIsEditing(false);
   };
 
   return (
@@ -55,23 +45,7 @@ const ProfileHeader = ({
             </AvatarFallback>
           </Avatar>
           
-          {isEditing ? (
-            <div>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="mb-2 bg-black/20 border-white/10"
-                placeholder="Your Name"
-              />
-              <Input
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                className="bg-black/20 border-white/10"
-                placeholder="Phone Number"
-                disabled
-              />
-            </div>
-          ) : (
+          {!isEditing && (
             <div>
               <h2 className="text-xl font-semibold text-white">
                 {user?.name || "Add Your Name"}
@@ -81,14 +55,7 @@ const ProfileHeader = ({
           )}
         </div>
         
-        {isEditing ? (
-          <Button
-            onClick={handleSaveProfile}
-            className="bg-zepmeds-purple hover:bg-zepmeds-purple-light"
-          >
-            Save
-          </Button>
-        ) : (
+        {!isEditing && (
           <Button
             variant="outline"
             size="icon"
@@ -100,26 +67,21 @@ const ProfileHeader = ({
         )}
       </div>
       
-      {isEditing && (
-        <div className="mt-3">
-          <label className="text-sm text-gray-400 mb-1 block">Address</label>
-          <Input
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            className="bg-black/20 border-white/10"
-            placeholder="Your Address"
-          />
-        </div>
+      {isEditing ? (
+        <EditProfileForm
+          onSave={handleSaveProfile}
+          onCancel={() => setIsEditing(false)}
+        />
+      ) : (
+        <Button
+          variant="ghost"
+          className="w-full mt-3 flex items-center justify-center gap-2 text-white hover:bg-white/5"
+          onClick={() => {}}
+        >
+          <Camera size={18} />
+          <span>Change Profile Photo</span>
+        </Button>
       )}
-      
-      <Button
-        variant="ghost"
-        className="w-full mt-3 flex items-center justify-center gap-2 text-white hover:bg-white/5"
-        onClick={() => {}}
-      >
-        <Camera size={18} />
-        <span>Change Profile Photo</span>
-      </Button>
     </motion.div>
   );
 };
