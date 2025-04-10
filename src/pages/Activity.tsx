@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -9,9 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { AlertCircle, Heart, TrendingUp, Award } from "lucide-react";
 
-// Fixed import
+// Fixed imports
+import { WeeklyStatsGraph } from "@/components/activity/WeeklyStatsGraph";
 import HealthMetricsLogger from "@/components/activity/HealthMetricsLogger";
-import WeeklyStatsGraph from "@/components/activity/WeeklyStatsGraph";
 
 const Activity = () => {
   const navigate = useNavigate();
