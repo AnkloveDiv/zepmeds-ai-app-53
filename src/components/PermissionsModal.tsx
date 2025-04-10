@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { 
   Camera, 
@@ -9,6 +9,9 @@ import {
   AlertCircle
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { Capacitor } from "@capacitor/core";
+import { Camera as CapacitorCamera, CameraPermissionState } from "@capacitor/camera";
+import { Geolocation } from "@capacitor/geolocation";
 
 interface PermissionsModalProps {
   onGranted: () => void;
@@ -21,22 +24,71 @@ const PermissionsModal = ({ onGranted }: PermissionsModalProps) => {
     storage: false
   });
 
+  // Check permissions on component mount
+  useEffect(() => {
+    const checkPermissions = async () => {
+      if (Capacitor.isNativePlatform()) {
+        // Check camera permission
+        try {
+          const cameraPermission = await CapacitorCamera.checkPermissions();
+          if (cameraPermission.camera === 'granted') {
+            setPermissions(prev => ({ ...prev, camera: true }));
+          }
+        } catch (error) {
+          console.error("Error checking camera permission:", error);
+        }
+        
+        // For location, we can't easily check without requesting
+        // We'll handle that when the user clicks the button
+      }
+    };
+    
+    checkPermissions();
+  }, []);
+
   const handleRequestPermission = async (type: 'camera' | 'location' | 'storage') => {
     try {
       if (type === 'camera') {
-        // Request camera permission
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        stream.getTracks().forEach(track => track.stop());
-        setPermissions(prev => ({ ...prev, camera: true }));
+        if (Capacitor.isNativePlatform()) {
+          // Use Capacitor Camera API to request permission on native platforms
+          const permission = await CapacitorCamera.requestPermissions();
+          setPermissions(prev => ({ 
+            ...prev, 
+            camera: permission.camera === CameraPermissionState.Granted 
+          }));
+        } else {
+          // Fallback for web
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          stream.getTracks().forEach(track => track.stop());
+          setPermissions(prev => ({ ...prev, camera: true }));
+        }
       } 
       else if (type === 'location') {
-        // Request location permission
-        await navigator.geolocation.getCurrentPosition(() => {
+        if (Capacitor.isNativePlatform()) {
+          // Use Capacitor Geolocation API to request permission on native platforms
+          await Geolocation.requestPermissions();
+          // Attempt to get position to verify permission
+          await Geolocation.getCurrentPosition();
           setPermissions(prev => ({ ...prev, location: true }));
-        });
+        } else {
+          // Fallback for web
+          await new Promise<void>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(
+              () => {
+                setPermissions(prev => ({ ...prev, location: true }));
+                resolve();
+              },
+              (error) => {
+                console.error("Error requesting location permission:", error);
+                reject(error);
+              }
+            );
+          });
+        }
       }
       else if (type === 'storage') {
-        // For storage, we'll just simulate a permission grant
+        // For storage permission on Android, we'll just simulate a grant
+        // Real implementation would depend on specific storage needs
         setPermissions(prev => ({ ...prev, storage: true }));
       }
     } catch (error) {
