@@ -77,14 +77,6 @@ const Index = () => {
               </motion.span>
             ))}
           </h1>
-          <motion.p 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1, duration: 0.8 }}
-            className="text-gray-400"
-          >
-            Medicines at your doorstep
-          </motion.p>
         </motion.div>
 
         <div className="h-64 w-full mb-8 flex items-center justify-center">
@@ -164,6 +156,14 @@ const Index = () => {
             Your health, our priority
           </motion.p>
           
+          <div className="grid grid-cols-3 gap-2 mt-4 mb-6">
+            <LinkButton icon="💰" name="Wallet" path="/wallet" />
+            <LinkButton icon="🎁" name="Offers" path="/offers" />
+            <LinkButton icon="🎫" name="Coupons" path="/coupons" />
+            <LinkButton icon="❓" name="Help" path="/help" />
+            <LinkButton icon="📞" name="Support" path="/support" />
+          </div>
+          
           {!isLoggedIn && (
             <motion.button
               initial={{ opacity: 0, y: 20 }}
@@ -178,6 +178,22 @@ const Index = () => {
         </motion.div>
       </div>
     </div>
+  );
+};
+
+const LinkButton = ({ icon, name, path }: { icon: string; name: string; path: string }) => {
+  const navigate = useNavigate();
+  
+  return (
+    <motion.button
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      className="flex flex-col items-center justify-center p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
+      onClick={() => navigate(path)}
+    >
+      <span className="text-xl mb-1">{icon}</span>
+      <span className="text-xs text-gray-300">{name}</span>
+    </motion.button>
   );
 };
 

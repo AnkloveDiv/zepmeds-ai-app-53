@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -8,6 +7,12 @@ import ProductCard from "@/components/ProductCard";
 import BottomNavigation from "@/components/BottomNavigation";
 import { useToast } from "@/components/ui/use-toast";
 import useBackNavigation from "@/hooks/useBackNavigation";
+import MedicineDetailModal from "@/components/MedicineDetailModal";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+} from "@/components/ui/carousel";
 import {
   MapPin,
   Cloud,
@@ -22,20 +27,41 @@ import {
   Pill,
   ShoppingCart
 } from "lucide-react";
+import DeliveryAnimation from "@/components/DeliveryAnimation";
 
-// Use actual images for products
-const vitaminCImg = "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
-const thermometerImg = "https://images.unsplash.com/photo-1588613254750-bc14209ae7ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
-const painReliefImg = "https://images.unsplash.com/photo-1558956546-130eb5b8ba93?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
-const multivitaminImg = "https://images.unsplash.com/photo-1579165466741-7f35e4755183?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
-const bpMonitorImg = "https://images.unsplash.com/photo-1631815588090-d4bfec5b9a1e?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
-const sanitizerImg = "https://images.unsplash.com/photo-1584483720412-ce931f4aefa8?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
-const eyeDropsImg = "https://images.unsplash.com/photo-1616668983570-a971f3e35c62?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
-const dentalFlossImg = "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
-const sunscreenImg = "https://images.unsplash.com/photo-1521223619409-8071a04a1b78?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
-const memorySupplementImg = "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
-const readingGlassesImg = "https://images.unsplash.com/photo-1483412468200-72182a492cdb?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
-const musclePainImg = "https://images.unsplash.com/photo-1616091238995-af68d2711aec?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
+const vitaminCImg = "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
+const thermometerImg = "https://images.unsplash.com/photo-1588613254750-bc14209ae7ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
+const painReliefImg = "https://images.unsplash.com/photo-1558956546-130eb5b8ba93?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
+const multivitaminImg = "https://images.unsplash.com/photo-1579165466741-7f35e4755183?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
+const bpMonitorImg = "https://images.unsplash.com/photo-1631815588090-d4bfec5b9a1e?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
+const sanitizerImg = "https://images.unsplash.com/photo-1584483720412-ce931f4aefa8?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
+const eyeDropsImg = "https://images.unsplash.com/photo-1616668983570-a971f3e35c62?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
+const dentalFlossImg = "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
+const sunscreenImg = "https://images.unsplash.com/photo-1521223619409-8071a04a1b78?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
+const memorySupplementImg = "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
+const readingGlassesImg = "https://images.unsplash.com/photo-1483412468200-72182a492cdb?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
+const musclePainImg = "https://images.unsplash.com/photo-1616091238995-af68d2711aec?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
+
+const dealBanners = [
+  {
+    id: 'deal1',
+    image: 'https://images.unsplash.com/photo-1607619056574-7b8d3ee536b2?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    title: 'Summer Health Sale',
+    discount: '30% OFF'
+  },
+  {
+    id: 'deal2',
+    image: 'https://images.unsplash.com/photo-1576671081837-49000212a370?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    title: 'Diabetes Care',
+    discount: 'Buy 1 Get 1'
+  },
+  {
+    id: 'deal3',
+    image: 'https://images.unsplash.com/photo-1551076805-e1869033e561?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    title: 'Daily Essentials',
+    discount: 'Flat 20% OFF'
+  }
+];
 
 const MedicineDelivery = () => {
   const navigate = useNavigate();
@@ -47,8 +73,9 @@ const MedicineDelivery = () => {
   const [temperature] = useState("28°C");
   const [weather] = useState("Sunny");
   const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
+  const [selectedMedicine, setSelectedMedicine] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
-  // Use our custom hook for back navigation
   useBackNavigation();
 
   const categories = [
@@ -62,9 +89,50 @@ const MedicineDelivery = () => {
   ];
 
   const allProducts = [
-    { id: "1", name: "Vitamin C Tablets", image: vitaminCImg, price: 350, discountPrice: 280, rating: 4.5, description: "Immunity Booster", category: "Popular" },
-    { id: "2", name: "Digital Thermometer", image: thermometerImg, price: 500, discountPrice: 399, rating: 4.2, description: "Accurate Reading", category: "Summer" },
-    { id: "3", name: "Pain Relief Gel", image: painReliefImg, price: 220, discountPrice: null, rating: 4.0, description: "Fast Relief", category: "Pain" },
+    { 
+      id: "1", 
+      name: "Vitamin C Tablets", 
+      image: vitaminCImg, 
+      price: 350, 
+      discountPrice: 280, 
+      rating: 4.5, 
+      description: "Immunity Booster", 
+      category: "Popular",
+      fullDescription: "Vitamin C supplements containing 1000mg of ascorbic acid to boost your immunity. Take one tablet daily for optimal results.",
+      manufacturer: "HealthPlus Inc.",
+      expiryDate: "Jan 2026",
+      dosage: "1 tablet daily after breakfast",
+      sideEffects: ["Nausea", "Stomach cramps", "Diarrhea in high doses"],
+      ingredients: ["Ascorbic Acid", "Zinc", "Rose Hip Extract"]
+    },
+    { 
+      id: "2", 
+      name: "Digital Thermometer", 
+      image: thermometerImg, 
+      price: 500, 
+      discountPrice: 399, 
+      rating: 4.2, 
+      description: "Accurate Reading", 
+      category: "Summer",
+      fullDescription: "Digital infrared thermometer for accurate temperature readings within seconds. Easy to use and clean.",
+      manufacturer: "MediTech",
+      expiryDate: "N/A",
+      dosage: "Place 1cm away from forehead for reading"
+    },
+    { 
+      id: "3", 
+      name: "Pain Relief Gel", 
+      image: painReliefImg, 
+      price: 220, 
+      discountPrice: null, 
+      rating: 4.0, 
+      description: "Fast Relief", 
+      category: "Pain",
+      fullDescription: "Quick-absorbing gel that provides fast relief from muscle and joint pain. Contains natural ingredients for long-lasting effect.",
+      manufacturer: "Relief Pharma",
+      expiryDate: "Dec 2025",
+      dosage: "Apply thin layer to affected area 3-4 times daily"
+    },
     { id: "4", name: "Multivitamin Capsules", image: multivitaminImg, price: 450, discountPrice: 410, rating: 4.7, description: "Daily Nutrition", category: "Popular" },
     { id: "5", name: "Blood Pressure Monitor", image: bpMonitorImg, price: 1800, discountPrice: 1499, rating: 4.3, description: "Digital Monitor", category: "Brain" },
     { id: "6", name: "Hand Sanitizer", image: sanitizerImg, price: 150, discountPrice: 120, rating: 4.1, description: "99.9% Germ Protection", category: "Popular" },
@@ -77,18 +145,15 @@ const MedicineDelivery = () => {
   ];
 
   useEffect(() => {
-    // Get cart items from localStorage
     const savedCart = localStorage.getItem("cart");
     if (savedCart) {
       setCartItems(JSON.parse(savedCart));
     }
     
-    // Check for category from URL params
     const params = new URLSearchParams(location.search);
     const categoryParam = params.get("category");
     
     if (categoryParam) {
-      // Map URL parameter to actual category
       const categoryMap: { [key: string]: string } = {
         "skincare": "Popular",
         "supplements": "Popular",
@@ -122,17 +187,13 @@ const MedicineDelivery = () => {
   };
 
   const handleAddToCart = (product: any) => {
-    // Get existing cart
     const existingCart = JSON.parse(localStorage.getItem("cart") || "[]");
     
-    // Check if item already exists
     const existingItemIndex = existingCart.findIndex((item: any) => item.id === product.id);
     
     if (existingItemIndex >= 0) {
-      // Increase quantity if already in cart
       existingCart[existingItemIndex].quantity += 1;
     } else {
-      // Add new item to cart
       existingCart.push({
         ...product,
         quantity: 1,
@@ -140,14 +201,47 @@ const MedicineDelivery = () => {
       });
     }
     
-    // Save updated cart
     localStorage.setItem("cart", JSON.stringify(existingCart));
     setCartItems(existingCart);
     
     toast({
       title: "Added to cart",
       description: `${product.name} has been added to your cart`,
+      duration: 4000,
     });
+  };
+
+  const handleProductClick = (product: any) => {
+    setSelectedMedicine(product);
+    setIsModalOpen(true);
+  };
+
+  const handleModalAddToCart = (quantity: number, strips: number) => {
+    if (selectedMedicine) {
+      const existingCart = JSON.parse(localStorage.getItem("cart") || "[]");
+      
+      const existingItemIndex = existingCart.findIndex((item: any) => item.id === selectedMedicine.id);
+      
+      if (existingItemIndex >= 0) {
+        existingCart[existingItemIndex].quantity = quantity;
+        existingCart[existingItemIndex].stripQuantity = strips;
+      } else {
+        existingCart.push({
+          ...selectedMedicine,
+          quantity: quantity,
+          stripQuantity: strips
+        });
+      }
+      
+      localStorage.setItem("cart", JSON.stringify(existingCart));
+      setCartItems(existingCart);
+      
+      toast({
+        title: "Added to cart",
+        description: `${selectedMedicine.name} has been added to your cart`,
+        duration: 4000,
+      });
+    }
   };
 
   const handleViewCart = () => {
@@ -172,6 +266,42 @@ const MedicineDelivery = () => {
         </div>
 
         <SearchBar placeholder="Search for medicines, health products..." />
+        
+        <div className="my-4 p-3 rounded-xl glass-morphism">
+          <DeliveryAnimation />
+        </div>
+        
+        <div className="mt-6 mb-4">
+          <Carousel
+            opts={{
+              align: "start",
+              loop: true,
+            }}
+            className="w-full"
+          >
+            <CarouselContent>
+              {dealBanners.map((deal) => (
+                <CarouselItem key={deal.id} className="basis-4/5">
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="relative h-32 rounded-xl overflow-hidden"
+                  >
+                    <img 
+                      src={deal.image} 
+                      alt={deal.title} 
+                      className="w-full h-full object-cover" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-4">
+                      <h3 className="text-white font-bold">{deal.title}</h3>
+                      <span className="text-zepmeds-purple font-bold">{deal.discount}</span>
+                    </div>
+                  </motion.div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+          </Carousel>
+        </div>
 
         <div className="flex justify-between items-center mt-6 mb-4">
           <motion.button
@@ -226,6 +356,7 @@ const MedicineDelivery = () => {
                 rating={product.rating}
                 description={product.description}
                 onAddToCart={() => handleAddToCart(product)}
+                onClick={() => handleProductClick(product)}
               />
             </motion.div>
           ))}
@@ -248,6 +379,13 @@ const MedicineDelivery = () => {
             )}
           </button>
         </motion.div>
+        
+        <MedicineDetailModal 
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          medicine={selectedMedicine}
+          onAddToCart={handleModalAddToCart}
+        />
       </main>
 
       <BottomNavigation />

@@ -12,6 +12,7 @@ import ServiceSection from "@/components/dashboard/ServiceSection";
 import CategorySection from "@/components/dashboard/CategorySection";
 import TrendingProducts from "@/components/dashboard/TrendingProducts";
 import OfferBanner from "@/components/dashboard/OfferBanner";
+import AdFlyer from "@/components/dashboard/AdFlyer";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -41,6 +42,7 @@ const Dashboard = () => {
 
       <main className="px-4 py-4">
         <AnimatedSearchBar />
+        <AdFlyer />
         <ServiceSection />
         <CategorySection />
         <TrendingProducts setCartCount={setCartCount} />

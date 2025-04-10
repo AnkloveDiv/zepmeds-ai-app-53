@@ -10,6 +10,7 @@ interface ProductCardProps {
   rating: number;
   description?: string;
   onAddToCart?: () => void;
+  onClick?: () => void;
 }
 
 const ProductCard = ({
@@ -19,7 +20,8 @@ const ProductCard = ({
   discountPrice,
   rating,
   description,
-  onAddToCart
+  onAddToCart,
+  onClick
 }: ProductCardProps) => {
   const discount = discountPrice ? Math.round(((price - discountPrice) / price) * 100) : 0;
 
@@ -33,7 +35,8 @@ const ProductCard = ({
   return (
     <motion.div
       whileHover={{ y: -5 }}
-      className="rounded-xl overflow-hidden bg-black/20 border border-white/10 transition-all duration-300 hover:border-zepmeds-purple/30 card-glow"
+      className="rounded-xl overflow-hidden bg-black/20 border border-white/10 transition-all duration-300 hover:border-zepmeds-purple/30 card-glow cursor-pointer"
+      onClick={onClick}
     >
       <div className="relative">
         <img 
