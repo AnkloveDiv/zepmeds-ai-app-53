@@ -25,9 +25,11 @@ import {
   Bone,
   Sun,
   Pill,
-  ShoppingCart
+  ShoppingCart,
+  ExternalLink
 } from "lucide-react";
 import DeliveryAnimation from "@/components/DeliveryAnimation";
+import { Badge } from "@/components/ui/badge";
 
 const vitaminCImg = "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
 const thermometerImg = "https://images.unsplash.com/photo-1588613254750-bc14209ae7ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
@@ -63,6 +65,41 @@ const dealBanners = [
   }
 ];
 
+const Advertisement = ({ image, title, sponsor, url = "#", onClose }: { image: string; title: string; sponsor: string; url?: string; onClose: () => void }) => (
+  <motion.div 
+    initial={{ opacity: 0, scale: 0.9 }}
+    animate={{ opacity: 1, scale: 1 }}
+    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70"
+    onClick={onClose}
+  >
+    <div className="relative max-w-md w-full overflow-hidden rounded-xl" onClick={e => e.stopPropagation()}>
+      <button 
+        className="absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 text-white"
+        onClick={onClose}
+      >
+        ✕
+      </button>
+      
+      <div className="relative">
+        <img src={image} alt={title} className="w-full" />
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+          <h3 className="text-white font-bold">{title}</h3>
+          <div className="flex items-center justify-between mt-1">
+            <span className="text-gray-300 text-xs">Sponsored by {sponsor}</span>
+            <a 
+              href={url} 
+              className="text-zepmeds-purple text-sm flex items-center"
+              onClick={e => e.stopPropagation()}
+            >
+              Visit <ExternalLink className="h-3 w-3 ml-1" />
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </motion.div>
+);
+
 const MedicineDelivery = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -75,7 +112,8 @@ const MedicineDelivery = () => {
   const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
   const [selectedMedicine, setSelectedMedicine] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
+  const [showAdvertisement, setShowAdvertisement] = useState(false);
+
   useBackNavigation();
 
   const categories = [
@@ -144,11 +182,32 @@ const MedicineDelivery = () => {
     { id: "12", name: "Muscle Pain Cream", image: musclePainImg, price: 190, discountPrice: 160, rating: 4.4, description: "Fast Acting", category: "Pain" }
   ];
 
+  const advertisements = [
+    {
+      id: 'ad1',
+      image: 'https://images.unsplash.com/photo-1563213126-a4273aed2016?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+      title: 'New Anti-Allergic Range by HealthPlus',
+      sponsor: 'HealthPlus',
+      url: 'https://example.com/healthplus'
+    },
+    {
+      id: 'ad2',
+      image: 'https://images.unsplash.com/photo-1471864190281-a93a3070b6de?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+      title: 'Immunity Booster Sale - 25% Off',
+      sponsor: 'Wellness Pharma',
+      url: 'https://example.com/wellness'
+    }
+  ];
+
   useEffect(() => {
     const savedCart = localStorage.getItem("cart");
     if (savedCart) {
       setCartItems(JSON.parse(savedCart));
     }
+    
+    const adTimer = setTimeout(() => {
+      setShowAdvertisement(true);
+    }, 3000);
     
     const params = new URLSearchParams(location.search);
     const categoryParam = params.get("category");
@@ -168,6 +227,8 @@ const MedicineDelivery = () => {
       const mappedCategory = categoryMap[categoryParam] || "All";
       setActiveCategory(mappedCategory);
     }
+    
+    return () => clearTimeout(adTimer);
   }, [location.search]);
 
   useEffect(() => {
@@ -247,6 +308,8 @@ const MedicineDelivery = () => {
   const handleViewCart = () => {
     navigate("/cart");
   };
+
+  const randomAdIndex = Math.floor(Math.random() * advertisements.length);
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -361,6 +424,31 @@ const MedicineDelivery = () => {
             </motion.div>
           ))}
         </div>
+        
+        <div className="mt-8 mb-20">
+          <h2 className="text-lg font-semibold text-white mb-3">Special Offers</h2>
+          <motion.div 
+            className="glass-morphism rounded-xl p-4 overflow-hidden relative"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-zepmeds-purple/20 to-purple-500/30 rounded-full -translate-y-1/2 translate-x-1/2" />
+            
+            <div className="flex items-center justify-between relative z-10">
+              <div className="flex items-center">
+                <div className="mr-4 p-3 rounded-full bg-purple-500/20">
+                  <Heart className="h-6 w-6 text-purple-500" />
+                </div>
+                <div>
+                  <h3 className="text-white font-medium">Heart Health Week</h3>
+                  <p className="text-gray-400 text-sm">30% off on BP monitors</p>
+                </div>
+              </div>
+              
+              <Badge className="bg-purple-500">NEW</Badge>
+            </div>
+          </motion.div>
+        </div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -386,6 +474,13 @@ const MedicineDelivery = () => {
           medicine={selectedMedicine}
           onAddToCart={handleModalAddToCart}
         />
+        
+        {showAdvertisement && (
+          <Advertisement 
+            {...advertisements[randomAdIndex]} 
+            onClose={() => setShowAdvertisement(false)} 
+          />
+        )}
       </main>
 
       <BottomNavigation />

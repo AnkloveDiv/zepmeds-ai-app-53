@@ -1,9 +1,11 @@
 
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/components/ui/use-toast";
 
 export const useBackNavigation = (homeRoute: string = "/dashboard") => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   useEffect(() => {
     // Handle back button
@@ -11,7 +13,7 @@ export const useBackNavigation = (homeRoute: string = "/dashboard") => {
       // If we're already on the home page, show exit confirmation
       if (window.location.pathname === homeRoute) {
         e.preventDefault();
-        if (window.confirm("Do you wish to exit?")) {
+        if (window.confirm("Do you wish to exit the app?")) {
           // Exit app logic would go here for a mobile app
           // For web, we'd typically do nothing and let the browser handle it
         } else {
@@ -19,10 +21,16 @@ export const useBackNavigation = (homeRoute: string = "/dashboard") => {
           window.history.pushState(null, "", window.location.pathname);
         }
       } else {
-        // Navigate to home first
+        // Navigate to home first and show toast
         e.preventDefault();
         navigate(homeRoute);
         window.history.pushState(null, "", homeRoute);
+        
+        toast({
+          title: "Navigated to Home",
+          description: "Press back again to exit the app",
+          duration: 3000,
+        });
       }
     };
     
@@ -33,7 +41,7 @@ export const useBackNavigation = (homeRoute: string = "/dashboard") => {
     return () => {
       window.removeEventListener("popstate", handleBackButton);
     };
-  }, [navigate, homeRoute]);
+  }, [navigate, homeRoute, toast]);
 };
 
 export default useBackNavigation;

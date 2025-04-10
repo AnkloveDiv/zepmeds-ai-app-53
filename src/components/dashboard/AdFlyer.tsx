@@ -16,35 +16,40 @@ const adFlyers = [
     image: "https://images.unsplash.com/photo-1611242320536-f12d3541249b?ixlib=rb-1.2.1&auto=format&fit=crop&w=1240&q=80",
     title: "Summer Health Essentials",
     subtitle: "20% off on all summer products",
-    color: "from-blue-600 to-purple-600"
+    color: "from-blue-600 to-purple-600",
+    brand: "MedLife"
   },
   {
     id: 2,
     image: "https://images.unsplash.com/photo-1587854692152-cbe660dbde88?ixlib=rb-1.2.1&auto=format&fit=crop&w=1240&q=80",
     title: "Vitamin Supplements",
     subtitle: "Buy 2 Get 1 Free",
-    color: "from-orange-500 to-red-500"
+    color: "from-orange-500 to-red-500",
+    brand: "HealthPlus"
   },
   {
     id: 3,
     image: "https://images.unsplash.com/photo-1512069772995-ec65ed45afd6?ixlib=rb-1.2.1&auto=format&fit=crop&w=1240&q=80",
     title: "Diabetes Care",
     subtitle: "Free Blood Sugar Monitor",
-    color: "from-green-500 to-teal-500"
+    color: "from-green-500 to-teal-500",
+    brand: "MedOne"
   },
   {
     id: 4,
     image: "https://images.unsplash.com/photo-1504439468489-c8920d796a29?ixlib=rb-1.2.1&auto=format&fit=crop&w=1240&q=80",
     title: "Heart Health",
     subtitle: "BP Monitor at 30% off",
-    color: "from-red-500 to-pink-500"
+    color: "from-red-500 to-pink-500",
+    brand: "CardioLife"
   },
   {
     id: 5,
     image: "https://images.unsplash.com/photo-1471864190281-a93a3070b6de?ixlib=rb-1.2.1&auto=format&fit=crop&w=1240&q=80",
     title: "Immunity Boosters",
     subtitle: "New range of herbal products",
-    color: "from-purple-500 to-indigo-500"
+    color: "from-purple-500 to-indigo-500",
+    brand: "NatureVita"
   }
 ];
 
@@ -69,7 +74,7 @@ const AdFlyer = () => {
 
   return (
     <section className="mt-6 mb-8">
-      <h2 className="text-lg font-semibold text-white mb-3">Featured Offers</h2>
+      <h2 className="text-lg font-semibold text-white mb-3">Featured Brands</h2>
       
       <Carousel
         opts={{
@@ -93,6 +98,9 @@ const AdFlyer = () => {
                   alt={ad.title}
                   className="w-full h-full object-cover opacity-60 mix-blend-overlay" 
                 />
+                <div className="absolute top-2 left-2 bg-white/20 px-2 py-1 rounded-full backdrop-blur-sm">
+                  <span className="text-xs font-bold text-white">Sponsored by {ad.brand}</span>
+                </div>
                 <div className="absolute inset-0 flex flex-col justify-end p-4 text-white">
                   <h3 className="text-xl font-bold drop-shadow-md">{ad.title}</h3>
                   <p className="text-sm drop-shadow-md">{ad.subtitle}</p>
