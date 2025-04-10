@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -36,10 +36,10 @@ import Support from "./pages/Support";
 const queryClient = new QueryClient();
 
 const App = () => {
-  const [showPermissions, setShowPermissions] = useState(false);
+  const [showPermissions, setShowPermissions] = React.useState(false);
 
   // Check if user is logged in and needs to show permissions
-  useEffect(() => {
+  React.useEffect(() => {
     const isLoggedIn = localStorage.getItem("isLoggedIn");
     const permissionsGranted = localStorage.getItem("permissionsGranted");
     
