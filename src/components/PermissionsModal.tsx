@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Capacitor } from "@capacitor/core";
-import { Camera as CapacitorCamera, CameraPermissionState } from "@capacitor/camera";
+import { Camera as CapacitorCamera } from "@capacitor/camera";
 import { Geolocation } from "@capacitor/geolocation";
 
 interface PermissionsModalProps {
@@ -54,7 +54,7 @@ const PermissionsModal = ({ onGranted }: PermissionsModalProps) => {
           const permission = await CapacitorCamera.requestPermissions();
           setPermissions(prev => ({ 
             ...prev, 
-            camera: permission.camera === CameraPermissionState.Granted 
+            camera: permission.camera === 'granted' 
           }));
         } else {
           // Fallback for web
