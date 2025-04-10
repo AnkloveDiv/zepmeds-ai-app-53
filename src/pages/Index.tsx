@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import MedicineAnimation from "@/components/MedicineAnimation";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
@@ -22,7 +21,7 @@ const Index = () => {
           navigate("/login");
         }
       }, 2000);
-    }, 3000);
+    }, 1000);
 
     return () => clearTimeout(timer);
   }, [navigate, isLoggedIn]);
@@ -42,8 +41,21 @@ const Index = () => {
           <p className="text-gray-400">Medicines at your doorstep</p>
         </motion.div>
 
-        <div className="h-64 w-full mb-8">
-          <MedicineAnimation />
+        <div className="h-64 w-full mb-8 flex items-center justify-center">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.8 }}
+            className="p-6 rounded-full bg-zepmeds-purple/20 flex items-center justify-center"
+          >
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ repeat: Infinity, duration: 8, ease: "linear" }}
+              className="text-6xl text-zepmeds-purple"
+            >
+              💊
+            </motion.div>
+          </motion.div>
         </div>
 
         <motion.div
