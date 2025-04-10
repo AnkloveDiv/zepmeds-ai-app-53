@@ -80,56 +80,11 @@ const Index = () => {
 
         <motion.div
           initial={{ opacity: 0, scale: 0 }}
-          animate={{ 
-            opacity: 1, 
-            scale: 1,
-            rotateZ: [0, 10, -10, 5, -5, 0],
-          }}
-          transition={{ 
-            delay: 1.5,
-            duration: 1.5, 
-            rotateZ: {
-              repeat: 0,
-              duration: 1
-            }
-          }}
-          className="text-zepmeds-purple text-xl"
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 1.5, duration: 1 }}
+          className="text-white text-xl font-medium"
         >
-          Digital Rx Hub
-        </motion.div>
-        
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ 
-            scale: 1, 
-            opacity: 1,
-            y: [0, -10, 0],
-          }}
-          transition={{ 
-            delay: 2, 
-            duration: 2,
-            y: {
-              repeat: Infinity,
-              duration: 2,
-              ease: "easeInOut"
-            }
-          }}
-          className="mt-8"
-        >
-          <motion.div
-            animate={{ 
-              rotate: 360,
-            }}
-            transition={{ 
-              repeat: Infinity,
-              duration: 8,
-              ease: "linear"
-            }}
-            className="relative w-24 h-24 flex items-center justify-center"
-          >
-            <div className="absolute inset-0 rounded-full border-4 border-t-zepmeds-purple border-r-transparent border-b-white/30 border-l-transparent"></div>
-            <motion.span className="text-4xl">💊</motion.span>
-          </motion.div>
+          India's First Fastest Medicine Delivery App
         </motion.div>
       </div>
     </div>

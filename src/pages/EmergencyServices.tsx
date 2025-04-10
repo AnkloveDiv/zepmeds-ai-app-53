@@ -136,13 +136,14 @@ const EmergencyServices = () => {
           </Card>
         </div>
         
-        <div className="space-y-4">
+        <div className="space-y-4 mb-20"> {/* Added mb-20 to ensure content doesn't go under bottom nav */}
           <h3 className="text-white font-medium mb-2">Other Emergency Services</h3>
           
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
+            className="w-full"
           >
             <Button 
               variant="outline" 
@@ -166,6 +167,7 @@ const EmergencyServices = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
+            className="w-full"
           >
             <Button 
               variant="outline" 
