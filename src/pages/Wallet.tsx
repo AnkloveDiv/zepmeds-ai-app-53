@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { CreditCard, PlusCircle, CreditCardIcon, Landmark, ArrowDown, ArrowUp, Clock } from "lucide-react";
@@ -9,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
-import { useBackButton } from "@/hooks/useBackButton";
+import useBackNavigation from "@/hooks/useBackNavigation";
 
 interface Transaction {
   id: string;
@@ -56,7 +55,7 @@ const Wallet = () => {
     }
   ]);
   
-  useBackButton();
+  useBackNavigation();
 
   const handleAddMoney = () => {
     const amount = parseInt(addMoneyAmount);
@@ -69,10 +68,8 @@ const Wallet = () => {
       return;
     }
 
-    // Add money to wallet
     setWalletBalance(prev => prev + amount);
     
-    // Add transaction
     const newTransaction: Transaction = {
       id: `t${Date.now()}`,
       date: new Date(),

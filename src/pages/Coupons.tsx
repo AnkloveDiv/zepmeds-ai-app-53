@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Ticket, Copy, CheckCircle, ExternalLink, Calendar } from "lucide-react";
@@ -7,7 +6,7 @@ import BottomNavigation from "@/components/BottomNavigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { useBackButton } from "@/hooks/useBackButton";
+import useBackNavigation from "@/hooks/useBackNavigation";
 
 interface Coupon {
   id: string;
@@ -23,60 +22,18 @@ interface Coupon {
 const Coupons = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("all");
-  const [coupons, setCoupons] = useState<Coupon[]>([
-    {
-      id: "c1",
-      code: "WELCOME20",
-      discount: "20% OFF",
-      description: "20% off on your first medicine order",
-      validUntil: new Date(2023, 6, 30),
-      type: "medicine",
-      minimumPurchase: 500,
-      isCopied: false
-    },
-    {
-      id: "c2",
-      code: "DOCTOR100",
-      discount: "₹100 OFF",
-      description: "Flat ₹100 off on doctor consultation",
-      validUntil: new Date(2023, 5, 15),
-      type: "doctor",
-      isCopied: false
-    },
-    {
-      id: "c3",
-      code: "ZEPMEDS25",
-      discount: "25% OFF",
-      description: "25% off on any service (max discount ₹200)",
-      validUntil: new Date(2023, 7, 10),
-      type: "both",
-      isCopied: false
-    },
-    {
-      id: "c4",
-      code: "SUMMER15",
-      discount: "15% OFF",
-      description: "Summer special discount on medicines",
-      validUntil: new Date(2023, 5, 30),
-      type: "medicine",
-      minimumPurchase: 300,
-      isCopied: false
-    }
-  ]);
   
-  useBackButton();
+  useBackNavigation();
 
   const handleCopyCode = (id: string) => {
     const coupon = coupons.find(c => c.id === id);
     if (coupon) {
       navigator.clipboard.writeText(coupon.code);
       
-      // Update copied state
       setCoupons(coupons.map(c => 
         c.id === id ? { ...c, isCopied: true } : c
       ));
       
-      // Reset after 2 seconds
       setTimeout(() => {
         setCoupons(coupons.map(c => 
           c.id === id ? { ...c, isCopied: false } : c

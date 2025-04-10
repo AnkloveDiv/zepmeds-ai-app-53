@@ -1,11 +1,10 @@
-
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Tag, ShoppingBag, Calendar, Clock, Gift, ExternalLink } from "lucide-react";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
 import { Button } from "@/components/ui/button";
-import { useBackButton } from "@/hooks/useBackButton";
+import useBackNavigation from "@/hooks/useBackNavigation";
 
 interface Offer {
   id: string;
@@ -21,7 +20,7 @@ interface Offer {
 const Offers = () => {
   const navigate = useNavigate();
   
-  useBackButton();
+  useBackNavigation();
 
   const featuredOffers: Offer[] = [
     {

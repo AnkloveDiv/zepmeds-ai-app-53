@@ -1,9 +1,8 @@
-
 import { motion } from "framer-motion";
 import { Github, Linkedin, Mail, Globe, Code, Heart } from "lucide-react";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
-import { useBackButton } from "@/hooks/useBackButton";
+import useBackNavigation from "@/hooks/useBackNavigation";
 
 interface DeveloperProfile {
   name: string;
@@ -18,7 +17,7 @@ interface DeveloperProfile {
 }
 
 const DeveloperInfo = () => {
-  useBackButton();
+  useBackNavigation();
   
   const developers: DeveloperProfile[] = [
     {

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
@@ -7,7 +6,7 @@ import BottomNavigation from "@/components/BottomNavigation";
 import { MessageSquare, Video } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
-import { useBackButton } from "@/hooks/useBackButton";
+import useBackNavigation from "@/hooks/useBackNavigation";
 import { doctors, availableTimes } from "@/data/doctorData";
 import DoctorCard from "@/components/doctor/DoctorCard";
 import ConsultationOptions from "@/components/doctor/ConsultationOptions";
@@ -25,8 +24,8 @@ const DoctorConsultation = () => {
   const [selectedTime, setSelectedTime] = useState<string>("");
   const { toast } = useToast();
   
-  // Use the custom back button hook
-  useBackButton();
+  // Use the custom back navigation hook
+  useBackNavigation();
   
   const handleDoctorConsult = (doctor: any) => {
     setSelectedDoctor(doctor);
