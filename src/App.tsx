@@ -26,6 +26,10 @@ import ManageAddresses from "./pages/ManageAddresses";
 import OrderHistory from "./pages/OrderHistory";
 import MedicalReports from "./pages/MedicalReports";
 import EmergencyServices from "./pages/EmergencyServices";
+import Wallet from "./pages/Wallet";
+import Coupons from "./pages/Coupons";
+import Offers from "./pages/Offers";
+import DeveloperInfo from "./pages/DeveloperInfo";
 
 const queryClient = new QueryClient();
 
@@ -76,6 +80,10 @@ const App = () => {
               <Route path="/orders" element={<OrderHistory />} />
               <Route path="/reports" element={<MedicalReports />} />
               <Route path="/emergency" element={<EmergencyServices />} />
+              <Route path="/wallet" element={<Wallet />} />
+              <Route path="/coupons" element={<Coupons />} />
+              <Route path="/offers" element={<Offers />} />
+              <Route path="/about-developers" element={<DeveloperInfo />} />
               
               <Route path="*" element={<NotFound />} />
             </Routes>

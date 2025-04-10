@@ -9,7 +9,9 @@ import {
   AlertCircle, 
   Headphones, 
   Wallet, 
-  Ticket
+  Ticket,
+  Gift,
+  Code
 } from "lucide-react";
 import { MenuItem } from "@/components/profile/ProfileMenu";
 
@@ -24,6 +26,8 @@ export const getProfileMenuItems = (): MenuItem[] => {
     { icon: <AlertCircle size={20} />, title: "Emergency Services", path: "/emergency" },
     { icon: <Headphones size={20} />, title: "Help & Support", path: "/support" },
     { icon: <Wallet size={20} />, title: "Wallet", path: "/wallet" },
-    { icon: <Ticket size={20} />, title: "Coupons & Offers", path: "/coupons" }
+    { icon: <Ticket size={20} />, title: "Coupons", path: "/coupons" },
+    { icon: <Gift size={20} />, title: "Offers", path: "/offers" },
+    { icon: <Code size={20} />, title: "About Developers", path: "/about-developers" }
   ];
 };

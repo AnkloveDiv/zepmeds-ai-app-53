@@ -1,229 +1,190 @@
-import React, { useState } from "react";
+
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Battery, Calendar, Heart, Droplets, ChevronDown, ChevronUp, X } from "lucide-react";
+import { Calendar, Plus } from "lucide-react";
+import { format } from "date-fns";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import WeeklyStatsGraph from "@/components/activity/WeeklyStatsGraph";
-import HealthMetricsLogger from "@/components/activity/HealthMetricsLogger";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Progress } from "@/components/ui/progress";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { WeeklyStatsGraph } from "@/components/activity/WeeklyStatsGraph";
+import { HealthMetricsLogger } from "@/components/activity/HealthMetricsLogger";
+import { useToast } from "@/components/ui/use-toast";
+import { useBackButton } from "@/hooks/useBackButton";
 
+// Define the HealthData interface
 interface HealthData {
-  date: string;
-  steps: number;
-  heartRate: number;
-  sleepHours: number;
-  waterIntake: number;
+  id: string;
+  date: Date;
+  type: string;
+  value: number;
+  unit: string;
 }
 
 const Activity = () => {
+  const { toast } = useToast();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("weekly");
   const [healthData, setHealthData] = useState<HealthData[]>([
-    { date: "2024-07-15", steps: 5245, heartRate: 72, sleepHours: 7, waterIntake: 3 },
-    { date: "2024-07-16", steps: 6870, heartRate: 68, sleepHours: 8, waterIntake: 4 },
-    { date: "2024-07-17", steps: 4120, heartRate: 75, sleepHours: 6, waterIntake: 2 },
-    { date: "2024-07-18", steps: 7500, heartRate: 70, sleepHours: 7, waterIntake: 3 },
-    { date: "2024-07-19", steps: 3200, heartRate: 65, sleepHours: 8, waterIntake: 4 },
-    { date: "2024-07-20", steps: 8200, heartRate: 72, sleepHours: 6, waterIntake: 2 },
-    { date: "2024-07-21", steps: 9500, heartRate: 68, sleepHours: 7, waterIntake: 3 },
+    {
+      id: "1",
+      date: new Date("2023-05-01"),
+      type: "Blood Pressure",
+      value: 120,
+      unit: "mmHg"
+    },
+    {
+      id: "2",
+      date: new Date("2023-05-02"),
+      type: "Heart Rate",
+      value: 72,
+      unit: "bpm"
+    },
+    {
+      id: "3",
+      date: new Date("2023-05-03"),
+      type: "Blood Glucose",
+      value: 95,
+      unit: "mg/dL"
+    },
+    {
+      id: "4",
+      date: new Date("2023-05-04"),
+      type: "Temperature",
+      value: 98.6,
+      unit: "°F"
+    },
+    {
+      id: "5",
+      date: new Date("2023-05-05"),
+      type: "Weight",
+      value: 160,
+      unit: "lbs"
+    }
   ]);
-  const [isMetricsModalOpen, setIsMetricsModalOpen] = useState(false);
-  const [newSteps, setNewSteps] = useState("");
-  const [newHeartRate, setNewHeartRate] = useState("");
-  const [newSleepHours, setNewSleepHours] = useState("");
-  const [newWaterIntake, setNewWaterIntake] = useState("");
-  const [expandedDate, setExpandedDate] = useState<string | null>(null);
+  
+  useBackButton();
 
-  const toggleExpand = (date: string) => {
-    setExpandedDate(expandedDate === date ? null : date);
+  const handleAddHealthData = (newData: Omit<HealthData, 'id'>) => {
+    const id = Math.random().toString(36).substring(2, 9);
+    const data = { ...newData, id };
+    setHealthData([...healthData, data]);
+    setIsDialogOpen(false);
+    toast({
+      title: "Health data added",
+      description: "Your health data has been logged successfully.",
+    });
   };
 
-  const addHealthData = (newData: HealthData) => {
-    setHealthData([...healthData, newData]);
-  };
-
-  const handleSubmitMetrics = () => {
-    const today = new Date().toISOString().slice(0, 10);
-    const newEntry: HealthData = {
-      date: today,
-      steps: parseInt(newSteps, 10) || 0,
-      heartRate: parseInt(newHeartRate, 10) || 0,
-      sleepHours: parseInt(newSleepHours, 10) || 0,
-      waterIntake: parseInt(newWaterIntake, 10) || 0,
-    };
-    addHealthData(newEntry);
-    setIsMetricsModalOpen(false);
-    setNewSteps("");
-    setNewHeartRate("");
-    setNewSleepHours("");
-    setNewWaterIntake("");
-  };
-
-  const dailyGoals = {
-    steps: 8000,
-    heartRate: 70,
-    sleepHours: 7,
-    waterIntake: 3,
+  const handleOpenDialog = () => {
+    setIsDialogOpen(true);
   };
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <Header showBackButton title="Activity" />
+      <Header showBackButton title="Activity & Health" />
 
-      <main className="px-4 py-6">
-        <WeeklyStatsGraph healthData={healthData} />
+      <main className="px-4 py-4">
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h2 className="text-2xl font-bold text-white">Health Metrics</h2>
+            <p className="text-gray-400 text-sm">Track your health journey</p>
+          </div>
+          <Button
+            onClick={handleOpenDialog}
+            className="rounded-full bg-zepmeds-purple hover:bg-zepmeds-purple/80"
+            size="sm"
+          >
+            <Plus className="h-4 w-4 mr-1" /> Log
+          </Button>
+        </div>
 
-        <Tabs defaultValue="daily" className="mt-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="daily">Daily</TabsTrigger>
-            <TabsTrigger value="exercise">Exercise</TabsTrigger>
-            <TabsTrigger value="sleep">Sleep</TabsTrigger>
-          </TabsList>
-          <TabsContent value="daily" className="mt-4">
-            {healthData.map((data) => (
-              <motion.div
-                key={data.date}
-                className="glass-morphism rounded-xl p-4 mb-4"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="text-lg font-semibold text-white">{data.date}</h3>
-                  <button onClick={() => toggleExpand(data.date)}>
-                    {expandedDate === data.date ? (
-                      <ChevronUp className="h-6 w-6 text-gray-400" />
-                    ) : (
-                      <ChevronDown className="h-6 w-6 text-gray-400" />
-                    )}
-                  </button>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Log Health Metrics</DialogTitle>
+            </DialogHeader>
+            <HealthMetricsLogger onSubmit={handleAddHealthData} />
+          </DialogContent>
+        </Dialog>
+
+        <div className="glass-morphism rounded-xl p-4 mb-6">
+          <div className="flex items-center text-white mb-3">
+            <Calendar className="h-5 w-5 mr-2 text-zepmeds-purple" />
+            <span>{format(new Date(), "MMMM d, yyyy")}</span>
+          </div>
+          
+          <Tabs defaultValue="weekly" value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-3 mb-4">
+              <TabsTrigger value="daily">Daily</TabsTrigger>
+              <TabsTrigger value="weekly">Weekly</TabsTrigger>
+              <TabsTrigger value="monthly">Monthly</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="daily" className="h-64">
+              <WeeklyStatsGraph data={healthData} period="daily" />
+            </TabsContent>
+            
+            <TabsContent value="weekly" className="h-64">
+              <WeeklyStatsGraph data={healthData} period="weekly" />
+            </TabsContent>
+            
+            <TabsContent value="monthly" className="h-64">
+              <WeeklyStatsGraph data={healthData} period="monthly" />
+            </TabsContent>
+          </Tabs>
+        </div>
+        
+        <h3 className="text-lg font-semibold text-white mb-3">Recent Logs</h3>
+        
+        <div className="space-y-3">
+          {healthData.slice(0, 5).map((item) => (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="glass-morphism rounded-xl p-3 flex justify-between items-center"
+            >
+              <div>
+                <h4 className="text-white font-medium">{item.type}</h4>
+                <div className="flex items-center">
+                  <span className="text-zepmeds-purple text-sm font-semibold">
+                    {item.value} {item.unit}
+                  </span>
+                  <span className="text-gray-400 text-xs ml-2">
+                    {format(new Date(item.date), "MMM d, yyyy")}
+                  </span>
                 </div>
-
-                {expandedDate === data.date && (
-                  <div className="mt-2">
-                    <div className="mb-3">
-                      <div className="flex items-center justify-between text-white">
-                        <span className="flex items-center">
-                          <Battery className="h-4 w-4 mr-2" /> Steps
-                        </span>
-                        <span>{data.steps}</span>
-                      </div>
-                      <Progress value={(data.steps / dailyGoals.steps) * 100} />
-                    </div>
-
-                    <div className="mb-3">
-                      <div className="flex items-center justify-between text-white">
-                        <span className="flex items-center">
-                          <Heart className="h-4 w-4 mr-2" /> Heart Rate
-                        </span>
-                        <span>{data.heartRate} bpm</span>
-                      </div>
-                      <Progress value={(data.heartRate / dailyGoals.heartRate) * 100} />
-                    </div>
-
-                    <div className="mb-3">
-                      <div className="flex items-center justify-between text-white">
-                        <span className="flex items-center">
-                          <Calendar className="h-4 w-4 mr-2" /> Sleep
-                        </span>
-                        <span>{data.sleepHours} hours</span>
-                      </div>
-                      <Progress value={(data.sleepHours / dailyGoals.sleepHours) * 100} />
-                    </div>
-
-                    <div className="mb-3">
-                      <div className="flex items-center justify-between text-white">
-                        <span className="flex items-center">
-                          <Droplets className="h-4 w-4 mr-2" /> Water Intake
-                        </span>
-                        <span>{data.waterIntake} liters</span>
-                      </div>
-                      <Progress value={(data.waterIntake / dailyGoals.waterIntake) * 100} />
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-            ))}
-          </TabsContent>
-          <TabsContent value="exercise">
-            <div>Exercise Content</div>
-          </TabsContent>
-          <TabsContent value="sleep">
-            <div>Sleep Content</div>
-          </TabsContent>
-        </Tabs>
-
-        <HealthMetricsLogger onOpen={() => setIsMetricsModalOpen(true)} />
+              </div>
+              <div className={`w-3 h-3 rounded-full ${getHealthIndicatorColor(item.type, item.value)}`} />
+            </motion.div>
+          ))}
+        </div>
       </main>
-
-      {/* Health Metrics Modal */}
-      <Dialog open={isMetricsModalOpen} onOpenChange={setIsMetricsModalOpen}>
-        <DialogContent className="bg-background border-gray-800 text-white sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add Today's Health Metrics</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="steps" className="text-right">
-                Steps
-              </label>
-              <Input
-                type="number"
-                id="steps"
-                value={newSteps}
-                onChange={(e) => setNewSteps(e.target.value)}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="heartRate" className="text-right">
-                Heart Rate
-              </label>
-              <Input
-                type="number"
-                id="heartRate"
-                value={newHeartRate}
-                onChange={(e) => setNewHeartRate(e.target.value)}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="sleepHours" className="text-right">
-                Sleep Hours
-              </label>
-              <Input
-                type="number"
-                id="sleepHours"
-                value={newSleepHours}
-                onChange={(e) => setNewSleepHours(e.target.value)}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="waterIntake" className="text-right">
-                Water Intake (L)</label>
-              <Input
-                type="number"
-                id="waterIntake"
-                value={newWaterIntake}
-                onChange={(e) => setNewWaterIntake(e.target.value)}
-                className="col-span-3"
-              />
-            </div>
-          </div>
-          <div className="flex justify-end">
-            <Button type="submit" onClick={handleSubmitMetrics}>
-              Save Metrics
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <BottomNavigation />
     </div>
   );
+};
+
+// Helper function to determine the color of the health indicator
+const getHealthIndicatorColor = (type: string, value: number): string => {
+  switch (type) {
+    case "Blood Pressure":
+      return value > 140 ? "bg-red-500" : value < 90 ? "bg-yellow-500" : "bg-green-500";
+    case "Heart Rate":
+      return value > 100 ? "bg-red-500" : value < 60 ? "bg-yellow-500" : "bg-green-500";
+    case "Blood Glucose":
+      return value > 140 ? "bg-red-500" : value < 70 ? "bg-yellow-500" : "bg-green-500";
+    case "Temperature":
+      return value > 99.5 ? "bg-red-500" : value < 97.5 ? "bg-yellow-500" : "bg-green-500";
+    case "Weight":
+      // This is a simplistic example, weight would depend on height, age, etc.
+      return "bg-blue-500";
+    default:
+      return "bg-gray-500";
+  }
 };
 
 export default Activity;

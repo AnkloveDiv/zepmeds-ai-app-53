@@ -1,290 +1,201 @@
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Heart, TrendingUp, BarChart3, Plus } from 'lucide-react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/components/ui/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { format } from 'date-fns';
 
-type MetricType = 'bloodPressure' | 'bloodSugar' | 'steps';
-
-interface MetricEntry {
-  id: string;
-  time: string;
-  value: string | number;
-  type: MetricType;
+interface HealthMetricsLoggerProps {
+  onSubmit: (data: {
+    date: Date;
+    type: string;
+    value: number;
+    unit: string;
+  }) => void;
 }
 
-const HealthMetricsLogger = () => {
-  const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<MetricType>('bloodPressure');
-  const [showForm, setShowForm] = useState(false);
-  const [bpSystolic, setBpSystolic] = useState('');
-  const [bpDiastolic, setBpDiastolic] = useState('');
-  const [bloodSugar, setBloodSugar] = useState('');
-  const [steps, setSteps] = useState('');
-  const [dailyStepGoal] = useState(10000);
-  
-  // State for storing logged metrics
-  const [metrics, setMetrics] = useState<MetricEntry[]>([
-    { id: '1', time: '08:30 AM', value: '120/80', type: 'bloodPressure' },
-    { id: '2', time: '01:15 PM', value: '118/78', type: 'bloodPressure' },
-    { id: '3', time: '08:45 AM', value: 110, type: 'bloodSugar' },
-    { id: '4', time: '01:30 PM', value: 120, type: 'bloodSugar' },
-    { id: '5', time: '10:00 AM', value: 3500, type: 'steps' },
-    { id: '6', time: '03:00 PM', value: 7200, type: 'steps' },
-  ]);
-  
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const now = new Date();
-    const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const newId = Date.now().toString();
-    
-    let newMetric: MetricEntry | null = null;
-    
-    if (activeTab === 'bloodPressure' && bpSystolic && bpDiastolic) {
-      newMetric = {
-        id: newId,
-        time: timeString,
-        value: `${bpSystolic}/${bpDiastolic}`,
-        type: 'bloodPressure'
-      };
-      setBpSystolic('');
-      setBpDiastolic('');
-    } else if (activeTab === 'bloodSugar' && bloodSugar) {
-      newMetric = {
-        id: newId,
-        time: timeString,
-        value: parseInt(bloodSugar),
-        type: 'bloodSugar'
-      };
-      setBloodSugar('');
-    } else if (activeTab === 'steps' && steps) {
-      newMetric = {
-        id: newId,
-        time: timeString,
-        value: parseInt(steps),
-        type: 'steps'
-      };
-      setSteps('');
-    }
-    
-    if (newMetric) {
-      setMetrics([...metrics, newMetric]);
-      setShowForm(false);
-      
-      toast({
-        title: 'Metric logged',
-        description: `Your ${getMetricTitle(activeTab).toLowerCase()} has been recorded successfully.`,
-        duration: 3000,
-      });
-    }
-  };
-  
-  const getMetricTitle = (type: MetricType): string => {
+// Form schema
+const formSchema = z.object({
+  date: z.date(),
+  type: z.string().min(1, { message: 'Please select a metric type' }),
+  value: z.coerce.number().min(0, { message: 'Value cannot be negative' }),
+  unit: z.string().min(1, { message: 'Please select a unit' }),
+});
+
+export const HealthMetricsLogger: React.FC<HealthMetricsLoggerProps> = ({ onSubmit }) => {
+  const [selectedType, setSelectedType] = useState<string>('');
+
+  // Initialize form
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      date: new Date(),
+      type: '',
+      value: 0,
+      unit: '',
+    },
+  });
+
+  // Get units based on selected type
+  const getUnitsForType = (type: string): { value: string; label: string }[] => {
     switch (type) {
-      case 'bloodPressure': return 'Blood Pressure';
-      case 'bloodSugar': return 'Blood Sugar';
-      case 'steps': return 'Steps';
+      case 'Blood Pressure':
+        return [{ value: 'mmHg', label: 'mmHg' }];
+      case 'Heart Rate':
+        return [{ value: 'bpm', label: 'bpm' }];
+      case 'Blood Glucose':
+        return [{ value: 'mg/dL', label: 'mg/dL' }, { value: 'mmol/L', label: 'mmol/L' }];
+      case 'Temperature':
+        return [{ value: '°F', label: '°F' }, { value: '°C', label: '°C' }];
+      case 'Weight':
+        return [{ value: 'lbs', label: 'lbs' }, { value: 'kg', label: 'kg' }];
+      default:
+        return [];
     }
   };
-  
-  const getTodayTotal = (type: MetricType): number => {
-    if (type === 'steps') {
-      return metrics
-        .filter(m => m.type === type)
-        .reduce((sum, entry) => sum + (typeof entry.value === 'number' ? entry.value : 0), 0);
+
+  const handleTypeChange = (value: string) => {
+    setSelectedType(value);
+    form.setValue('type', value);
+    
+    // Set default unit for the selected type
+    const units = getUnitsForType(value);
+    if (units.length > 0) {
+      form.setValue('unit', units[0].value);
+    } else {
+      form.setValue('unit', '');
     }
-    return 0;
   };
-  
-  const todaySteps = getTodayTotal('steps');
-  const stepProgress = Math.min(100, (todaySteps / dailyStepGoal) * 100);
-  
+
+  const handleSubmit = (values: z.infer<typeof formSchema>) => {
+    onSubmit(values);
+    form.reset();
+  };
+
   return (
-    <div className="glass-morphism rounded-xl p-4 mt-6">
-      <h2 className="text-lg font-semibold text-white mb-4">Today's Health Metrics</h2>
-      
-      {/* Tabs */}
-      <div className="flex mb-6 bg-black/30 rounded-lg p-1">
-        <button
-          className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
-            activeTab === 'bloodPressure' ? 'bg-zepmeds-purple text-white' : 'text-gray-400'
-          }`}
-          onClick={() => setActiveTab('bloodPressure')}
-        >
-          <Heart className="h-4 w-4 mx-auto mb-1" />
-          BP
-        </button>
-        <button
-          className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
-            activeTab === 'bloodSugar' ? 'bg-zepmeds-purple text-white' : 'text-gray-400'
-          }`}
-          onClick={() => setActiveTab('bloodSugar')}
-        >
-          <TrendingUp className="h-4 w-4 mx-auto mb-1" />
-          Sugar
-        </button>
-        <button
-          className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
-            activeTab === 'steps' ? 'bg-zepmeds-purple text-white' : 'text-gray-400'
-          }`}
-          onClick={() => setActiveTab('steps')}
-        >
-          <BarChart3 className="h-4 w-4 mx-auto mb-1" />
-          Steps
-        </button>
-      </div>
-      
-      {/* Steps Progress */}
-      {activeTab === 'steps' && (
-        <div className="mb-6">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm text-gray-400">Daily Goal</span>
-            <span className="text-sm font-medium text-white">{todaySteps} / {dailyStepGoal}</span>
-          </div>
-          <div className="h-3 bg-black/30 rounded-full overflow-hidden">
-            <div 
-              className="h-full rounded-full" 
-              style={{ 
-                width: `${stepProgress}%`,
-                background: `linear-gradient(90deg, 
-                  ${stepProgress < 30 ? '#f87171' : stepProgress < 70 ? '#fb923c' : '#22c55e'} 0%,
-                  ${stepProgress < 30 ? '#ef4444' : stepProgress < 70 ? '#f97316' : '#16a34a'} 100%)`
-              }}
-            />
-          </div>
-        </div>
-      )}
-      
-      {/* Today's Entries */}
-      <div className="space-y-3">
-        {metrics
-          .filter(metric => metric.type === activeTab)
-          .map(entry => (
-            <motion.div
-              key={entry.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-black/20 border border-white/5 rounded-lg p-3 flex justify-between items-center"
-            >
-              <div>
-                <span className="text-gray-400 text-xs">{entry.time}</span>
-                <div className="text-white font-medium">
-                  {typeof entry.value === 'string' 
-                    ? entry.value 
-                    : entry.type === 'bloodSugar'
-                      ? `${entry.value} mg/dL`
-                      : entry.value.toLocaleString()}
-                </div>
-              </div>
-              
-              {activeTab === 'bloodPressure' && (
-                <div className="bg-black/30 px-2 py-1 rounded text-xs text-gray-300">
-                  {parseInt((entry.value as string).split('/')[0]) > 130 ? 'High' : 'Normal'}
-                </div>
-              )}
-              
-              {activeTab === 'bloodSugar' && typeof entry.value === 'number' && (
-                <div className="bg-black/30 px-2 py-1 rounded text-xs text-gray-300">
-                  {entry.value > 140 ? 'High' : entry.value < 80 ? 'Low' : 'Normal'}
-                </div>
-              )}
-            </motion.div>
-          ))}
-      </div>
-      
-      {/* Add New Entry Form */}
-      {showForm ? (
-        <motion.form
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          className="mt-4"
-          onSubmit={handleSubmit}
-        >
-          {activeTab === 'bloodPressure' && (
-            <div className="flex gap-2 mb-3">
-              <div className="flex-1">
-                <label className="text-xs text-gray-400 mb-1 block">Systolic</label>
-                <Input
-                  type="number"
-                  value={bpSystolic}
-                  onChange={(e) => setBpSystolic(e.target.value)}
-                  placeholder="120"
-                  className="bg-black/20 border-white/10 text-white"
-                  required
-                />
-              </div>
-              <div className="flex-1">
-                <label className="text-xs text-gray-400 mb-1 block">Diastolic</label>
-                <Input
-                  type="number"
-                  value={bpDiastolic}
-                  onChange={(e) => setBpDiastolic(e.target.value)}
-                  placeholder="80"
-                  className="bg-black/20 border-white/10 text-white"
-                  required
-                />
-              </div>
-            </div>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="date"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <FormLabel>Date</FormLabel>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Button
+                      variant={"outline"}
+                      className="pl-3 text-left font-normal"
+                    >
+                      {field.value ? (
+                        format(field.value, "PPP")
+                      ) : (
+                        <span>Pick a date</span>
+                      )}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={field.value}
+                    onSelect={field.onChange}
+                    disabled={(date) =>
+                      date > new Date() || date < new Date("1900-01-01")
+                    }
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              <FormMessage />
+            </FormItem>
           )}
-          
-          {activeTab === 'bloodSugar' && (
-            <div className="mb-3">
-              <label className="text-xs text-gray-400 mb-1 block">Blood Sugar (mg/dL)</label>
-              <Input
-                type="number"
-                value={bloodSugar}
-                onChange={(e) => setBloodSugar(e.target.value)}
-                placeholder="110"
-                className="bg-black/20 border-white/10 text-white"
-                required
-              />
-            </div>
+        />
+
+        <FormField
+          control={form.control}
+          name="type"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Metric Type</FormLabel>
+              <Select onValueChange={handleTypeChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a metric" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="Blood Pressure">Blood Pressure</SelectItem>
+                  <SelectItem value="Heart Rate">Heart Rate</SelectItem>
+                  <SelectItem value="Blood Glucose">Blood Glucose</SelectItem>
+                  <SelectItem value="Temperature">Temperature</SelectItem>
+                  <SelectItem value="Weight">Weight</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
           )}
-          
-          {activeTab === 'steps' && (
-            <div className="mb-3">
-              <label className="text-xs text-gray-400 mb-1 block">Steps Count</label>
-              <Input
-                type="number"
-                value={steps}
-                onChange={(e) => setSteps(e.target.value)}
-                placeholder="2500"
-                className="bg-black/20 border-white/10 text-white"
-                required
-              />
-            </div>
+        />
+
+        <FormField
+          control={form.control}
+          name="value"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Value</FormLabel>
+              <FormControl>
+                <Input type="number" placeholder="Enter value" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-          
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1"
-              onClick={() => setShowForm(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" className="flex-1 bg-zepmeds-purple hover:bg-zepmeds-purple/80">
-              Save
-            </Button>
-          </div>
-        </motion.form>
-      ) : (
-        <Button
-          onClick={() => setShowForm(true)}
-          className="w-full mt-4 bg-zepmeds-purple hover:bg-zepmeds-purple/80"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Log New Entry
+        />
+
+        <FormField
+          control={form.control}
+          name="unit"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Unit</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a unit" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {getUnitsForType(selectedType).map((unit) => (
+                    <SelectItem key={unit.value} value={unit.value}>
+                      {unit.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <Button type="submit" className="w-full bg-zepmeds-purple hover:bg-zepmeds-purple/80">
+          Log Health Data
         </Button>
-      )}
-    </div>
+      </form>
+    </Form>
   );
 };
-
-export default HealthMetricsLogger;

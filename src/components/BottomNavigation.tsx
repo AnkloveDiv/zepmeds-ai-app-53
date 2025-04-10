@@ -33,10 +33,11 @@ const BottomNavigation = () => {
     { name: "Coupons", path: "/coupons", icon: "🎫" },
     { name: "Offers", path: "/offers", icon: "🎁" },
     { name: "Prescriptions", path: "/prescription-upload", icon: "📋" },
-    { name: "Medical Reports", path: "/medical-reports", icon: "📊" },
-    { name: "Emergency Services", path: "/emergency-services", icon: "🚑" },
-    { name: "Order History", path: "/order-history", icon: "📦" },
-    { name: "Manage Addresses", path: "/manage-addresses", icon: "🏠" },
+    { name: "Medical Reports", path: "/reports", icon: "📊" },
+    { name: "Emergency Services", path: "/emergency", icon: "🚑" },
+    { name: "Order History", path: "/orders", icon: "📦" },
+    { name: "Manage Addresses", path: "/addresses", icon: "🏠" },
+    { name: "About Developers", path: "/about-developers", icon: "👨‍💻" },
   ];
 
   return (
