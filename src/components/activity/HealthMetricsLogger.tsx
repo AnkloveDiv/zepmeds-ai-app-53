@@ -1,201 +1,176 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { CalendarIcon } from "lucide-react"
+import { cn } from "@/lib/utils"
 
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Calendar as CalendarIcon } from 'lucide-react';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { format } from 'date-fns';
-
-interface HealthMetricsLoggerProps {
-  onSubmit: (data: {
-    date: Date;
-    type: string;
-    value: number;
-    unit: string;
-  }) => void;
+interface HealthMetric {
+  date: Date;
+  type: string;
+  value: number;
+  unit: string;
 }
 
-// Form schema
-const formSchema = z.object({
-  date: z.date(),
-  type: z.string().min(1, { message: 'Please select a metric type' }),
-  value: z.coerce.number().min(0, { message: 'Value cannot be negative' }),
-  unit: z.string().min(1, { message: 'Please select a unit' }),
-});
+const HealthMetricsLogger = () => {
+  const [metrics, setMetrics] = useState<HealthMetric[]>([]);
+  const [newMetricType, setNewMetricType] = useState<string>('');
+  const [newMetricValue, setNewMetricValue] = useState<string>('');
+  const [newMetricUnit, setNewMetricUnit] = useState<string>('');
+  const [date, setDate] = useState<Date | undefined>(new Date());
 
-export const HealthMetricsLogger: React.FC<HealthMetricsLoggerProps> = ({ onSubmit }) => {
-  const [selectedType, setSelectedType] = useState<string>('');
-
-  // Initialize form
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      date: new Date(),
-      type: '',
-      value: 0,
-      unit: '',
-    },
-  });
-
-  // Get units based on selected type
-  const getUnitsForType = (type: string): { value: string; label: string }[] => {
-    switch (type) {
-      case 'Blood Pressure':
-        return [{ value: 'mmHg', label: 'mmHg' }];
-      case 'Heart Rate':
-        return [{ value: 'bpm', label: 'bpm' }];
-      case 'Blood Glucose':
-        return [{ value: 'mg/dL', label: 'mg/dL' }, { value: 'mmol/L', label: 'mmol/L' }];
-      case 'Temperature':
-        return [{ value: '°F', label: '°F' }, { value: '°C', label: '°C' }];
-      case 'Weight':
-        return [{ value: 'lbs', label: 'lbs' }, { value: 'kg', label: 'kg' }];
-      default:
-        return [];
+  useEffect(() => {
+    // Load metrics from local storage on component mount
+    const storedMetrics = localStorage.getItem('healthMetrics');
+    if (storedMetrics) {
+      setMetrics(JSON.parse(storedMetrics).map((metric: any) => ({ ...metric, date: new Date(metric.date) })));
     }
-  };
+  }, []);
 
-  const handleTypeChange = (value: string) => {
-    setSelectedType(value);
-    form.setValue('type', value);
+  useEffect(() => {
+    // Save metrics to local storage whenever metrics change
+    localStorage.setItem('healthMetrics', JSON.stringify(metrics));
+  }, [metrics]);
+
+  const addMetric = () => {
+    if (!newMetricValue || !newMetricUnit || !newMetricType) return;
     
-    // Set default unit for the selected type
-    const units = getUnitsForType(value);
-    if (units.length > 0) {
-      form.setValue('unit', units[0].value);
-    } else {
-      form.setValue('unit', '');
-    }
+    const newMetric = {
+      date: new Date(),
+      type: newMetricType,
+      value: Number(newMetricValue),
+      unit: newMetricUnit
+    };
+    
+    setMetrics(prevMetrics => [...prevMetrics, newMetric]);
+    setNewMetricValue('');
   };
 
-  const handleSubmit = (values: z.infer<typeof formSchema>) => {
-    onSubmit(values);
-    form.reset();
+  const deleteMetric = (index: number) => {
+    setMetrics(prevMetrics => {
+      const newMetrics = [...prevMetrics];
+      newMetrics.splice(index, 1);
+      return newMetrics;
+    });
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="date"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Date</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant={"outline"}
-                      className="pl-3 text-left font-normal"
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP")
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    disabled={(date) =>
-                      date > new Date() || date < new Date("1900-01-01")
-                    }
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="type"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Metric Type</FormLabel>
-              <Select onValueChange={handleTypeChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a metric" />
-                  </SelectTrigger>
-                </FormControl>
+    <Card className="w-[500px] bg-background shadow-md rounded-lg">
+      <CardHeader>
+        <CardTitle className="text-lg font-semibold">Health Metrics Logger</CardTitle>
+      </CardHeader>
+      <CardContent className="p-4">
+        <div className="grid gap-4">
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <Label htmlFor="metric-type">Metric Type</Label>
+              <Select onValueChange={setNewMetricType}>
+                <SelectTrigger id="metric-type">
+                  <SelectValue placeholder="Select a type" />
+                </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="Weight">Weight</SelectItem>
                   <SelectItem value="Blood Pressure">Blood Pressure</SelectItem>
                   <SelectItem value="Heart Rate">Heart Rate</SelectItem>
-                  <SelectItem value="Blood Glucose">Blood Glucose</SelectItem>
-                  <SelectItem value="Temperature">Temperature</SelectItem>
-                  <SelectItem value="Weight">Weight</SelectItem>
+                  <SelectItem value="Sleep Duration">Sleep Duration</SelectItem>
                 </SelectContent>
               </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="value"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Value</FormLabel>
-              <FormControl>
-                <Input type="number" placeholder="Enter value" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="unit"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Unit</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a unit" />
-                  </SelectTrigger>
-                </FormControl>
+            </div>
+            <div>
+              <Label htmlFor="metric-value">Value</Label>
+              <Input
+                type="number"
+                id="metric-value"
+                placeholder="Enter value"
+                value={newMetricValue}
+                onChange={(e) => setNewMetricValue(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="metric-unit">Unit</Label>
+              <Select onValueChange={setNewMetricUnit}>
+                <SelectTrigger id="metric-unit">
+                  <SelectValue placeholder="Select a unit" />
+                </SelectTrigger>
                 <SelectContent>
-                  {getUnitsForType(selectedType).map((unit) => (
-                    <SelectItem key={unit.value} value={unit.value}>
-                      {unit.label}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="kg">kg</SelectItem>
+                  <SelectItem value="mmHg">mmHg</SelectItem>
+                  <SelectItem value="bpm">bpm</SelectItem>
+                  <SelectItem value="hours">hours</SelectItem>
                 </SelectContent>
               </Select>
-              <FormMessage />
-            </FormItem>
+            </div>
+          </div>
+          <div>
+            <Label>Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-[240px] justify-start text-left font-normal",
+                    !date && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {date ? date?.toLocaleDateString() : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="center" side="bottom">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={setDate}
+                  disabled={(date) =>
+                    date > new Date()
+                  }
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+          <Button onClick={addMetric} className="bg-zepmeds-purple hover:bg-zepmeds-purple/80">Add Metric</Button>
+        </div>
+        <div className="mt-6">
+          <h3 className="text-md font-semibold mb-2">Logged Metrics</h3>
+          {metrics.length === 0 ? (
+            <p className="text-sm text-gray-500">No metrics logged yet.</p>
+          ) : (
+            <ul className="space-y-2">
+              {metrics.map((metric, index) => (
+                <li key={index} className="flex items-center justify-between bg-gray-100 p-3 rounded-md">
+                  <div>
+                    <p className="text-sm font-medium">{metric.type}: {metric.value} {metric.unit}</p>
+                    <p className="text-xs text-gray-500">
+                      {metric.date.toLocaleDateString()} {metric.date.toLocaleTimeString()}
+                    </p>
+                  </div>
+                  <Button variant="destructive" size="icon" onClick={() => deleteMetric(index)}>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      className="w-4 h-4"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </Button>
+                </li>
+              ))}
+            </ul>
           )}
-        />
-
-        <Button type="submit" className="w-full bg-zepmeds-purple hover:bg-zepmeds-purple/80">
-          Log Health Data
-        </Button>
-      </form>
-    </Form>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
+
+export default HealthMetricsLogger;

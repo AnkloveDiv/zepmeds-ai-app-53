@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -30,6 +29,7 @@ import Wallet from "./pages/Wallet";
 import Coupons from "./pages/Coupons";
 import Offers from "./pages/Offers";
 import DeveloperInfo from "./pages/DeveloperInfo";
+import AppGuide from "./pages/AppGuide";
 
 const queryClient = new QueryClient();
 
@@ -73,6 +73,7 @@ const App = () => {
               <Route path="/cart" element={<Cart />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/order-tracking" element={<OrderTracking />} />
+              <Route path="/app-guide" element={<AppGuide />} />
               
               {/* Profile Section Routes */}
               <Route path="/patient-details" element={<PatientDetails />} />

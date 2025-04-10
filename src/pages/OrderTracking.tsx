@@ -4,9 +4,10 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
-import { Phone, Star, Clock, MapPin } from "lucide-react";
+import { Phone, Star, Clock, MapPin, DollarSign, ShoppingBag, AlertTriangle } from "lucide-react";
 import DeliveryMap from "@/components/DeliveryMap";
 import DeliveryAnimation from "@/components/DeliveryAnimation";
+import { useToast } from "@/components/ui/use-toast";
 
 interface OrderDetails {
   id: string;
@@ -22,19 +23,53 @@ interface OrderDetails {
     image: string;
     quantity: number;
     stripQuantity: number;
+    price: number;
   }>;
+  expectedDeliveryTime?: Date;
+  totalAmount?: number;
 }
 
 const OrderTracking = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [timeLeft, setTimeLeft] = useState({ minutes: 12, seconds: 0 });
+  const [isLate, setIsLate] = useState(false);
+  const [totalItems, setTotalItems] = useState(0);
   
   useEffect(() => {
     // Get order details
     const savedOrder = localStorage.getItem("currentOrder");
     if (savedOrder) {
-      setOrder(JSON.parse(savedOrder));
+      const parsedOrder = JSON.parse(savedOrder);
+      
+      // Calculate total items
+      const itemCount = parsedOrder.items.reduce((acc: number, item: any) => 
+        acc + (item.quantity * item.stripQuantity), 0);
+      setTotalItems(itemCount);
+      
+      // Calculate total amount if not already present
+      if (!parsedOrder.totalAmount) {
+        const total = parsedOrder.items.reduce((acc: number, item: any) => 
+          acc + (item.price * item.quantity * item.stripQuantity), 0);
+        parsedOrder.totalAmount = total;
+      }
+      
+      setOrder(parsedOrder);
+      
+      // Check if order is late
+      if (parsedOrder.expectedDeliveryTime) {
+        const expectedTime = new Date(parsedOrder.expectedDeliveryTime);
+        if (expectedTime < new Date()) {
+          setIsLate(true);
+          toast({
+            title: "Delivery Update",
+            description: "Your order is running late. We apologize for the inconvenience.",
+            variant: "destructive",
+            duration: 5000,
+          });
+        }
+      }
     } else {
       navigate("/dashboard");
     }
@@ -56,7 +91,7 @@ const OrderTracking = () => {
     }, 1000);
     
     return () => clearInterval(timer);
-  }, [navigate]);
+  }, [navigate, toast]);
   
   if (!order) {
     return (
@@ -116,6 +151,13 @@ const OrderTracking = () => {
                   </span>
                 </div>
               </div>
+              
+              {isLate && (
+                <div className="mt-2 p-3 bg-red-500/20 rounded-lg flex items-center">
+                  <AlertTriangle className="h-4 w-4 text-red-500 mr-2" />
+                  <span className="text-red-300 text-sm">Your order is running late. We apologize for the delay.</span>
+                </div>
+              )}
             </div>
           </div>
         </motion.div>
@@ -140,7 +182,13 @@ const OrderTracking = () => {
           transition={{ delay: 0.2 }}
           className="glass-morphism rounded-xl p-4 mb-6"
         >
-          <h3 className="text-white font-medium mb-4">Order Items</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-white font-medium">Order Items</h3>
+            <div className="flex items-center bg-zepmeds-purple/20 px-3 py-1 rounded-full">
+              <ShoppingBag className="h-3 w-3 text-zepmeds-purple mr-1" />
+              <span className="text-xs text-white">{totalItems} items</span>
+            </div>
+          </div>
           
           <div className="space-y-3">
             {order.items.map(item => (
@@ -154,8 +202,26 @@ const OrderTracking = () => {
                     {item.quantity} x {item.stripQuantity} strips
                   </p>
                 </div>
+                <div className="text-right">
+                  <p className="text-white text-sm">₹{(item.price * item.quantity * item.stripQuantity).toFixed(2)}</p>
+                </div>
               </div>
             ))}
+            
+            <div className="border-t border-gray-700 mt-4 pt-4">
+              <div className="flex justify-between text-gray-400 text-sm">
+                <span>Subtotal</span>
+                <span>₹{order.totalAmount?.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-gray-400 text-sm mt-1">
+                <span>Delivery Fee</span>
+                <span>₹49.00</span>
+              </div>
+              <div className="flex justify-between text-white font-medium mt-2">
+                <span>Total</span>
+                <span>₹{(order.totalAmount ? order.totalAmount + 49 : 49).toFixed(2)}</span>
+              </div>
+            </div>
           </div>
         </motion.div>
         
