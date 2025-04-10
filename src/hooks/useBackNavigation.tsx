@@ -13,14 +13,19 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
+import { Capacitor } from "@capacitor/core";
 
 export const useBackNavigation = (homeRoute: string = "/dashboard") => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
   const [showExitDialog, setShowExitDialog] = useState(false);
+  const [doubleBackToExitPressedOnce, setDoubleBackToExitPressedOnce] = useState(false);
   
   useEffect(() => {
+    // Check if running on a mobile device
+    const isNative = Capacitor.isNativePlatform();
+    
     // Only add the back button handler if we're not already on the home route
     if (location.pathname !== homeRoute) {
       // Handle back button
@@ -32,7 +37,7 @@ export const useBackNavigation = (homeRoute: string = "/dashboard") => {
         
         // Show toast notification
         toast({
-          title: "Back to Home",
+          title: "Navigated to Home",
           description: "Press back again to exit the app",
           duration: 3000,
         });
@@ -45,8 +50,27 @@ export const useBackNavigation = (homeRoute: string = "/dashboard") => {
       window.history.pushState(null, "", location.pathname);
       window.addEventListener("popstate", handleBackButton);
       
+      // Android hardware back button handling
+      const setupHardwareBackPress = () => {
+        if (isNative && (window as any).Capacitor?.Plugins?.App) {
+          (window as any).Capacitor.Plugins.App.addListener('backButton', () => {
+            navigate(homeRoute);
+            toast({
+              title: "Navigated to Home",
+              description: "Press back again to exit the app",
+              duration: 3000,
+            });
+          });
+        }
+      };
+      
+      setupHardwareBackPress();
+      
       return () => {
         window.removeEventListener("popstate", handleBackButton);
+        if (isNative && (window as any).Capacitor?.Plugins?.App) {
+          (window as any).Capacitor.Plugins.App.removeAllListeners();
+        }
       };
     } else {
       // We're on the home route, show exit confirmation when back is pressed
@@ -58,14 +82,43 @@ export const useBackNavigation = (homeRoute: string = "/dashboard") => {
         window.history.pushState(null, "", homeRoute);
       };
       
+      // Set up double back to exit on Android
+      const setupDoubleBackToExit = () => {
+        if (isNative && (window as any).Capacitor?.Plugins?.App) {
+          (window as any).Capacitor.Plugins.App.addListener('backButton', () => {
+            if (doubleBackToExitPressedOnce) {
+              // User pressed back twice, show exit dialog
+              setShowExitDialog(true);
+            } else {
+              // First back press
+              setDoubleBackToExitPressedOnce(true);
+              toast({
+                title: "Press back again to exit",
+                description: "Tap back button again to exit the application",
+                duration: 2000,
+              });
+              
+              // Reset after 2 seconds
+              setTimeout(() => {
+                setDoubleBackToExitPressedOnce(false);
+              }, 2000);
+            }
+          });
+        }
+      };
+      
       window.history.pushState(null, "", homeRoute);
       window.addEventListener("popstate", handleExitApp);
+      setupDoubleBackToExit();
       
       return () => {
         window.removeEventListener("popstate", handleExitApp);
+        if (isNative && (window as any).Capacitor?.Plugins?.App) {
+          (window as any).Capacitor.Plugins.App.removeAllListeners();
+        }
       };
     }
-  }, [navigate, homeRoute, toast, location.pathname]);
+  }, [navigate, homeRoute, toast, location.pathname, doubleBackToExitPressedOnce]);
 
   // The dialog component that will be shown when user is on home page and presses back
   const ExitConfirmDialog = () => {
@@ -74,12 +127,16 @@ export const useBackNavigation = (homeRoute: string = "/dashboard") => {
     const handleExit = () => {
       setShowExitDialog(false);
       // In a real mobile app this would use a native exit API
-      // For web this is a placeholder, as browsers control window closing
-      toast({
-        title: "Exit",
-        description: "App would exit now if this was a native app",
-        duration: 3000,
-      });
+      if (Capacitor.isNativePlatform() && (window as any).Capacitor?.Plugins?.App) {
+        (window as any).Capacitor.Plugins.App.exitApp();
+      } else {
+        // For web this is a placeholder, as browsers control window closing
+        toast({
+          title: "Exit",
+          description: "App would exit now if this was a native app",
+          duration: 3000,
+        });
+      }
     };
     
     const handleCancel = () => {

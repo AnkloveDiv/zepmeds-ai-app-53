@@ -1,243 +1,128 @@
-import { useNavigate } from "react-router-dom";
+
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Tag, ShoppingBag, Calendar, Clock, Gift, ExternalLink } from "lucide-react";
+import { Calendar, ShoppingBag, Tag, ChevronRight } from "lucide-react";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
-import { Button } from "@/components/ui/button";
 import useBackNavigation from "@/hooks/useBackNavigation";
 
-interface Offer {
-  id: string;
-  title: string;
-  description: string;
-  expires: string;
-  discount: string;
-  image: string;
-  type: "medicine" | "doctor" | "subscription";
-  code?: string;
-}
-
 const Offers = () => {
-  const navigate = useNavigate();
-  
-  useBackNavigation();
-
-  const featuredOffers: Offer[] = [
+  const { ExitConfirmDialog } = useBackNavigation();
+  const [offers] = useState([
     {
-      id: "o1",
-      title: "Summer Health Sale",
-      description: "Get up to 25% off on summer health essentials",
-      expires: "June 30, 2023",
-      discount: "25% OFF",
-      image: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      type: "medicine",
-      code: "SUMMER25"
-    },
-    {
-      id: "o2",
-      title: "Doctor Consultation Offer",
-      description: "Flat ₹200 off on specialist consultations",
-      expires: "May 20, 2023",
-      discount: "₹200 OFF",
-      image: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      type: "doctor",
-      code: "DOC200"
-    }
-  ];
-  
-  const additionalOffers: Offer[] = [
-    {
-      id: "o3",
-      title: "First Order Discount",
-      description: "20% off on your first medicine order",
-      expires: "No expiry",
+      id: 1,
+      title: "Weekend Special",
       discount: "20% OFF",
-      image: "https://images.unsplash.com/photo-1576602976047-174e57a47881?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      type: "medicine",
-      code: "FIRST20"
+      description: "On all health supplements",
+      validTill: "15 Apr 2025",
+      image: "https://source.unsplash.com/random/400x200/?medicine"
     },
     {
-      id: "o4",
-      title: "Zepmeds+ Membership",
-      description: "Subscribe for premium benefits & free delivery",
-      expires: "Ongoing",
-      discount: "Premium",
-      image: "https://images.unsplash.com/photo-1573855619003-97b4799dcd8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      type: "subscription"
+      id: 2,
+      title: "Summer Sale",
+      discount: "FLAT ₹200 OFF",
+      description: "On orders above ₹999",
+      validTill: "30 Apr 2025",
+      image: "https://source.unsplash.com/random/400x200/?pharmacy"
     },
     {
-      id: "o5",
-      title: "Festive Season Offer",
-      description: "Special discounts on health packages",
-      expires: "July 15, 2023",
-      discount: "30% OFF",
-      image: "https://images.unsplash.com/photo-1628771065518-0d82f1938462?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      type: "medicine",
-      code: "FESTIVE30"
+      id: 3,
+      title: "Doctor Consultation",
+      discount: "50% OFF",
+      description: "On your first online consultation",
+      validTill: "10 May 2025",
+      image: "https://source.unsplash.com/random/400x200/?doctor"
     }
-  ];
-
-  const handleViewAll = () => {
-    navigate("/coupons");
-  };
+  ]);
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <Header showBackButton title="Offers & Promotions" />
-
-      <main className="px-4 py-4">
-        <div className="glass-morphism rounded-xl p-4 mb-6">
-          <div className="flex items-center mb-4">
-            <Tag className="h-5 w-5 text-zepmeds-purple mr-2" />
-            <h2 className="text-lg font-bold text-white">Featured Offers</h2>
-          </div>
-          
-          <div className="space-y-4">
-            {featuredOffers.map((offer, index) => (
-              <motion.div
-                key={offer.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="relative overflow-hidden rounded-lg"
-              >
-                <img 
-                  src={offer.image} 
-                  alt={offer.title} 
-                  className="w-full h-48 object-cover"
-                />
-                
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent flex flex-col justify-end p-4">
-                  <div className="absolute top-4 right-4 bg-zepmeds-purple text-white px-3 py-1 rounded-full text-sm font-bold">
-                    {offer.discount}
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-xl font-bold text-white mb-1">{offer.title}</h3>
-                    <p className="text-gray-300 text-sm mb-2">{offer.description}</p>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center text-xs text-gray-400">
-                        <Clock className="h-3 w-3 mr-1" />
-                        <span>Expires: {offer.expires}</span>
-                      </div>
-                      
-                      {offer.code && (
-                        <div className="bg-black/50 px-2 py-1 rounded text-xs text-white">
-                          Code: <span className="font-semibold">{offer.code}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
+      <Header showBackButton title="Offers" />
+      <ExitConfirmDialog />
+      
+      <main className="px-4 py-6">
+        <h2 className="text-xl font-bold text-white mb-5">Current Offers</h2>
         
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center">
-            <Gift className="h-5 w-5 text-zepmeds-purple mr-2" />
-            <h2 className="text-lg font-bold text-white">All Offers</h2>
-          </div>
-          
-          <Button 
-            variant="link" 
-            className="text-zepmeds-purple p-0"
-            onClick={handleViewAll}
-          >
-            View all
-          </Button>
-        </div>
-        
-        <div className="grid grid-cols-1 gap-4 mb-6">
-          {additionalOffers.map((offer, index) => (
+        <div className="space-y-5">
+          {offers.map((offer, index) => (
             <motion.div
               key={offer.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 + index * 0.1 }}
-              className="glass-morphism rounded-xl overflow-hidden flex"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="glass-morphism rounded-xl overflow-hidden"
             >
-              <div className="w-24 h-auto">
+              <div className="relative h-40">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10"></div>
                 <img 
                   src={offer.image} 
-                  alt={offer.title} 
+                  alt={offer.title}
                   className="w-full h-full object-cover"
                 />
+                <div className="absolute bottom-0 left-0 p-4 z-20">
+                  <div className="bg-zepmeds-purple text-white text-xl font-bold px-3 py-1 rounded-lg inline-block mb-2">
+                    {offer.discount}
+                  </div>
+                  <h3 className="text-white text-xl font-bold">{offer.title}</h3>
+                  <p className="text-gray-300">{offer.description}</p>
+                </div>
               </div>
               
-              <div className="p-3 flex-1">
-                <div className="flex justify-between items-start">
-                  <h3 className="text-white font-semibold">{offer.title}</h3>
-                  <span className="text-xs bg-zepmeds-purple/20 text-zepmeds-purple px-2 py-0.5 rounded-full">
-                    {offer.discount}
-                  </span>
+              <div className="p-4 flex items-center justify-between">
+                <div className="flex items-center text-gray-400">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  <span>Valid till {offer.validTill}</span>
                 </div>
                 
-                <p className="text-gray-400 text-xs my-1">{offer.description}</p>
-                
-                <div className="flex items-center justify-between mt-1">
-                  <div className="flex items-center text-xs text-gray-500">
-                    <Calendar className="h-3 w-3 mr-1" />
-                    <span>{offer.expires}</span>
-                  </div>
-                  
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 text-xs px-2 text-zepmeds-purple hover:text-white hover:bg-zepmeds-purple/20"
-                  >
-                    Use now <ExternalLink className="h-3 w-3 ml-1" />
-                  </Button>
-                </div>
+                <button className="flex items-center text-zepmeds-purple">
+                  <span>Shop Now</span>
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </button>
               </div>
             </motion.div>
           ))}
         </div>
         
-        <div className="glass-morphism rounded-xl p-4 mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-white font-bold">Membership Benefits</h3>
-            <Button size="sm" variant="link" className="text-zepmeds-purple p-0">
-              Join now
-            </Button>
-          </div>
+        <div className="mt-8">
+          <h2 className="text-xl font-bold text-white mb-5">Categories with Offers</h2>
           
-          <div className="space-y-3">
-            <div className="flex items-center">
-              <div className="w-8 h-8 rounded-full bg-zepmeds-purple/20 flex items-center justify-center mr-3">
-                <ShoppingBag className="h-4 w-4 text-zepmeds-purple" />
-              </div>
-              <div>
-                <h4 className="text-white text-sm font-medium">Free Delivery</h4>
-                <p className="text-gray-400 text-xs">On all orders, no minimum purchase</p>
-              </div>
+          <div className="grid grid-cols-2 gap-4">
+            {['Medicine', 'Health Supplements', 'Personal Care', 'Medical Devices'].map((category, index) => (
+              <motion.div
+                key={category}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: index * 0.1 }}
+                className="glass-morphism rounded-xl p-4 flex flex-col items-center justify-center text-center"
+              >
+                <div className="w-12 h-12 rounded-full bg-zepmeds-purple/20 flex items-center justify-center mb-3">
+                  <ShoppingBag className="h-6 w-6 text-zepmeds-purple" />
+                </div>
+                <h3 className="text-white font-medium mb-1">{category}</h3>
+                <p className="text-xs text-gray-400">Up to 30% off</p>
+                <button className="mt-3 text-xs text-zepmeds-purple flex items-center">
+                  <span>View Offers</span>
+                  <ChevronRight className="h-3 w-3 ml-0.5" />
+                </button>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+        
+        <div className="mt-8">
+          <div className="glass-morphism rounded-xl p-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-white font-medium mb-1">Have a coupon code?</h3>
+              <p className="text-sm text-gray-400">Redeem it during checkout</p>
             </div>
             
-            <div className="flex items-center">
-              <div className="w-8 h-8 rounded-full bg-zepmeds-purple/20 flex items-center justify-center mr-3">
-                <Tag className="h-4 w-4 text-zepmeds-purple" />
-              </div>
-              <div>
-                <h4 className="text-white text-sm font-medium">5% Extra Discount</h4>
-                <p className="text-gray-400 text-xs">On all medicine purchases</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center">
-              <div className="w-8 h-8 rounded-full bg-zepmeds-purple/20 flex items-center justify-center mr-3">
-                <Gift className="h-4 w-4 text-zepmeds-purple" />
-              </div>
-              <div>
-                <h4 className="text-white text-sm font-medium">Priority Support</h4>
-                <p className="text-gray-400 text-xs">Get assistance faster</p>
-              </div>
+            <div className="w-10 h-10 rounded-full bg-zepmeds-purple/20 flex items-center justify-center">
+              <Tag className="h-5 w-5 text-zepmeds-purple" />
             </div>
           </div>
         </div>
       </main>
-
+      
       <BottomNavigation />
     </div>
   );

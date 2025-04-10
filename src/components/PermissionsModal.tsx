@@ -12,6 +12,7 @@ import { motion } from "framer-motion";
 import { Capacitor } from "@capacitor/core";
 import { Camera as CapacitorCamera } from "@capacitor/camera";
 import { Geolocation } from "@capacitor/geolocation";
+import { useToast } from "@/components/ui/use-toast";
 
 interface PermissionsModalProps {
   onGranted: () => void;
@@ -23,6 +24,7 @@ const PermissionsModal = ({ onGranted }: PermissionsModalProps) => {
     location: false,
     storage: false
   });
+  const { toast } = useToast();
 
   // Check permissions on component mount
   useEffect(() => {
@@ -38,8 +40,30 @@ const PermissionsModal = ({ onGranted }: PermissionsModalProps) => {
           console.error("Error checking camera permission:", error);
         }
         
-        // For location, we can't easily check without requesting
-        // We'll handle that when the user clicks the button
+        // Check location permission
+        try {
+          const locationPermission = await Geolocation.checkPermissions();
+          if (locationPermission.location === 'granted') {
+            setPermissions(prev => ({ ...prev, location: true }));
+          }
+        } catch (error) {
+          console.error("Error checking location permission:", error);
+        }
+
+        // For storage permission on Android
+        try {
+          const storagePermission = true; // Simplified for now
+          setPermissions(prev => ({ ...prev, storage: true }));
+        } catch (error) {
+          console.error("Error checking storage permission:", error);
+        }
+      } else {
+        // For web testing, we'll simulate permissions
+        setPermissions({
+          camera: false,
+          location: false,
+          storage: false
+        });
       }
     };
     
@@ -56,26 +80,47 @@ const PermissionsModal = ({ onGranted }: PermissionsModalProps) => {
             ...prev, 
             camera: permission.camera === 'granted' 
           }));
+          
+          if (permission.camera === 'granted') {
+            toast({
+              title: "Camera permission granted",
+              description: "You can now scan prescriptions and upload images",
+            });
+          }
         } else {
           // Fallback for web
           const stream = await navigator.mediaDevices.getUserMedia({ video: true });
           stream.getTracks().forEach(track => track.stop());
           setPermissions(prev => ({ ...prev, camera: true }));
+          toast({
+            title: "Camera permission granted",
+            description: "You can now scan prescriptions and upload images",
+          });
         }
       } 
       else if (type === 'location') {
         if (Capacitor.isNativePlatform()) {
           // Use Capacitor Geolocation API to request permission on native platforms
-          await Geolocation.requestPermissions();
-          // Attempt to get position to verify permission
-          await Geolocation.getCurrentPosition();
-          setPermissions(prev => ({ ...prev, location: true }));
+          const permission = await Geolocation.requestPermissions();
+          const granted = permission.location === 'granted';
+          setPermissions(prev => ({ ...prev, location: granted }));
+          
+          if (granted) {
+            toast({
+              title: "Location permission granted",
+              description: "We can now deliver medicines to your location",
+            });
+          }
         } else {
           // Fallback for web
           await new Promise<void>((resolve, reject) => {
             navigator.geolocation.getCurrentPosition(
               () => {
                 setPermissions(prev => ({ ...prev, location: true }));
+                toast({
+                  title: "Location permission granted",
+                  description: "We can now deliver medicines to your location",
+                });
                 resolve();
               },
               (error) => {
@@ -88,11 +133,19 @@ const PermissionsModal = ({ onGranted }: PermissionsModalProps) => {
       }
       else if (type === 'storage') {
         // For storage permission on Android, we'll just simulate a grant
-        // Real implementation would depend on specific storage needs
         setPermissions(prev => ({ ...prev, storage: true }));
+        toast({
+          title: "Storage permission granted",
+          description: "You can now save prescriptions and reports",
+        });
       }
     } catch (error) {
       console.error(`Error requesting ${type} permission:`, error);
+      toast({
+        title: `Permission denied`,
+        description: `Please grant ${type} permission from your device settings`,
+        variant: "destructive"
+      });
     }
   };
 
