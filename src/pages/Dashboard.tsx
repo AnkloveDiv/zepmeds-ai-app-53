@@ -1,10 +1,9 @@
-
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
-import SearchBar from "@/components/SearchBar";
+import AnimatedSearchBar from "@/components/AnimatedSearchBar";
 import ServiceCard from "@/components/ServiceCard";
 import CategoryCard from "@/components/CategoryCard";
 import ProductCard from "@/components/ProductCard";
@@ -34,6 +33,26 @@ const Dashboard = () => {
     if (!isLoggedIn) {
       navigate("/login");
     }
+    
+    // Handle back button
+    const handleBackButton = (e: PopStateEvent) => {
+      e.preventDefault();
+      if (window.confirm("Do you wish to exit?")) {
+        // Exit app logic would go here for a mobile app
+        // For web, we'd typically do nothing and let the browser handle it
+      } else {
+        // Stay in app - push a new entry to cancel the back
+        window.history.pushState(null, "", window.location.pathname);
+      }
+    };
+    
+    // Push an initial state
+    window.history.pushState(null, "", window.location.pathname);
+    window.addEventListener("popstate", handleBackButton);
+    
+    return () => {
+      window.removeEventListener("popstate", handleBackButton);
+    };
   }, [isLoggedIn, navigate]);
 
   const services = [
@@ -116,7 +135,7 @@ const Dashboard = () => {
       <Header />
 
       <main className="px-4 py-4">
-        <SearchBar />
+        <AnimatedSearchBar />
 
         <section className="mt-6">
           <div className="grid grid-cols-2 gap-4">

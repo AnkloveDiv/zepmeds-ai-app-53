@@ -39,6 +39,17 @@ const DeliveryMap = () => {
           ctx.stroke();
         }
         
+        // Draw store location
+        ctx.fillStyle = "#9b87f5";
+        ctx.beginPath();
+        ctx.arc(canvas.width * 0.2, canvas.height * 0.3, 8, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Label for store
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "12px Arial";
+        ctx.fillText("Store", canvas.width * 0.2 - 15, canvas.height * 0.3 - 15);
+        
         // Draw delivery path
         ctx.strokeStyle = "#9b87f5";
         ctx.lineWidth = 4;
@@ -50,18 +61,22 @@ const DeliveryMap = () => {
         ctx.setLineDash([5, 5]);
         ctx.stroke();
         
-        // Draw delivery starting point
+        // Draw user location
         ctx.setLineDash([]);
         ctx.fillStyle = "#FF6B6B";
         ctx.beginPath();
-        ctx.arc(canvas.width * 0.2, canvas.height * 0.3, 8, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Draw delivery end point (user location)
-        ctx.fillStyle = "#9b87f5";
-        ctx.beginPath();
         ctx.arc(canvas.width * 0.7, canvas.height * 0.6, 8, 0, Math.PI * 2);
         ctx.fill();
+        
+        // Label for user location
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "12px Arial";
+        ctx.fillText("Your Location", canvas.width * 0.7 - 40, canvas.height * 0.6 - 15);
+        
+        // Draw distance indicator
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "14px Arial Bold";
+        ctx.fillText("2.4 km", canvas.width * 0.45, canvas.height * 0.45);
       }
     }
   }, []);

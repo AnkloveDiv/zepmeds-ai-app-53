@@ -21,6 +21,9 @@ import PrescriptionUpload from "./pages/PrescriptionUpload";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import OrderTracking from "./pages/OrderTracking";
+import PatientDetails from "./pages/PatientDetails";
+import ManageAddresses from "./pages/ManageAddresses";
+import OrderHistory from "./pages/OrderHistory";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +67,12 @@ const App = () => {
               <Route path="/cart" element={<Cart />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/order-tracking" element={<OrderTracking />} />
+              
+              {/* New Profile Section Routes */}
+              <Route path="/patient-details" element={<PatientDetails />} />
+              <Route path="/addresses" element={<ManageAddresses />} />
+              <Route path="/orders" element={<OrderHistory />} />
+              
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

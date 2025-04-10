@@ -28,7 +28,7 @@ interface OrderDetails {
 const OrderTracking = () => {
   const navigate = useNavigate();
   const [order, setOrder] = useState<OrderDetails | null>(null);
-  const [timeLeft, setTimeLeft] = useState({ minutes: 15, seconds: 0 });
+  const [timeLeft, setTimeLeft] = useState({ minutes: 12, seconds: 0 });
   
   useEffect(() => {
     // Get order details
@@ -78,7 +78,11 @@ const OrderTracking = () => {
         >
           <div className="flex items-start">
             <div className="w-12 h-12 rounded-full bg-zepmeds-purple/20 flex items-center justify-center text-zepmeds-purple mr-3">
-              <span className="text-xl">🚴</span>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4Z" fill="#9b87f5"/>
+                <path d="M16 14H8C5.79 14 4 15.79 4 18V20H20V18C20 15.79 18.21 14 16 14Z" fill="#9b87f5"/>
+                <path d="M12 2C7.58 2 4 5.58 4 10V11H7L9 7H15L17 11H20V10C20 5.58 16.42 2 12 2Z" fill="#9b87f5"/>
+              </svg>
             </div>
             
             <div className="flex-1">
