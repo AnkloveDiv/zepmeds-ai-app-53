@@ -1,5 +1,5 @@
 
-import { Home, Activity, UserRound, MoreHorizontal } from "lucide-react";
+import { Home, Activity, UserRound, ShoppingCart } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 
@@ -14,7 +14,7 @@ const BottomNavigation = () => {
     { icon: Home, label: "Home", path: "/dashboard" },
     { icon: Activity, label: "Activity", path: "/activity" },
     { icon: UserRound, label: "Doctor", path: "/doctor" },
-    { icon: MoreHorizontal, label: "More", path: "/more" },
+    { icon: ShoppingCart, label: "Cart", path: "/cart" },
   ];
 
   return (

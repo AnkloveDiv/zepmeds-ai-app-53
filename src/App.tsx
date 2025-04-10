@@ -15,6 +15,12 @@ import MedicineDelivery from "./pages/MedicineDelivery";
 import DoctorConsultation from "./pages/DoctorConsultation";
 import NotFound from "./pages/NotFound";
 import PermissionsModal from "./components/PermissionsModal";
+import Activity from "./pages/Activity";
+import AISymptomChecker from "./pages/AISymptomChecker";
+import PrescriptionUpload from "./pages/PrescriptionUpload";
+import Cart from "./pages/Cart";
+import Checkout from "./pages/Checkout";
+import OrderTracking from "./pages/OrderTracking";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +58,12 @@ const App = () => {
               <Route path="/profile" element={<Profile />} />
               <Route path="/medicine-delivery" element={<MedicineDelivery />} />
               <Route path="/doctor" element={<DoctorConsultation />} />
+              <Route path="/activity" element={<Activity />} />
+              <Route path="/symptom-checker" element={<AISymptomChecker />} />
+              <Route path="/prescription-upload" element={<PrescriptionUpload />} />
+              <Route path="/cart" element={<Cart />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/order-tracking" element={<OrderTracking />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

@@ -9,6 +9,7 @@ interface ProductCardProps {
   discountPrice?: number;
   rating: number;
   description?: string;
+  onAddToCart?: () => void;
 }
 
 const ProductCard = ({
@@ -17,9 +18,17 @@ const ProductCard = ({
   price,
   discountPrice,
   rating,
-  description
+  description,
+  onAddToCart
 }: ProductCardProps) => {
   const discount = discountPrice ? Math.round(((price - discountPrice) / price) * 100) : 0;
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onAddToCart) {
+      onAddToCart();
+    }
+  };
 
   return (
     <motion.div
@@ -65,7 +74,10 @@ const ProductCard = ({
             )}
           </div>
           
-          <button className="bg-zepmeds-purple text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-zepmeds-purple-light transition-colors">
+          <button 
+            className="bg-zepmeds-purple text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-zepmeds-purple-light transition-colors"
+            onClick={handleAddToCart}
+          >
             <Plus className="h-4 w-4" />
           </button>
         </div>

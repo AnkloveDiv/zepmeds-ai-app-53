@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -12,7 +13,6 @@ import {
   Pill,
   FileUp,
   MessageSquareText,
-  UserRound,
   Stethoscope,
   Heart,
   Brain,
@@ -49,14 +49,14 @@ const Dashboard = () => {
       description: "Get medicines as prescribed",
       icon: <FileUp className="h-6 w-6 text-white" />,
       color: "bg-gradient-to-br from-purple-600 to-purple-400",
-      onClick: () => {}
+      onClick: () => navigate("/prescription-upload")
     },
     {
       title: "AI Symptom Checker",
       description: "Get instant health insights",
       icon: <MessageSquareText className="h-6 w-6 text-white" />,
       color: "bg-gradient-to-br from-green-600 to-green-400",
-      onClick: () => {}
+      onClick: () => navigate("/symptom-checker")
     },
     {
       title: "Consult Doctor",
@@ -68,22 +68,48 @@ const Dashboard = () => {
   ];
 
   const categories = [
-    { name: "Skin Care", icon: <Heart className="h-6 w-6 text-white" />, gradient: "linear-gradient(135deg, #FF6B6B, #FFD166)" },
-    { name: "Supplements", icon: <Pill className="h-6 w-6 text-white" />, gradient: "linear-gradient(135deg, #4E65FF, #92EFFD)" },
-    { name: "Eye Care", icon: <Eye className="h-6 w-6 text-white" />, gradient: "linear-gradient(135deg, #33D9B2, #00B5AA)" },
-    { name: "Dental", icon: <DentalIcon className="h-6 w-6 text-white" />, gradient: "linear-gradient(135deg, #706FD3, #98D9EA)" },
-    { name: "Pain Relief", icon: <Bone className="h-6 w-6 text-white" />, gradient: "linear-gradient(135deg, #FF5E3A, #FF9E80)" },
-    { name: "Brain", icon: <Brain className="h-6 w-6 text-white" />, gradient: "linear-gradient(135deg, #6A5ACD, #A17FE0)" },
-    { name: "Summer Care", icon: <Sun className="h-6 w-6 text-white" />, gradient: "linear-gradient(135deg, #FF9E2C, #FFD66B)" },
-    { name: "Devices", icon: <Thermometer className="h-6 w-6 text-white" />, gradient: "linear-gradient(135deg, #4776E6, #8E54E9)" }
+    { name: "Skin Care", icon: <Heart className="h-6 w-6 text-white" />, gradient: "linear-gradient(135deg, #FF6B6B, #FFD166)", onClick: () => navigate("/medicine-delivery?category=skincare") },
+    { name: "Supplements", icon: <Pill className="h-6 w-6 text-white" />, gradient: "linear-gradient(135deg, #4E65FF, #92EFFD)", onClick: () => navigate("/medicine-delivery?category=supplements") },
+    { name: "Eye Care", icon: <Eye className="h-6 w-6 text-white" />, gradient: "linear-gradient(135deg, #33D9B2, #00B5AA)", onClick: () => navigate("/medicine-delivery?category=eyecare") },
+    { name: "Dental", icon: <DentalIcon className="h-6 w-6 text-white" />, gradient: "linear-gradient(135deg, #706FD3, #98D9EA)", onClick: () => navigate("/medicine-delivery?category=dental") },
+    { name: "Pain Relief", icon: <Bone className="h-6 w-6 text-white" />, gradient: "linear-gradient(135deg, #FF5E3A, #FF9E80)", onClick: () => navigate("/medicine-delivery?category=painrelief") },
+    { name: "Brain", icon: <Brain className="h-6 w-6 text-white" />, gradient: "linear-gradient(135deg, #6A5ACD, #A17FE0)", onClick: () => navigate("/medicine-delivery?category=brain") },
+    { name: "Summer Care", icon: <Sun className="h-6 w-6 text-white" />, gradient: "linear-gradient(135deg, #FF9E2C, #FFD66B)", onClick: () => navigate("/medicine-delivery?category=summercare") },
+    { name: "Devices", icon: <Thermometer className="h-6 w-6 text-white" />, gradient: "linear-gradient(135deg, #4776E6, #8E54E9)", onClick: () => navigate("/medicine-delivery?category=devices") }
   ];
 
   const products = [
-    { name: "Vitamin C Tablets", image: placeholderImg, price: 350, discountPrice: 280, rating: 4.5, description: "Immunity Booster" },
-    { name: "Digital Thermometer", image: placeholderImg, price: 500, discountPrice: 399, rating: 4.2, description: "Accurate Reading" },
-    { name: "Pain Relief Gel", image: placeholderImg, price: 220, discountPrice: null, rating: 4.0, description: "Fast Relief" },
-    { name: "Multivitamin Capsules", image: placeholderImg, price: 450, discountPrice: 410, rating: 4.7, description: "Daily Nutrition" }
+    { id: "prod1", name: "Vitamin C Tablets", image: placeholderImg, price: 350, discountPrice: 280, rating: 4.5, description: "Immunity Booster" },
+    { id: "prod2", name: "Digital Thermometer", image: placeholderImg, price: 500, discountPrice: 399, rating: 4.2, description: "Accurate Reading" },
+    { id: "prod3", name: "Pain Relief Gel", image: placeholderImg, price: 220, discountPrice: null, rating: 4.0, description: "Fast Relief" },
+    { id: "prod4", name: "Multivitamin Capsules", image: placeholderImg, price: 450, discountPrice: 410, rating: 4.7, description: "Daily Nutrition" }
   ];
+
+  const handleProductClick = (product: any) => {
+    // Get existing cart
+    const existingCart = JSON.parse(localStorage.getItem("cart") || "[]");
+    
+    // Check if item already exists
+    const existingItemIndex = existingCart.findIndex((item: any) => item.id === product.id);
+    
+    if (existingItemIndex >= 0) {
+      // Increase quantity if already in cart
+      existingCart[existingItemIndex].quantity += 1;
+    } else {
+      // Add new item to cart
+      existingCart.push({
+        ...product,
+        quantity: 1,
+        stripQuantity: 1
+      });
+    }
+    
+    // Save updated cart
+    localStorage.setItem("cart", JSON.stringify(existingCart));
+    
+    // Navigate to medicine delivery
+    navigate("/medicine-delivery");
+  };
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -116,7 +142,12 @@ const Dashboard = () => {
         <section className="mt-8">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-white">Categories</h2>
-            <button className="text-sm text-zepmeds-purple">View All</button>
+            <button 
+              className="text-sm text-zepmeds-purple"
+              onClick={() => navigate("/medicine-delivery")}
+            >
+              View All
+            </button>
           </div>
 
           <div className="overflow-x-auto scrollbar-none -mx-4 px-4">
@@ -132,6 +163,7 @@ const Dashboard = () => {
                     icon={category.icon}
                     name={category.name}
                     gradient={category.gradient}
+                    onClick={category.onClick}
                   />
                 </motion.div>
               ))}
@@ -142,7 +174,12 @@ const Dashboard = () => {
         <section className="mt-8">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-white">Trending Products</h2>
-            <button className="text-sm text-zepmeds-purple">View All</button>
+            <button 
+              className="text-sm text-zepmeds-purple"
+              onClick={() => navigate("/medicine-delivery")}
+            >
+              View All
+            </button>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -152,6 +189,7 @@ const Dashboard = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 + 0.4 }}
+                onClick={() => handleProductClick(product)}
               >
                 <ProductCard
                   name={product.name}
