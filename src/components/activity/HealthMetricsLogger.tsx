@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Heart, Activity, Thermometer, TrendingUp, Plus, Weight, Blood } from "lucide-react";
+import { Heart, Activity, Thermometer, TrendingUp, Plus, Weight, Droplets } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 const HealthMetricsLogger = () => {
