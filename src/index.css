@@ -90,4 +90,65 @@
   .card-glow:hover::before {
     @apply opacity-100;
   }
+  
+  /* Color utility classes for dynamic styling */
+  .border-accent-orange {
+    @apply border-orange-500;
+  }
+  
+  .border-accent-red {
+    @apply border-red-500;
+  }
+  
+  .border-accent-green {
+    @apply border-green-500;
+  }
+  
+  .border-accent-purple {
+    @apply border-purple-500;
+  }
+  
+  .border-accent-blue {
+    @apply border-blue-500;
+  }
+  
+  .bg-accent-orange {
+    @apply bg-orange-500/20;
+  }
+  
+  .bg-accent-red {
+    @apply bg-red-500/20;
+  }
+  
+  .bg-accent-green {
+    @apply bg-green-500/20;
+  }
+  
+  .bg-accent-purple {
+    @apply bg-purple-500/20;
+  }
+  
+  .bg-accent-blue {
+    @apply bg-blue-500/20;
+  }
+  
+  .text-accent-orange {
+    @apply text-orange-400;
+  }
+  
+  .text-accent-red {
+    @apply text-red-400;
+  }
+  
+  .text-accent-green {
+    @apply text-green-400;
+  }
+  
+  .text-accent-purple {
+    @apply text-purple-400;
+  }
+  
+  .text-accent-blue {
+    @apply text-blue-400;
+  }
 }

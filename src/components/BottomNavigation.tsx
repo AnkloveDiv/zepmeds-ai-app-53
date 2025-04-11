@@ -2,7 +2,7 @@
 import { Home, Activity, UserRound, ShoppingCart, MoreHorizontal } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Drawer,
   DrawerContent,
@@ -14,7 +14,21 @@ import {
 
 const BottomNavigation = () => {
   const location = useLocation();
-  const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const [accentColors, setAccentColors] = useState<Record<string, string>>({});
+  
+  const getRandomAccentColor = () => {
+    const colors = ['orange', 'red', 'green', 'blue', 'purple'];
+    return colors[Math.floor(Math.random() * colors.length)];
+  };
+  
+  useEffect(() => {
+    // Assign random accent colors to each nav item
+    const newColors: Record<string, string> = {};
+    navItems.forEach(item => {
+      newColors[item.path] = getRandomAccentColor();
+    });
+    setAccentColors(newColors);
+  }, []);
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -43,39 +57,42 @@ const BottomNavigation = () => {
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-black/50 backdrop-blur-lg border-t border-white/10 py-2 px-4 z-30">
       <div className="flex justify-around items-center">
-        {navItems.map((item) => (
-          <Link
-            key={item.label}
-            to={item.path}
-            className="flex flex-col items-center px-3 py-1 relative"
-          >
-            {isActive(item.path) && (
-              <motion.div
-                layoutId="bottomNavIndicator"
-                className="absolute inset-0 rounded-lg bg-zepmeds-purple/20"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.2 }}
-              />
-            )}
-            <item.icon
-              className={`h-6 w-6 ${
-                isActive(item.path) 
-                  ? "text-zepmeds-purple" 
-                  : "text-gray-400"
-              }`}
-            />
-            <span
-              className={`text-xs mt-1 ${
-                isActive(item.path) 
-                  ? "font-medium text-zepmeds-purple" 
-                  : "text-gray-400"
-              }`}
+        {navItems.map((item) => {
+          const color = accentColors[item.path] || 'blue';
+          return (
+            <Link
+              key={item.label}
+              to={item.path}
+              className="flex flex-col items-center px-3 py-1 relative"
             >
-              {item.label}
-            </span>
-          </Link>
-        ))}
+              {isActive(item.path) && (
+                <motion.div
+                  layoutId="bottomNavIndicator"
+                  className={`absolute inset-0 rounded-lg bg-accent-${color}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.2 }}
+                />
+              )}
+              <item.icon
+                className={`h-6 w-6 ${
+                  isActive(item.path) 
+                    ? `text-accent-${color}` 
+                    : "text-gray-400"
+                }`}
+              />
+              <span
+                className={`text-xs mt-1 ${
+                  isActive(item.path) 
+                    ? `font-medium text-accent-${color}` 
+                    : "text-gray-400"
+                }`}
+              >
+                {item.label}
+              </span>
+            </Link>
+          );
+        })}
         
         <Drawer>
           <DrawerTrigger asChild>
