@@ -37,6 +37,30 @@ const DoctorConsultation = () => {
     setIsAppointmentModalOpen(true);
   };
 
+  // Add the missing instant consultation handler
+  const handleInstantConsultation = () => {
+    // Find the first available doctor
+    const availableDoctor = doctors.find(doc => doc.available);
+    
+    if (availableDoctor) {
+      setSelectedDoctor(availableDoctor);
+      setIsConsultModalOpen(true);
+      
+      toast({
+        title: "Searching for available doctors",
+        description: `Connecting you with ${availableDoctor.name}...`,
+        duration: 3000,
+      });
+    } else {
+      toast({
+        title: "No doctors available",
+        description: "Sorry, there are no doctors available for instant consultation right now.",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
+  };
+
   const handleConfirmAppointment = () => {
     if (!selectedDate || !selectedTime) {
       toast({
@@ -91,11 +115,14 @@ const DoctorConsultation = () => {
             </TabsList>
             
             <TabsContent value="video">
-              <ConsultationOptions onBookAppointment={handleBookAppointment} />
+              <ConsultationOptions 
+                onBookAppointment={handleBookAppointment} 
+                onInstantConsultation={handleInstantConsultation}
+              />
             </TabsContent>
             
             <TabsContent value="chat">
-              <div className="glass-morphism rounded-xl p-4 mb-6">
+              <div className="glass-morphism rounded-xl p-4 mb-6 cursor-pointer" onClick={handleInstantConsultation}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <div className="w-10 h-10 rounded-full bg-zepmeds-purple/10 flex items-center justify-center mr-3 text-zepmeds-purple">
