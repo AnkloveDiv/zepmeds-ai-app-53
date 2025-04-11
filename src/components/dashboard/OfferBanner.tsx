@@ -3,9 +3,11 @@ import { ShoppingBag, ChevronRight, Pill, CreditCard, Truck, Clock, Gift, Heart 
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
 
 const OfferBanner = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   const offers = [
     {
@@ -46,8 +48,13 @@ const OfferBanner = () => {
     }
   ];
   
-  const handleOfferClick = (path: string) => {
+  const handleOfferClick = (path: string, title: string) => {
     navigate(path);
+    toast({
+      title: "Offer Selected",
+      description: `You've selected the "${title}" offer.`,
+      duration: 3000,
+    });
   };
   
   return (
@@ -61,6 +68,9 @@ const OfferBanner = () => {
             className="glass-morphism rounded-xl p-4 overflow-hidden relative"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
           >
             <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-zepmeds-purple/20 to-purple-500/30 rounded-full -translate-y-1/2 translate-x-1/2" />
             
@@ -78,7 +88,7 @@ const OfferBanner = () => {
               <Button 
                 size="sm" 
                 className={`flex items-center ${offer.buttonColor}`}
-                onClick={() => handleOfferClick(offer.path)}
+                onClick={() => handleOfferClick(offer.path, offer.title)}
               >
                 {offer.buttonIcon}
                 Shop Now

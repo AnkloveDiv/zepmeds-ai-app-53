@@ -11,6 +11,7 @@ import useBackNavigation from "@/hooks/useBackNavigation";
 import { doctors, availableTimes } from "@/data/doctorData";
 import DoctorCard from "@/components/doctor/DoctorCard";
 import ConsultationOptions from "@/components/doctor/ConsultationOptions";
+import AudioConsultationOption from "@/components/doctor/AudioConsultationOption";
 import SpecialtiesSection from "@/components/doctor/SpecialtiesSection";
 import ConsultationModal from "@/components/doctor/ConsultationModal";
 import AppointmentModal from "@/components/doctor/AppointmentModal";
@@ -119,6 +120,7 @@ const DoctorConsultation = () => {
                 onBookAppointment={handleBookAppointment} 
                 onInstantConsultation={handleInstantConsultation}
               />
+              <AudioConsultationOption onClick={handleInstantConsultation} />
             </TabsContent>
             
             <TabsContent value="chat">

@@ -6,9 +6,13 @@ import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
 import useBackNavigation from "@/hooks/useBackNavigation";
 import Utensils from "@/components/icons/Utensils";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/components/ui/use-toast";
 
 const Offers = () => {
   const { ExitConfirmDialog } = useBackNavigation();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [offers] = useState([
     {
       id: 1,
@@ -84,6 +88,32 @@ const Offers = () => {
     }
   };
 
+  const handleShopNow = (offer: any) => {
+    toast({
+      title: "Offer Applied",
+      description: `${offer.discount} discount has been applied to your next purchase.`,
+      duration: 3000,
+    });
+    
+    // Navigate based on the category
+    if (offer.category === 'pet') {
+      navigate('/pet-care');
+    } else if (offer.category === 'health') {
+      navigate('/medicine-delivery?category=supplements');
+    } else {
+      navigate('/medicine-delivery');
+    }
+  };
+
+  const handleViewOffers = (category: string) => {
+    toast({
+      title: `${category} Offers`,
+      description: `Browsing special offers for ${category}.`,
+      duration: 3000,
+    });
+    navigate(`/medicine-delivery?category=${category.toLowerCase().replace(/\s+/g, '')}`);
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <Header showBackButton title="Offers" />
@@ -126,10 +156,15 @@ const Offers = () => {
                   <span>Valid till {offer.validTill}</span>
                 </div>
                 
-                <button className="flex items-center text-zepmeds-purple">
+                <motion.button 
+                  className="flex items-center text-zepmeds-purple"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => handleShopNow(offer)}
+                >
                   <span>Shop Now</span>
                   <ChevronRight className="h-4 w-4 ml-1" />
-                </button>
+                </motion.button>
               </div>
             </motion.div>
           ))}
@@ -155,48 +190,63 @@ const Offers = () => {
             </div>
             
             <div className="space-y-3">
-              <div className="p-3 bg-black/40 rounded-lg flex items-start backdrop-blur-sm">
+              <motion.div 
+                className="p-3 bg-black/40 rounded-lg flex items-start backdrop-blur-sm"
+                whileHover={{ x: 5 }}
+              >
                 <Pill className="h-5 w-5 text-red-400 mr-2 mt-1" />
                 <div>
                   <h4 className="text-white text-sm font-medium">Blood Pressure Medications</h4>
                   <p className="text-gray-300 text-xs">ACE inhibitors, beta-blockers, and more</p>
                 </div>
-              </div>
+              </motion.div>
               
-              <div className="p-3 bg-black/40 rounded-lg flex items-start backdrop-blur-sm">
+              <motion.div 
+                className="p-3 bg-black/40 rounded-lg flex items-start backdrop-blur-sm"
+                whileHover={{ x: 5 }}
+              >
                 <Pill className="h-5 w-5 text-red-400 mr-2 mt-1" />
                 <div>
                   <h4 className="text-white text-sm font-medium">Cholesterol Management</h4>
                   <p className="text-gray-300 text-xs">Statins and other cholesterol-lowering drugs</p>
                 </div>
-              </div>
+              </motion.div>
               
-              <div className="p-3 bg-black/40 rounded-lg flex items-start backdrop-blur-sm">
+              <motion.div 
+                className="p-3 bg-black/40 rounded-lg flex items-start backdrop-blur-sm"
+                whileHover={{ x: 5 }}
+              >
                 <ShoppingBag className="h-5 w-5 text-orange-400 mr-2 mt-1" />
                 <div>
                   <h4 className="text-white text-sm font-medium">Heart-Healthy Supplements</h4>
                   <p className="text-gray-300 text-xs">Omega-3, CoQ10, and other heart-supporting nutrients</p>
                 </div>
-              </div>
+              </motion.div>
             </div>
             
             <h3 className="text-white text-lg font-bold mt-6 mb-3">Recommended Activities</h3>
             <div className="space-y-3">
-              <div className="p-3 bg-black/40 rounded-lg flex items-start backdrop-blur-sm">
+              <motion.div 
+                className="p-3 bg-black/40 rounded-lg flex items-start backdrop-blur-sm"
+                whileHover={{ x: 5 }}
+              >
                 <Activity className="h-5 w-5 text-green-400 mr-2 mt-1" />
                 <div>
                   <h4 className="text-white text-sm font-medium">Cardio Exercises</h4>
                   <p className="text-gray-300 text-xs">30 minutes of walking, swimming, or cycling daily</p>
                 </div>
-              </div>
+              </motion.div>
               
-              <div className="p-3 bg-black/40 rounded-lg flex items-start backdrop-blur-sm">
+              <motion.div 
+                className="p-3 bg-black/40 rounded-lg flex items-start backdrop-blur-sm"
+                whileHover={{ x: 5 }}
+              >
                 <Utensils className="h-5 w-5 text-green-400 mr-2 mt-1" />
                 <div>
                   <h4 className="text-white text-sm font-medium">Heart-Healthy Diet</h4>
                   <p className="text-gray-300 text-xs">Fish, nuts, berries, leafy greens, whole grains, olive oil</p>
                 </div>
-              </div>
+              </motion.div>
             </div>
           </div>
         </div>
@@ -218,10 +268,13 @@ const Offers = () => {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.1 }}
-                className="glass-morphism rounded-xl p-4 flex flex-col items-center justify-center text-center"
+                className="glass-morphism rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer"
                 style={{ 
                   background: `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), ${category.gradient}`
                 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handleViewOffers(category.name)}
               >
                 <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3" style={{ 
                   background: category.gradient
@@ -240,9 +293,17 @@ const Offers = () => {
         </div>
         
         <div className="mt-8">
-          <div className="glass-morphism rounded-xl p-4 flex items-center justify-between" style={{ 
-            background: "linear-gradient(135deg, rgba(106, 90, 205, 0.4), rgba(161, 127, 224, 0.4))"
-          }}>
+          <motion.div 
+            className="glass-morphism rounded-xl p-4 flex items-center justify-between" 
+            style={{ background: "linear-gradient(135deg, rgba(106, 90, 205, 0.4), rgba(161, 127, 224, 0.4))" }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => toast({
+              title: "Coupon Code",
+              description: "Use code ZEPMEDS for 20% off your next order!",
+              duration: 5000,
+            })}
+          >
             <div>
               <h3 className="text-white font-medium mb-1">Have a coupon code?</h3>
               <p className="text-sm text-gray-300">Redeem it during checkout</p>
@@ -253,7 +314,7 @@ const Offers = () => {
             }}>
               <Tag className="h-5 w-5 text-white" />
             </div>
-          </div>
+          </motion.div>
         </div>
       </main>
       

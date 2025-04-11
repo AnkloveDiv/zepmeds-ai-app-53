@@ -86,7 +86,7 @@ const ManageAddresses = () => {
     setNewAddress({
       type: 'home',
       address: '',
-      isDefault: false
+      isDefault: addresses.length === 0 // Set as default if this is the first address
     });
     setShowAddDialog(true);
   };
@@ -103,13 +103,20 @@ const ManageAddresses = () => {
     
     if (editingAddress) {
       // Update existing address
-      setAddresses(addresses.map(addr => 
-        addr.id === editingAddress.id 
-          ? { ...addr, ...newAddress as Address } 
-          : newAddress.isDefault 
-            ? { ...addr, isDefault: false } 
-            : addr
-      ));
+      const updatedAddresses = addresses.map(addr => {
+        if (addr.id === editingAddress.id) {
+          return { 
+            ...addr, 
+            ...newAddress as Address 
+          };
+        }
+        // If current address is being set as default, set all others to non-default
+        return newAddress.isDefault 
+          ? { ...addr, isDefault: false } 
+          : addr;
+      });
+      
+      setAddresses(updatedAddresses);
       
       toast({
         title: "Address updated",
@@ -125,12 +132,19 @@ const ManageAddresses = () => {
         isDefault: newAddress.isDefault as boolean
       };
       
+      let updatedAddresses;
       // If this is set as default, update all others to not be default
       if (newAddress.isDefault) {
-        setAddresses(addresses.map(addr => ({ ...addr, isDefault: false })).concat(addressToAdd));
+        updatedAddresses = addresses.map(addr => ({ 
+          ...addr, 
+          isDefault: false 
+        }));
+        updatedAddresses.push(addressToAdd);
       } else {
-        setAddresses([...addresses, addressToAdd]);
+        updatedAddresses = [...addresses, addressToAdd];
       }
+      
+      setAddresses(updatedAddresses);
       
       toast({
         title: "Address added",
@@ -255,7 +269,7 @@ const ManageAddresses = () => {
               <Input 
                 placeholder="Enter your full address" 
                 className="bg-black/20 border-gray-700"
-                value={newAddress.address} 
+                value={newAddress.address || ''} 
                 onChange={(e) => setNewAddress({...newAddress, address: e.target.value})}
               />
             </div>

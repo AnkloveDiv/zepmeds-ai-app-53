@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import { Pill, Heart, Brain, Eye, Stethoscope, Bone, Sun, Dog, Thermometer } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface CategoryProps {
   activeCategory?: string;
@@ -29,7 +30,7 @@ const CategoriesNav = ({
     <div className="mt-4 overflow-x-auto scrollbar-none -mx-4 px-4">
       <div className="flex space-x-2">
         {categories.map((category) => (
-          <button
+          <motion.button
             key={category.name}
             className={`px-4 py-2 rounded-full flex items-center space-x-1 min-w-max ${
               category.name === activeCategory
@@ -37,12 +38,14 @@ const CategoriesNav = ({
                 : "bg-black/20 border border-white/10 text-gray-300"
             }`}
             onClick={() => onCategoryClick(category.name)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
             <span className={category.name === activeCategory ? "text-white" : "text-gray-400"}>
               {category.icon}
             </span>
             <span>{category.name}</span>
-          </button>
+          </motion.button>
         ))}
       </div>
     </div>

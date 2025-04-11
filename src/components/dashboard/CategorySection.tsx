@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import CategoryCard from "@/components/CategoryCard";
 import { Heart, Pill, Eye, Stethoscope, Bone, Brain, Sun, Thermometer, Dog } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 const categories = [
   { name: "Skin Care", icon: <Heart className="h-6 w-6 text-white" />, gradient: "linear-gradient(135deg, #FF6B6B, #FFD166)", onClick: () => {} },
@@ -18,12 +19,19 @@ const categories = [
 
 const CategorySection = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   // Create a wrapped category array with navigation
-  const categoriesWithNavigation = categories.map(category => ({
-    ...category,
-    onClick: () => navigate(`/medicine-delivery?category=${category.name.toLowerCase().replace(/\s+/g, '')}`)
-  }));
+  const handleCategoryClick = (category: string) => {
+    const formattedCategory = category.toLowerCase().replace(/\s+/g, '');
+    navigate(`/medicine-delivery?category=${formattedCategory}`);
+    
+    toast({
+      title: `${category} Selected`,
+      description: `Browsing ${category} products.`,
+      duration: 2000,
+    });
+  };
 
   return (
     <section className="mt-8">
@@ -39,18 +47,20 @@ const CategorySection = () => {
 
       <div className="overflow-x-auto scrollbar-none -mx-4 px-4">
         <div className="flex space-x-4">
-          {categoriesWithNavigation.map((category, index) => (
+          {categories.map((category, index) => (
             <motion.div
               key={category.name}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.05 + 0.3 }}
+              whileHover={{ scale: 1.05, y: -5 }}
+              whileTap={{ scale: 0.95 }}
             >
               <CategoryCard
                 icon={category.icon}
                 name={category.name}
                 gradient={category.gradient}
-                onClick={category.onClick}
+                onClick={() => handleCategoryClick(category.name)}
               />
             </motion.div>
           ))}

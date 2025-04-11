@@ -22,9 +22,10 @@ export const WeeklyStatsGraph: React.FC<WeeklyStatsGraphProps> = ({ data = [], p
   const [activeMetric, setActiveMetric] = useState<string>(metric);
   const [activePeriod, setActivePeriod] = useState<'daily' | 'weekly' | 'monthly'>(period);
   
-  // Total metrics
+  // Total metrics with animations
   const totalSteps = 53425;
   const totalCalories = 12850;
+  const totalWaterIntake = 14.5; // in liters
   
   // Diet data for pie chart
   const dietData = [
@@ -48,6 +49,8 @@ export const WeeklyStatsGraph: React.FC<WeeklyStatsGraphProps> = ({ data = [], p
         return Math.floor(Math.random() * 40) + 80; // Random blood sugar between 80-120
       } else if (activeMetric === 'calories') {
         return Math.floor(Math.random() * 800) + 1200; // Random calories between 1200-2000
+      } else if (activeMetric === 'water') {
+        return Math.floor(Math.random() * 1000) + 1500; // Random water ml between 1500-2500
       }
       return Math.floor(Math.random() * 100) + 50; // Default random value
     };
@@ -85,6 +88,17 @@ export const WeeklyStatsGraph: React.FC<WeeklyStatsGraphProps> = ({ data = [], p
 
   const handlePeriodChange = (period: 'daily' | 'weekly' | 'monthly') => {
     setActivePeriod(period);
+  };
+
+  const getMetricUnit = () => {
+    switch (activeMetric) {
+      case 'steps': return 'steps';
+      case 'calories': return 'kcal';
+      case 'heartRate': return 'bpm';
+      case 'blood': return 'mg/dL';
+      case 'water': return 'ml';
+      default: return '';
+    }
   };
 
   return (
@@ -154,6 +168,14 @@ export const WeeklyStatsGraph: React.FC<WeeklyStatsGraphProps> = ({ data = [], p
           Calories
         </Button>
         <Button 
+          variant={activeMetric === 'water' ? "default" : "outline"} 
+          size="sm" 
+          onClick={() => handleMetricChange('water')}
+          className={activeMetric === 'water' ? "bg-zepmeds-purple" : ""}
+        >
+          Water
+        </Button>
+        <Button 
           variant={activeMetric === 'diet' ? "default" : "outline"} 
           size="sm" 
           onClick={() => handleMetricChange('diet')}
@@ -164,12 +186,13 @@ export const WeeklyStatsGraph: React.FC<WeeklyStatsGraphProps> = ({ data = [], p
       </div>
       
       {/* Total metrics section */}
-      <div className="grid grid-cols-2 gap-4 mb-4">
+      <div className="grid grid-cols-3 gap-3 mb-4">
         <motion.div 
           className="glass-morphism p-3 rounded-lg"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1 }}
+          whileHover={{ scale: 1.05 }}
         >
           <h3 className="text-sm text-gray-400">Total Steps</h3>
           <p className="text-xl font-bold text-white">{totalSteps.toLocaleString()}</p>
@@ -180,13 +203,30 @@ export const WeeklyStatsGraph: React.FC<WeeklyStatsGraphProps> = ({ data = [], p
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2 }}
+          whileHover={{ scale: 1.05 }}
         >
           <h3 className="text-sm text-gray-400">Total Calories</h3>
           <p className="text-xl font-bold text-white">{totalCalories.toLocaleString()} kcal</p>
         </motion.div>
+        
+        <motion.div 
+          className="glass-morphism p-3 rounded-lg"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.3 }}
+          whileHover={{ scale: 1.05 }}
+        >
+          <h3 className="text-sm text-gray-400">Water Intake</h3>
+          <p className="text-xl font-bold text-white">{totalWaterIntake}L</p>
+        </motion.div>
       </div>
       
-      <div className="h-64">
+      <motion.div 
+        className="h-64 relative"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+      >
         {activeMetric === 'diet' ? (
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -199,6 +239,8 @@ export const WeeklyStatsGraph: React.FC<WeeklyStatsGraphProps> = ({ data = [], p
                 paddingAngle={5}
                 dataKey="value"
                 label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                animationDuration={1500}
+                animationBegin={300}
               >
                 {dietData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
@@ -226,6 +268,7 @@ export const WeeklyStatsGraph: React.FC<WeeklyStatsGraphProps> = ({ data = [], p
               <XAxis dataKey="name" tick={{ fill: '#9b87f5' }} axisLine={{ stroke: '#444' }} />
               <YAxis tick={{ fill: '#9b87f5' }} axisLine={{ stroke: '#444' }} />
               <Tooltip
+                formatter={(value) => [`${value} ${getMetricUnit()}`, activeMetric.charAt(0).toUpperCase() + activeMetric.slice(1)]}
                 contentStyle={{
                   backgroundColor: 'rgba(0, 0, 0, 0.8)',
                   border: '1px solid #9b87f5',
@@ -243,7 +286,9 @@ export const WeeklyStatsGraph: React.FC<WeeklyStatsGraphProps> = ({ data = [], p
             </BarChart>
           </ResponsiveContainer>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 };
+
+export default WeeklyStatsGraph;
