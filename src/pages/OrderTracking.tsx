@@ -1,9 +1,7 @@
-
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Package, Truck, Check, AlertCircle, MapPin } from "lucide-react";
@@ -34,7 +32,6 @@ const OrderTracking = () => {
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    // Check for active order
     const savedOrder = localStorage.getItem("currentOrder");
     if (savedOrder) {
       try {
