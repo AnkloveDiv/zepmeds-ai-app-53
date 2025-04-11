@@ -1,5 +1,5 @@
 
-import DeliveryAnimation from "@/components/DeliveryAnimation";
+import DeliveryAnimation from "@/components/delivery/DeliveryAnimation";
 
 interface DeliveryStatusProps {
   currentStep: number;
