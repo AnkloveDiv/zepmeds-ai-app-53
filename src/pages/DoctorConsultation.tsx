@@ -133,7 +133,7 @@ const DoctorConsultation = () => {
                   <DoctorCard
                     name={doctor.name}
                     specialty={doctor.specialty}
-                    experience={doctor.experience}
+                    experience={doctor.experience.toString()}
                     rating={doctor.rating}
                     price={doctor.price.toString()}
                     available={doctor.available}

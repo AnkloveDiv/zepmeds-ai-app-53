@@ -9,7 +9,7 @@ interface DoctorCardProps {
   specialty: string;
   experience: string;
   rating: number;
-  price: number;
+  price: string;
   available: boolean;
   image?: string;
   onConsult: () => void;
