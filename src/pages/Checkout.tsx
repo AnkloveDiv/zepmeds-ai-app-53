@@ -9,9 +9,29 @@ import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, CreditCard, Clock, Truck, Wallet, Tag, Plus, Check, Calendar, DollarSign, Server, Shield } from "lucide-react";
+import { 
+  MapPin, CreditCard, Clock, Truck, Wallet, Tag, 
+  Plus, Check, Calendar, DollarSign, Server, Shield,
+  Smartphone, IndianRupee
+} from "lucide-react";
 import useBackNavigation from "@/hooks/useBackNavigation";
 import OrderForSomeoneElse from "@/components/checkout/OrderForSomeoneElse";
+
+const UPI_PROVIDERS = [
+  { id: "googlepay", name: "Google Pay", iconBg: "bg-blue-500" },
+  { id: "phonepe", name: "PhonePe", iconBg: "bg-purple-600" },
+  { id: "paytm", name: "Paytm", iconBg: "bg-blue-400" },
+  { id: "amazonpay", name: "Amazon Pay", iconBg: "bg-orange-500" },
+  { id: "mobikwik", name: "MobiKwik", iconBg: "bg-red-500" },
+  { id: "fampay", name: "FamPay", iconBg: "bg-yellow-500" },
+];
+
+const BNPL_PROVIDERS = [
+  { id: "simpl", name: "Simpl", iconBg: "bg-indigo-600" },
+  { id: "lazypay", name: "LazyPay", iconBg: "bg-green-600" },
+  { id: "zestmoney", name: "ZestMoney", iconBg: "bg-teal-500" },
+  { id: "kredpay", name: "KredPay", iconBg: "bg-red-600" },
+];
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -28,6 +48,7 @@ const Checkout = () => {
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cod");
+  const [upiProvider, setUpiProvider] = useState("");
   const [addresses, setAddresses] = useState([
     {
       id: 1,
@@ -53,6 +74,7 @@ const Checkout = () => {
   const [recipientDetails, setRecipientDetails] = useState<any>(null);
   const [showCardDetails, setShowCardDetails] = useState(false);
   const [showBnplDetails, setShowBnplDetails] = useState(false);
+  const [showUpiDetails, setShowUpiDetails] = useState(false);
   
   const [cardNumber, setCardNumber] = useState("");
   const [cardName, setCardName] = useState("");
@@ -90,6 +112,10 @@ const Checkout = () => {
     
     if (paymentMethod !== "bnpl") {
       setShowBnplDetails(false);
+    }
+    
+    if (paymentMethod !== "upi") {
+      setShowUpiDetails(false);
     }
   }, [paymentMethod]);
   
@@ -231,6 +257,15 @@ const Checkout = () => {
       return;
     }
     
+    if (paymentMethod === "upi" && !upiProvider) {
+      toast({
+        title: "UPI provider required",
+        description: "Please select a UPI payment method.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     const total = subTotal + deliveryFee - discount - couponDiscount - (useWallet ? walletBalance : 0);
     
     if (total < 0) {
@@ -256,12 +291,19 @@ const Checkout = () => {
         cardNumber: `**** **** **** ${cardNumber.slice(-4)}`,
         cardName,
         cardExpiry
-      } : (paymentMethod === "bnpl" ? { provider: bnplProvider } : null),
+      } : (paymentMethod === "bnpl" ? { provider: bnplProvider } : 
+           paymentMethod === "upi" ? { provider: upiProvider } : null),
       address: addresses.find(addr => addr.id === selectedAddress),
       deliveryTime,
       status: "confirmed",
       placedAt: new Date().toISOString(),
-      estimatedDelivery: new Date(Date.now() + (deliveryTime === "express" ? 30 : 120) * 60000).toISOString()
+      estimatedDelivery: new Date(Date.now() + (deliveryTime === "express" ? 15 : 120) * 60000).toISOString(),
+      deliveryRider: {
+        name: "Rahul Singh",
+        rating: 4.8,
+        phone: "+91 98765 43210",
+        eta: "15 minutes"
+      },
     };
     
     localStorage.setItem("currentOrder", JSON.stringify(order));
@@ -295,6 +337,12 @@ const Checkout = () => {
           >
             Place Order
           </Button>
+        </div>
+      </div>
+      
+      <div className="fixed top-16 right-4 z-20">
+        <div className="bg-zepmeds-purple px-3 py-2 rounded-lg shadow-lg">
+          <p className="text-white text-sm font-bold">₹{finalAmount.toFixed(2)}</p>
         </div>
       </div>
       
@@ -369,7 +417,7 @@ const Checkout = () => {
                     <Label htmlFor="express" className="text-white font-medium">Express Delivery</Label>
                     <Badge className="bg-zepmeds-purple">₹50</Badge>
                   </div>
-                  <p className="text-gray-400 text-sm">Delivered within 30 minutes</p>
+                  <p className="text-green-400 text-sm font-medium">Delivered within 15 minutes</p>
                 </div>
               </div>
             </div>
@@ -580,6 +628,64 @@ const Checkout = () => {
             </div>
             
             <div className={`rounded-xl border transition-all ${
+              paymentMethod === "upi" 
+                ? "border-zepmeds-purple bg-zepmeds-purple/10" 
+                : "border-white/10 bg-black/20"
+            }`}>
+              <div className="p-4" onClick={() => {
+                setPaymentMethod("upi");
+                setShowUpiDetails(true);
+              }}>
+                <div className="flex items-center">
+                  <RadioGroupItem value="upi" id="upi" className="text-zepmeds-purple border-white/20 mr-3" />
+                  <div className="flex items-center">
+                    <Smartphone className="h-5 w-5 text-green-500 mr-2" />
+                    <Label htmlFor="upi" className="text-white font-medium">UPI / Mobile Payments</Label>
+                  </div>
+                </div>
+              </div>
+              
+              {paymentMethod === "upi" && showUpiDetails && (
+                <div className="p-4 pt-0">
+                  <Separator className="bg-white/10 my-3" />
+                  
+                  <RadioGroup value={upiProvider} onValueChange={setUpiProvider} className="grid grid-cols-2 gap-2">
+                    {UPI_PROVIDERS.map(provider => (
+                      <div 
+                        key={provider.id}
+                        className={`p-3 rounded-lg border transition-all ${
+                          upiProvider === provider.id 
+                            ? "border-zepmeds-purple bg-zepmeds-purple/10" 
+                            : "border-white/10 bg-black/20"
+                        }`}
+                      >
+                        <RadioGroupItem 
+                          value={provider.id} 
+                          id={`upi-${provider.id}`}
+                          className="sr-only"
+                        />
+                        <Label 
+                          htmlFor={`upi-${provider.id}`}
+                          className="flex items-center cursor-pointer"
+                        >
+                          <div className={`w-8 h-8 rounded-full ${provider.iconBg} flex items-center justify-center mr-2`}>
+                            <IndianRupee className="h-4 w-4 text-white" />
+                          </div>
+                          <span className="text-white text-sm">{provider.name}</span>
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                  
+                  <div className="flex items-center gap-2 mt-4 p-3 rounded-lg bg-black/30">
+                    <Smartphone className="h-4 w-4 text-green-400" />
+                    <span className="text-xs text-gray-300">You'll be redirected to complete the payment</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className={`rounded-xl border transition-all ${
               paymentMethod === "bnpl" 
                 ? "border-zepmeds-purple bg-zepmeds-purple/10" 
                 : "border-white/10 bg-black/20"
@@ -598,24 +704,40 @@ const Checkout = () => {
               </div>
               
               {paymentMethod === "bnpl" && showBnplDetails && (
-                <div className="p-4 pt-0 space-y-3">
+                <div className="p-4 pt-0">
                   <Separator className="bg-white/10 my-3" />
                   
-                  <RadioGroup value={bnplProvider} onValueChange={setBnplProvider} className="space-y-2">
-                    <div className="flex items-center p-2 rounded-lg hover:bg-white/5">
-                      <RadioGroupItem value="simpl" id="simpl" className="text-zepmeds-purple border-white/20 mr-3" />
-                      <Label htmlFor="simpl" className="text-white font-medium cursor-pointer">Simpl</Label>
-                    </div>
-                    
-                    <div className="flex items-center p-2 rounded-lg hover:bg-white/5">
-                      <RadioGroupItem value="lazypay" id="lazypay" className="text-zepmeds-purple border-white/20 mr-3" />
-                      <Label htmlFor="lazypay" className="text-white font-medium cursor-pointer">LazyPay</Label>
-                    </div>
+                  <RadioGroup value={bnplProvider} onValueChange={setBnplProvider} className="grid grid-cols-2 gap-2">
+                    {BNPL_PROVIDERS.map(provider => (
+                      <div 
+                        key={provider.id}
+                        className={`p-3 rounded-lg border transition-all ${
+                          bnplProvider === provider.id 
+                            ? "border-zepmeds-purple bg-zepmeds-purple/10" 
+                            : "border-white/10 bg-black/20"
+                        }`}
+                      >
+                        <RadioGroupItem 
+                          value={provider.id} 
+                          id={`bnpl-${provider.id}`}
+                          className="sr-only"
+                        />
+                        <Label 
+                          htmlFor={`bnpl-${provider.id}`}
+                          className="flex items-center cursor-pointer"
+                        >
+                          <div className={`w-8 h-8 rounded-full ${provider.iconBg} flex items-center justify-center mr-2`}>
+                            <Clock className="h-4 w-4 text-white" />
+                          </div>
+                          <span className="text-white text-sm">{provider.name}</span>
+                        </Label>
+                      </div>
+                    ))}
                   </RadioGroup>
                   
-                  <div className="flex items-center gap-2 mt-2 p-3 rounded-lg bg-black/30">
+                  <div className="flex items-center gap-2 mt-4 p-3 rounded-lg bg-black/30">
                     <Server className="h-4 w-4 text-amber-400" />
-                    <span className="text-xs text-gray-300">You'll be redirected to complete authentication</span>
+                    <span className="text-xs text-gray-300">Complete authentication to use BNPL service</span>
                   </div>
                 </div>
               )}

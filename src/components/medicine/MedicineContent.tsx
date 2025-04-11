@@ -1,202 +1,82 @@
-
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { useToast } from "@/components/ui/use-toast";
-import MedicineDetailModal from "@/components/MedicineDetailModal";
-
-// Import refactored components
-import LocationWeather from "@/components/medicine/LocationWeather";
-import DealBanners from "@/components/medicine/DealBanners";
-import ActionButtons from "@/components/medicine/ActionButtons";
-import CategoriesNav from "@/components/medicine/CategoriesNav";
-import ProductGrid from "@/components/medicine/ProductGrid";
-import OfferBanner from "@/components/medicine/OfferBanner";
-import FloatingCartButton from "@/components/medicine/FloatingCartButton";
+import { useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
 import SearchBar from "@/components/SearchBar";
+import EnhancedProductGrid from "@/components/medicine/EnhancedProductGrid";
+import CategoriesNav from "@/components/medicine/CategoriesNav";
+import DealBanners from "@/components/medicine/DealBanners";
+import OfferBanner from "@/components/medicine/OfferBanner";
+import LocationWeather from "@/components/medicine/LocationWeather";
 import DeliveryTracking from "@/components/medicine/DeliveryTracking";
-import TrackOrderButton from "@/components/order/TrackOrderButton";
 
 interface MedicineContentProps {
   products: any[];
-  setCartItems: (items: any[]) => void;
+  setCartItems: React.Dispatch<React.SetStateAction<any[]>>;
 }
 
 const MedicineContent = ({ products, setCartItems }: MedicineContentProps) => {
-  const navigate = useNavigate();
+  const [cartItems, setLocalCartItems] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const location = useLocation();
-  const { toast } = useToast();
-  const [activeCategory, setActiveCategory] = useState("All");
-  const [userLocation, setUserLocation] = useState("Current Location");
-  const [temperature] = useState("28°C");
-  const [weather] = useState("Sunny");
-  const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
-  const [selectedMedicine, setSelectedMedicine] = useState<any>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
+  
   useEffect(() => {
-    // Try to get saved location from localStorage
-    const savedLocation = localStorage.getItem("userLocation");
-    if (savedLocation) {
-      setUserLocation(savedLocation);
+    const savedCart = localStorage.getItem("cart");
+    if (savedCart) {
+      const parsedCart = JSON.parse(savedCart);
+      setLocalCartItems(parsedCart);
     }
     
+    // Check for search query from URL
     const params = new URLSearchParams(location.search);
-    const categoryParam = params.get("category");
-    
-    if (categoryParam) {
-      const categoryMap: { [key: string]: string } = {
-        "skincare": "Popular",
-        "supplements": "Popular",
-        "eyecare": "Eye Care",
-        "dental": "Dental",
-        "painrelief": "Pain",
-        "brain": "Brain",
-        "summercare": "Summer",
-        "petcare": "Pet Care",
-        "devices": "Popular"
-      };
-      
-      const mappedCategory = categoryMap[categoryParam] || "All";
-      setActiveCategory(mappedCategory);
+    const searchParam = params.get("search");
+    if (searchParam) {
+      setSearchQuery(searchParam);
     }
   }, [location.search]);
 
-  useEffect(() => {
-    if (activeCategory === "All") {
-      setFilteredProducts(products);
-    } else {
-      setFilteredProducts(products.filter(product => product.category === activeCategory));
-    }
-  }, [activeCategory, products]);
-
-  const handleCategoryClick = (categoryName: string) => {
-    setActiveCategory(categoryName);
-  };
-
-  const handleUploadPrescription = () => {
-    navigate("/prescription-upload");
-  };
-
-  const handleAddToCart = (product: any) => {
-    const existingCart = JSON.parse(localStorage.getItem("cart") || "[]");
-    
-    const existingItemIndex = existingCart.findIndex((item: any) => item.id === product.id);
+  const handleAddToCart = (product: any, quantity: number) => {
+    const newCart = [...cartItems];
+    const existingItemIndex = newCart.findIndex(item => item.id === product.id);
     
     if (existingItemIndex >= 0) {
-      existingCart[existingItemIndex].quantity += 1;
+      newCart[existingItemIndex].quantity += quantity;
     } else {
-      existingCart.push({
-        ...product,
-        quantity: 1,
-        stripQuantity: 1
-      });
+      newCart.push({...product, quantity});
     }
     
-    localStorage.setItem("cart", JSON.stringify(existingCart));
-    setCartItems(existingCart);
-    
-    toast({
-      title: "Added to cart",
-      description: `${product.name} has been added to your cart`,
-      duration: 4000,
-    });
-  };
-
-  const handleProductClick = (product: any) => {
-    setSelectedMedicine(product);
-    setIsModalOpen(true);
-  };
-
-  const handleModalAddToCart = (quantity: number, strips: number) => {
-    if (selectedMedicine) {
-      const existingCart = JSON.parse(localStorage.getItem("cart") || "[]");
-      
-      const existingItemIndex = existingCart.findIndex((item: any) => item.id === selectedMedicine.id);
-      
-      if (existingItemIndex >= 0) {
-        existingCart[existingItemIndex].quantity = quantity;
-        existingCart[existingItemIndex].stripQuantity = strips;
-      } else {
-        existingCart.push({
-          ...selectedMedicine,
-          quantity: quantity,
-          stripQuantity: strips
-        });
-      }
-      
-      localStorage.setItem("cart", JSON.stringify(existingCart));
-      setCartItems(existingCart);
-      
-      toast({
-        title: "Added to cart",
-        description: `${selectedMedicine.name} has been added to your cart`,
-        duration: 4000,
-      });
-    }
-  };
-
-  const handleViewCart = () => {
-    navigate("/cart");
-  };
-  
-  const handleSaveLocation = (location: string) => {
-    setUserLocation(location);
-    localStorage.setItem("userLocation", location);
-    toast({
-      title: "Location saved",
-      description: `Delivery location set to ${location}`,
-    });
+    setLocalCartItems(newCart);
+    setCartItems(newCart);
+    localStorage.setItem("cart", JSON.stringify(newCart));
   };
 
   return (
     <div className="px-4 py-4">
-      <LocationWeather 
-        location={userLocation} 
-        temperature={temperature} 
-        weather={weather} 
-        onLocationSave={handleSaveLocation}
-      />
-
-      <SearchBar placeholder="Search for medicines, health products..." />
+      <motion.div
+        initial={{ y: -10, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <SearchBar placeholder="Search medicines and healthcare products" />
+      </motion.div>
       
-      <div className="mt-4 mb-6">
-        <TrackOrderButton
-          variant="outline"
-          className="w-full border-zepmeds-purple text-zepmeds-purple hover:bg-zepmeds-purple/10"
-          prominent={true}
+      <LocationWeather />
+      
+      <DeliveryTracking />
+      
+      <CategoriesNav />
+      
+      <DealBanners />
+      
+      <div className="my-4">
+        <h2 className="text-xl font-bold text-white mb-3">All Products</h2>
+        <EnhancedProductGrid 
+          products={products} 
+          searchQuery={searchQuery}
+          onAddToCart={handleAddToCart} 
         />
       </div>
       
-      <DealBanners />
-
-      <ActionButtons onUploadPrescription={handleUploadPrescription} />
-      
-      <DeliveryTracking />
-
-      <CategoriesNav 
-        activeCategory={activeCategory}
-        onCategoryClick={handleCategoryClick}
-      />
-
-      <ProductGrid 
-        products={filteredProducts} 
-        onAddToCart={handleAddToCart}
-        onProductClick={handleProductClick}
-      />
-      
       <OfferBanner />
-
-      <FloatingCartButton 
-        itemsCount={JSON.parse(localStorage.getItem("cart") || "[]").length} 
-        onClick={handleViewCart} 
-      />
-      
-      <MedicineDetailModal 
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        medicine={selectedMedicine}
-        onAddToCart={handleModalAddToCart}
-      />
     </div>
   );
 };

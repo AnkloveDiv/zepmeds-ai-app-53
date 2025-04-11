@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
-import SearchBar from "@/components/SearchBar";
 import BottomNavigation from "@/components/BottomNavigation";
 import { useToast } from "@/components/ui/use-toast";
 import useBackNavigation from "@/hooks/useBackNavigation";
@@ -13,6 +12,7 @@ import CategorySection from "@/components/dashboard/CategorySection";
 import TrendingProducts from "@/components/dashboard/TrendingProducts";
 import OfferBanner from "@/components/dashboard/OfferBanner";
 import AdFlyer from "@/components/dashboard/AdFlyer";
+import SearchBar from "@/components/SearchBar";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -41,7 +41,13 @@ const Dashboard = () => {
       <Header cartCount={cartCount} />
 
       <main className="px-4 py-4">
-        <SearchBar />
+        <motion.div
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <SearchBar />
+        </motion.div>
         <AdFlyer />
         <ServiceSection />
         <CategorySection />

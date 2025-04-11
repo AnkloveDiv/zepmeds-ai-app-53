@@ -3,281 +3,426 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
-import DeliveryMap from "@/components/DeliveryMap";
 import { Button } from "@/components/ui/button";
-import DeliveryAnimation from "@/components/DeliveryAnimation";
-import { Phone, Clock, MapPin, AlertTriangle, Package, FileText } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/use-toast";
+import { Phone, MapPin, Package, ChevronDown, ChevronUp, Copy, MessageSquare, Clock, Info, Share2 } from "lucide-react";
+import DeliveryAnimation from "@/components/DeliveryAnimation";
+import DeliveryMap from "@/components/DeliveryMap";
 import useBackNavigation from "@/hooks/useBackNavigation";
+import { motion, AnimatePresence } from "framer-motion";
 
 const TrackOrder = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [order, setOrder] = useState<any>(null);
-  const [timeLeft, setTimeLeft] = useState({ minutes: 15, seconds: 0 });
-  const [isLate, setIsLate] = useState(false);
-  const [showMap, setShowMap] = useState(true);
-  
-  useBackNavigation();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const { ExitConfirmDialog } = useBackNavigation();
   
   useEffect(() => {
-    // In a real app, you'd fetch order data from an API
-    // For now, we'll use mock data from localStorage
-    const savedOrder = localStorage.getItem("currentOrder");
-    if (savedOrder) {
-      setOrder(JSON.parse(savedOrder));
-    } else if (orderId) {
-      // Mock fetching by ID
-      const mockOrder = {
-        id: orderId,
-        status: "in-transit",
-        estimatedDelivery: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
-        deliveryRider: {
-          name: "Rahul Singh",
-          rating: 4.8,
-          phone: "+91 98765 43210",
-          eta: "15 minutes"
-        },
-        items: [
-          {
-            id: "med-1",
-            name: "Paracetamol",
-            image: "https://source.unsplash.com/random/100x100/?medicine",
-            quantity: 2,
-            stripQuantity: 10,
-            price: 25
+    // In a real app, this would be an API call to get order details by ID
+    const getOrderDetails = () => {
+      setLoading(true);
+      
+      try {
+        if (orderId) {
+          // Try to get from localStorage first (our mock data)
+          const savedOrder = localStorage.getItem("currentOrder");
+          
+          if (savedOrder) {
+            const parsedOrder = JSON.parse(savedOrder);
+            
+            // Check if the IDs match
+            if (parsedOrder.id === orderId) {
+              setOrder(parsedOrder);
+              setLoading(false);
+              return;
+            }
           }
-        ],
-        totalAmount: 500
-      };
-      setOrder(mockOrder);
+          
+          // If not in localStorage, this would be a call to the backend API
+          // For demo purposes, create a mock order
+          const mockOrder = {
+            id: orderId,
+            status: "in-transit",
+            estimatedDelivery: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+            deliveryRider: {
+              name: "Rahul Singh",
+              rating: 4.8,
+              phone: "+91 98765 43210",
+              eta: "15 minutes",
+              profileImage: "https://source.unsplash.com/random/100x100/?face"
+            },
+            items: [
+              {
+                id: "med-1",
+                name: "Paracetamol",
+                image: "https://source.unsplash.com/random/100x100/?medicine",
+                quantity: 2,
+                stripQuantity: 10,
+                price: 25
+              }
+            ],
+            totalAmount: 500,
+            deliveryAddress: "123 Main St, Apartment 4B, New York, NY 10001",
+            placedAt: new Date(Date.now() - 20 * 60 * 1000).toISOString()
+          };
+          
+          setOrder(mockOrder);
+          localStorage.setItem("currentOrder", JSON.stringify(mockOrder));
+        } else {
+          throw new Error("Order ID is missing");
+        }
+      } catch (err) {
+        console.error("Error fetching order:", err);
+        setError(true);
+        toast({
+          title: "Error loading order",
+          description: "Could not load the order details",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    getOrderDetails();
+  }, [orderId, toast]);
+  
+  const handleCopyOrderId = () => {
+    navigator.clipboard.writeText(orderId as string);
+    toast({
+      title: "Order ID Copied",
+      description: `Order ID ${orderId} copied to clipboard`,
+    });
+  };
+  
+  const handleCallRider = () => {
+    if (order?.deliveryRider?.phone) {
+      window.location.href = `tel:${order.deliveryRider.phone}`;
     } else {
       toast({
-        title: "Order not found",
-        description: "Please try again with a valid order ID",
+        title: "Cannot call rider",
+        description: "Rider phone number is not available",
         variant: "destructive"
       });
-      navigate("/orders");
     }
-    
-    // Timer countdown
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev.minutes === 0 && prev.seconds === 0) {
-          clearInterval(timer);
-          return prev;
-        }
-        
-        if (prev.seconds === 0) {
-          return { minutes: prev.minutes - 1, seconds: 59 };
-        }
-        
-        return { ...prev, seconds: prev.seconds - 1 };
-      });
-    }, 1000);
-    
-    return () => clearInterval(timer);
-  }, [orderId, navigate, toast]);
+  };
   
-  if (!order) {
+  const handleMessageRider = () => {
+    toast({
+      title: "Message sent to rider",
+      description: "Your message has been sent to the rider",
+    });
+  };
+  
+  const handleViewInvoice = () => {
+    navigate(`/orders/invoice/${orderId}`);
+  };
+  
+  const handleShareOrder = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: `Order #${orderId} from ZepMeds`,
+        text: `Track my medicine delivery from ZepMeds. Order #${orderId}`,
+        url: window.location.href
+      }).catch(err => {
+        console.error("Share failed:", err);
+      });
+    } else {
+      toast({
+        title: "Share not supported",
+        description: "Your browser does not support the Web Share API",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-4 border-zepmeds-purple border-t-transparent rounded-full"></div>
+        <div className="text-center">
+          <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            >
+              <Package className="h-10 w-10 text-zepmeds-purple" />
+            </motion.div>
+          </div>
+          <p className="text-white">Loading order details...</p>
+        </div>
       </div>
     );
   }
   
-  const handleCallRider = () => {
-    toast({
-      title: "Calling rider",
-      description: `Connecting you to ${order.deliveryRider?.name || 'rider'}...`,
-    });
-  };
+  if (error || !order) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header showBackButton title="Track Order" />
+        
+        <main className="px-4 py-8 text-center">
+          <div className="glass-morphism rounded-xl p-8 max-w-md mx-auto">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center">
+              <Info className="h-8 w-8 text-red-500" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">Order Not Found</h3>
+            <p className="text-gray-400 mb-6">We couldn't find the order you're looking for. It may have been cancelled or removed.</p>
+            
+            <Button
+              className="bg-zepmeds-purple hover:bg-zepmeds-purple/90 w-full"
+              onClick={() => navigate("/orders")}
+            >
+              View My Orders
+            </Button>
+          </div>
+        </main>
+        
+        <BottomNavigation />
+      </div>
+    );
+  }
   
-  const handleDownloadInvoice = () => {
-    toast({
-      title: "Invoice Downloaded",
-      description: "Invoice has been downloaded to your device",
-    });
-  };
+  // Format the estimated delivery time
+  const estimatedDelivery = new Date(order.estimatedDelivery);
+  const now = new Date();
+  const minutesRemaining = Math.floor((estimatedDelivery.getTime() - now.getTime()) / (1000 * 60));
   
-  const handleReportIssue = () => {
-    toast({
-      title: "Issue Reported",
-      description: "Our customer support team will contact you shortly",
-    });
+  // Determine order status and progress
+  const orderStatus = order.status || "confirmed";
+  const statusMap = {
+    "confirmed": { step: 0, text: "Order Confirmed" },
+    "preparing": { step: 1, text: "Preparing" },
+    "rider-assigned": { step: 2, text: "Rider Assigned" },
+    "in-transit": { step: 3, text: "On the Way" },
+    "delivered": { step: 4, text: "Delivered" }
   };
-  
-  // Ensure deliveryRider exists with fallbacks
-  const riderName = order.deliveryRider?.name || "Delivery Partner";
-  const riderRating = order.deliveryRider?.rating || "N/A";
-  const riderPhone = order.deliveryRider?.phone || "Not available";
+  const currentStep = statusMap[orderStatus]?.step || 0;
   
   return (
     <div className="min-h-screen bg-background pb-20">
-      <Header showBackButton title={`Track Order #${order.id}`} />
+      <Header showBackButton title="Track Order" />
+      <ExitConfirmDialog />
       
       <main className="px-4 py-4">
-        <div className="glass-morphism rounded-xl p-4 mb-6">
-          <div className="flex items-start">
-            <div className="w-12 h-12 rounded-full bg-zepmeds-purple/20 flex items-center justify-center text-zepmeds-purple mr-3">
-              <Package className="h-6 w-6" />
+        <div className="mb-6 glass-morphism rounded-xl p-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <div className="flex items-center">
+                <h2 className="text-lg font-bold text-white">Order #{order.id}</h2>
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={handleCopyOrderId}
+                  className="ml-2 p-1 rounded-full bg-white/10 hover:bg-white/20"
+                >
+                  <Copy className="h-3 w-3 text-gray-400" />
+                </motion.button>
+              </div>
+              
+              <div className="flex items-center mt-1">
+                <motion.div
+                  animate={{ 
+                    scale: [1, 1.2, 1],
+                    color: ["#9b87f5", "#ffffff", "#9b87f5"]
+                  }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="bg-zepmeds-purple/20 text-zepmeds-purple px-2 py-0.5 rounded text-xs font-medium"
+                >
+                  {minutesRemaining > 0 ? `Arriving in ${minutesRemaining} min` : "Arriving soon"}
+                </motion.div>
+              </div>
             </div>
             
-            <div className="flex-1">
-              <div className="flex justify-between">
-                <div>
-                  <h3 className="text-white font-medium">{riderName}</h3>
-                  <div className="flex items-center text-sm">
-                    <span className="text-yellow-400 mr-1">★</span>
-                    <span className="text-yellow-400 mr-2">{riderRating}</span>
-                    <span className="text-gray-400">Delivery Partner</span>
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 rounded-full border-white/10"
+                onClick={handleShareOrder}
+              >
+                <Share2 className="h-4 w-4 text-white" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon" 
+                className="h-8 w-8 rounded-full border-white/10 bg-green-500/10 text-green-500"
+                onClick={handleCallRider}
+              >
+                <Phone className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          
+          <div className="mt-4 flex justify-between items-center">
+            <div className="flex items-center">
+              <div className="flex flex-col">
+                <span className="text-gray-400 text-xs">Delivery address</span>
+                <span className="text-white text-sm truncate max-w-52">{order.deliveryAddress || order.address?.address}</span>
+              </div>
+            </div>
+            <Button
+              variant="link"
+              className="text-zepmeds-purple p-0 h-auto text-sm"
+              onClick={() => setShowDetails(!showDetails)}
+            >
+              {showDetails ? "Hide Details" : "View Details"}
+              {showDetails ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />}
+            </Button>
+          </div>
+          
+          <AnimatePresence>
+            {showDetails && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden"
+              >
+                <Separator className="my-3 bg-white/10" />
+                
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Order placed</span>
+                    <span className="text-white">
+                      {new Date(order.placedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Estimated arrival</span>
+                    <span className="text-white">
+                      {estimatedDelivery.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Total amount</span>
+                    <span className="text-white">₹{order.totalAmount || 0}</span>
+                  </div>
+                  
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Payment method</span>
+                    <span className="text-white">{order.paymentMethod === "cod" ? "Cash on Delivery" : 
+                         order.paymentMethod === "card" ? "Credit/Debit Card" : 
+                         order.paymentMethod === "upi" ? "UPI" : 
+                         order.paymentMethod === "bnpl" ? "Buy Now Pay Later" : "Online Payment"}</span>
                   </div>
                 </div>
                 
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="border-zepmeds-purple text-zepmeds-purple hover:bg-zepmeds-purple/10"
-                  onClick={handleCallRider}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full mt-3 text-zepmeds-purple border-zepmeds-purple"
+                  onClick={handleViewInvoice}
                 >
-                  <Phone size={16} className="mr-1" /> Call
+                  View Invoice
                 </Button>
-              </div>
-              
-              <div className="mt-4 p-3 bg-black/20 rounded-lg">
-                <div className="flex items-center">
-                  <Clock className="h-4 w-4 text-zepmeds-purple mr-2" />
-                  <span className="text-gray-300">Estimated Delivery Time:</span>
-                  <span className="ml-auto text-white font-bold">
-                    {timeLeft.minutes.toString().padStart(2, '0')}:{timeLeft.seconds.toString().padStart(2, '0')}
-                  </span>
-                </div>
-              </div>
-              
-              {isLate && (
-                <div className="mt-2 p-3 bg-red-500/20 rounded-lg flex items-center">
-                  <AlertTriangle className="h-4 w-4 text-red-500 mr-2" />
-                  <span className="text-red-300 text-sm">Your order is running late. We apologize for the delay.</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-        
-        <div className="glass-morphism rounded-xl overflow-hidden mb-6">
-          <div className="h-48 relative">
-            {showMap ? (
-              <DeliveryMap showRider={true} />
-            ) : (
-              <div className="h-full flex items-center justify-center">
-                <DeliveryAnimation />
-              </div>
+              </motion.div>
             )}
-            <div className="absolute bottom-4 left-4 glass-morphism rounded-lg p-2 flex items-center">
-              <MapPin className="h-4 w-4 text-zepmeds-purple mr-1" />
-              <span className="text-sm text-white">Delivering to your location</span>
+          </AnimatePresence>
+        </div>
+
+        <div className="mb-6 glass-morphism rounded-xl p-4">
+          <h3 className="text-lg font-bold text-white mb-4">Delivery Status</h3>
+          <DeliveryAnimation
+            currentStep={currentStep}
+            riderName={order.deliveryRider.name}
+            eta={minutesRemaining}
+          />
+        </div>
+        
+        <div className="mb-6 glass-morphism rounded-xl p-4">
+          <h3 className="text-lg font-bold text-white mb-4">Your Delivery Partner</h3>
+          
+          <div className="flex items-center">
+            <div className="relative">
+              <div className="w-16 h-16 rounded-full bg-zepmeds-purple/20 overflow-hidden border-2 border-zepmeds-purple">
+                <img
+                  src={order.deliveryRider.profileImage || "https://source.unsplash.com/random/100x100/?face"} 
+                  alt={order.deliveryRider.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = "https://source.unsplash.com/random/100x100/?face";
+                  }}
+                />
+              </div>
+              <motion.div
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+                className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1"
+              >
+                <Check className="h-3 w-3 text-white" />
+              </motion.div>
+            </div>
+            
+            <div className="ml-4 flex-1">
+              <h4 className="text-white font-medium">{order.deliveryRider.name}</h4>
+              <div className="flex items-center">
+                <div className="flex items-center text-amber-400">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <span key={i} className="text-lg">
+                      {i < Math.floor(order.deliveryRider.rating) ? "★" : "☆"}
+                    </span>
+                  ))}
+                </div>
+                <span className="ml-1 text-white">{order.deliveryRider.rating}</span>
+              </div>
+              <p className="text-gray-400 text-sm">{order.deliveryRider.phone}</p>
+            </div>
+            
+            <div className="flex space-x-2">
+              <Button
+                size="icon"
+                className="h-10 w-10 rounded-full bg-green-500/20 text-green-500 hover:bg-green-500/30 border-none"
+                onClick={handleCallRider}
+              >
+                <Phone className="h-5 w-5" />
+              </Button>
+              <Button
+                size="icon"
+                className="h-10 w-10 rounded-full bg-blue-500/20 text-blue-500 hover:bg-blue-500/30 border-none"
+                onClick={handleMessageRider}
+              >
+                <MessageSquare className="h-5 w-5" />
+              </Button>
             </div>
           </div>
           
-          <div className="p-4 flex justify-between items-center">
-            <DeliveryAnimation />
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-xs text-zepmeds-purple"
-              onClick={() => setShowMap(!showMap)}
-            >
-              {showMap ? "Hide map" : "Show map"}
-            </Button>
+          <Separator className="my-4 bg-white/10" />
+          
+          <div className="h-40 rounded-lg overflow-hidden">
+            <DeliveryMap showRider={true} orderId={orderId} />
           </div>
         </div>
         
-        <div className="glass-morphism rounded-xl p-4 mb-6">
-          <h3 className="text-white font-medium mb-3">Order Status</h3>
+        <div className="mb-6 glass-morphism rounded-xl p-4">
+          <h3 className="text-white font-bold mb-2">Order Items</h3>
           
-          <div className="space-y-4">
-            <div className="flex items-center">
-              <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center mr-3">
-                <span className="text-white">✓</span>
+          <div className="space-y-3 mt-4">
+            {order.items && order.items.map((item: any, index: number) => (
+              <div key={index} className="flex items-center">
+                <div className="w-12 h-12 rounded-lg bg-white/10 overflow-hidden">
+                  <img
+                    src={item.image || "https://source.unsplash.com/random/100x100/?medicine"}
+                    alt={item.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = "https://source.unsplash.com/random/100x100/?medicine";
+                    }}
+                  />
+                </div>
+                <div className="ml-3 flex-1">
+                  <h4 className="text-white">{item.name}</h4>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Qty: {item.quantity}</span>
+                    <span className="text-white">₹{item.price * item.quantity}</span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-white text-sm">Order Confirmed</p>
-                <p className="text-gray-400 text-xs">Today, 10:30 AM</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center">
-              <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center mr-3">
-                <span className="text-white">✓</span>
-              </div>
-              <div>
-                <p className="text-white text-sm">Order Packed</p>
-                <p className="text-gray-400 text-xs">Today, 10:45 AM</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center">
-              <div className="w-8 h-8 rounded-full bg-zepmeds-purple flex items-center justify-center mr-3 animate-pulse">
-                <span className="text-white">●</span>
-              </div>
-              <div>
-                <p className="text-white text-sm">Out for Delivery</p>
-                <p className="text-gray-400 text-xs">Today, 11:00 AM</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center opacity-50">
-              <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center mr-3">
-                <span className="text-white">○</span>
-              </div>
-              <div>
-                <p className="text-white text-sm">Delivered</p>
-                <p className="text-gray-400 text-xs">Estimated: Today, 11:30 AM</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="flex space-x-3 mb-6">
-          <Button 
-            variant="outline" 
-            className="flex-1 border-zepmeds-purple text-zepmeds-purple"
-            onClick={handleDownloadInvoice}
-          >
-            <FileText className="mr-2 h-4 w-4" />
-            Download Invoice
-          </Button>
-          
-          <Button 
-            variant="outline" 
-            className="flex-1 border-red-500 text-red-500"
-            onClick={handleReportIssue}
-          >
-            <AlertTriangle className="mr-2 h-4 w-4" />
-            Report Issue
-          </Button>
-        </div>
-        
-        <div className="glass-morphism rounded-xl p-4 mb-6">
-          <h3 className="text-white font-medium mb-3">FAQ</h3>
-          
-          <div className="space-y-3">
-            <div className="p-3 bg-black/20 rounded-lg">
-              <h4 className="text-white text-sm font-medium mb-1">How do I cancel my order?</h4>
-              <p className="text-gray-400 text-xs">You can cancel your order within 5 minutes of placing it. Go to Order History and select "Cancel Order".</p>
-            </div>
-            
-            <div className="p-3 bg-black/20 rounded-lg">
-              <h4 className="text-white text-sm font-medium mb-1">What if I'm not available during delivery?</h4>
-              <p className="text-gray-400 text-xs">You can reschedule delivery or ask the delivery partner to leave it with your security guard/neighbor.</p>
-            </div>
-            
-            <div className="p-3 bg-black/20 rounded-lg">
-              <h4 className="text-white text-sm font-medium mb-1">What if I receive incorrect medicines?</h4>
-              <p className="text-gray-400 text-xs">Please report the issue immediately using the "Report Issue" button and our team will assist you.</p>
-            </div>
+            ))}
           </div>
         </div>
       </main>
