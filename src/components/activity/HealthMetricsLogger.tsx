@@ -1,266 +1,265 @@
 
 import React, { useState } from "react";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { PlusCircle, Minus, Edit, Check, Heart, Droplets, Footprints, Award } from "lucide-react";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Heart, Activity, Thermometer, TrendingUp, Plus, Weight, Droplets } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-
-interface MetricErrors {
-  heartRate?: string;
-  bloodPressure?: string;
-  temperature?: string;
-  bloodSugar?: string;
-  weight?: string;
-}
 
 const HealthMetricsLogger = () => {
   const { toast } = useToast();
-  const [metrics, setMetrics] = useState({
-    heartRate: "",
-    bloodPressure: "",
-    temperature: "",
-    bloodSugar: "",
-    weight: "",
-  });
+  
+  const [steps, setSteps] = useState(7642);
+  const [waterIntake, setWaterIntake] = useState(6);
+  const [caloriesBurned, setCaloriesBurned] = useState(420);
+  
+  const [editingSteps, setEditingSteps] = useState(false);
+  const [editingWater, setEditingWater] = useState(false);
+  const [editingCalories, setEditingCalories] = useState(false);
+  
+  const [tempSteps, setTempSteps] = useState(steps.toString());
+  const [tempWater, setTempWater] = useState(waterIntake.toString());
+  const [tempCalories, setTempCalories] = useState(caloriesBurned.toString());
 
-  const [errors, setErrors] = useState<MetricErrors>({});
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setMetrics((prev) => ({ ...prev, [name]: value }));
-    
-    // Clear the error for this field when user starts typing again
-    if (errors[name as keyof MetricErrors]) {
-      setErrors(prev => ({ ...prev, [name]: undefined }));
+  const handleSaveSteps = () => {
+    const newSteps = parseInt(tempSteps);
+    if (!isNaN(newSteps) && newSteps >= 0) {
+      setSteps(newSteps);
+      setEditingSteps(false);
+      toast({
+        title: "Steps updated",
+        description: `Your daily steps count is now ${newSteps}.`,
+      });
+    } else {
+      toast({
+        title: "Invalid input",
+        description: "Please enter a valid positive number.",
+        variant: "destructive"
+      });
     }
   };
 
-  const validateMetrics = (): boolean => {
-    const newErrors: MetricErrors = {};
-    let isValid = true;
-
-    // Heart rate validation (40-220 bpm)
-    if (!metrics.heartRate) {
-      newErrors.heartRate = "Heart rate is required";
-      isValid = false;
-    } else if (isNaN(Number(metrics.heartRate)) || Number(metrics.heartRate) < 40 || Number(metrics.heartRate) > 220) {
-      newErrors.heartRate = "Heart rate must be between 40-220 bpm";
-      isValid = false;
-    }
-
-    // Blood pressure validation (format: systolic/diastolic)
-    if (!metrics.bloodPressure) {
-      newErrors.bloodPressure = "Blood pressure is required";
-      isValid = false;
+  const handleSaveWater = () => {
+    const newWater = parseInt(tempWater);
+    if (!isNaN(newWater) && newWater >= 0) {
+      setWaterIntake(newWater);
+      setEditingWater(false);
+      toast({
+        title: "Water intake updated",
+        description: `Your daily water intake is now ${newWater} glasses.`,
+      });
     } else {
-      const bpPattern = /^\d{2,3}\/\d{2,3}$/;
-      if (!bpPattern.test(metrics.bloodPressure)) {
-        newErrors.bloodPressure = "Format should be systolic/diastolic (e.g., 120/80)";
-        isValid = false;
-      } else {
-        const [systolic, diastolic] = metrics.bloodPressure.split('/').map(Number);
-        if (systolic < 70 || systolic > 220) {
-          newErrors.bloodPressure = "Systolic should be between 70-220";
-          isValid = false;
-        }
-        if (diastolic < 40 || diastolic > 130) {
-          newErrors.bloodPressure = "Diastolic should be between 40-130";
-          isValid = false;
-        }
-      }
+      toast({
+        title: "Invalid input",
+        description: "Please enter a valid positive number.",
+        variant: "destructive"
+      });
     }
-
-    // Temperature validation (95-108°F)
-    if (!metrics.temperature) {
-      newErrors.temperature = "Temperature is required";
-      isValid = false;
-    } else if (isNaN(Number(metrics.temperature)) || Number(metrics.temperature) < 95 || Number(metrics.temperature) > 108) {
-      newErrors.temperature = "Temperature must be between 95-108°F";
-      isValid = false;
-    }
-
-    // Blood sugar validation (40-500 mg/dL)
-    if (!metrics.bloodSugar) {
-      newErrors.bloodSugar = "Blood sugar is required";
-      isValid = false;
-    } else if (isNaN(Number(metrics.bloodSugar)) || Number(metrics.bloodSugar) < 40 || Number(metrics.bloodSugar) > 500) {
-      newErrors.bloodSugar = "Blood sugar must be between 40-500 mg/dL";
-      isValid = false;
-    }
-
-    // Weight validation (20-500 kg)
-    if (!metrics.weight) {
-      newErrors.weight = "Weight is required";
-      isValid = false;
-    } else if (isNaN(Number(metrics.weight)) || Number(metrics.weight) < 20 || Number(metrics.weight) > 500) {
-      newErrors.weight = "Weight must be between 20-500 kg";
-      isValid = false;
-    }
-
-    setErrors(newErrors);
-    return isValid;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (validateMetrics()) {
-      // In a real app, this would be sent to a backend API
+  const handleSaveCalories = () => {
+    const newCalories = parseInt(tempCalories);
+    if (!isNaN(newCalories) && newCalories >= 0) {
+      setCaloriesBurned(newCalories);
+      setEditingCalories(false);
       toast({
-        title: "Health metrics logged!",
-        description: "Your health data has been saved successfully.",
+        title: "Calories updated",
+        description: `Your daily calories burned is now ${newCalories}.`,
       });
-      
-      // Clear form after submission
-      setMetrics({
-        heartRate: "",
-        bloodPressure: "",
-        temperature: "",
-        bloodSugar: "",
-        weight: "",
-      });
-      
-      setErrors({});
     } else {
       toast({
-        title: "Validation errors",
-        description: "Please correct the errors in the form.",
-        variant: "destructive",
+        title: "Invalid input",
+        description: "Please enter a valid positive number.",
+        variant: "destructive"
       });
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 w-full max-w-full mx-auto">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="glass-morphism rounded-lg p-3">
-          <div className="flex items-center mb-2">
-            <Heart className="h-4 w-4 text-red-500 mr-2" />
-            <Label htmlFor="heartRate" className="text-white">Heart Rate</Label>
-          </div>
-          <div className="flex flex-col">
-            <div className="flex items-center">
-              <Input
-                id="heartRate"
-                name="heartRate"
-                type="number"
-                placeholder="e.g., 72"
-                className={`bg-black/20 border-white/10 flex-1 ${errors.heartRate ? 'border-red-500' : ''}`}
-                value={metrics.heartRate}
-                onChange={handleInputChange}
-              />
-              <span className="ml-2 text-gray-400 text-sm">BPM</span>
-            </div>
-            {errors.heartRate && (
-              <span className="text-red-500 text-xs mt-1">{errors.heartRate}</span>
-            )}
-          </div>
-        </div>
-
-        <div className="glass-morphism rounded-lg p-3">
-          <div className="flex items-center mb-2">
-            <Activity className="h-4 w-4 text-blue-500 mr-2" />
-            <Label htmlFor="bloodPressure" className="text-white">Blood Pressure</Label>
-          </div>
-          <div className="flex flex-col">
-            <div className="flex items-center">
-              <Input
-                id="bloodPressure"
-                name="bloodPressure"
-                placeholder="e.g., 120/80"
-                className={`bg-black/20 border-white/10 flex-1 ${errors.bloodPressure ? 'border-red-500' : ''}`}
-                value={metrics.bloodPressure}
-                onChange={handleInputChange}
-              />
-              <span className="ml-2 text-gray-400 text-sm">mmHg</span>
-            </div>
-            {errors.bloodPressure && (
-              <span className="text-red-500 text-xs mt-1">{errors.bloodPressure}</span>
-            )}
-          </div>
-        </div>
-
-        <div className="glass-morphism rounded-lg p-3">
-          <div className="flex items-center mb-2">
-            <Thermometer className="h-4 w-4 text-yellow-500 mr-2" />
-            <Label htmlFor="temperature" className="text-white">Temperature</Label>
-          </div>
-          <div className="flex flex-col">
-            <div className="flex items-center">
-              <Input
-                id="temperature"
-                name="temperature"
-                type="number"
-                step="0.1"
-                placeholder="e.g., 98.6"
-                className={`bg-black/20 border-white/10 flex-1 ${errors.temperature ? 'border-red-500' : ''}`}
-                value={metrics.temperature}
-                onChange={handleInputChange}
-              />
-              <span className="ml-2 text-gray-400 text-sm">°F</span>
-            </div>
-            {errors.temperature && (
-              <span className="text-red-500 text-xs mt-1">{errors.temperature}</span>
-            )}
-          </div>
-        </div>
-
-        <div className="glass-morphism rounded-lg p-3">
-          <div className="flex items-center mb-2">
-            <TrendingUp className="h-4 w-4 text-purple-500 mr-2" />
-            <Label htmlFor="bloodSugar" className="text-white">Blood Sugar</Label>
-          </div>
-          <div className="flex flex-col">
-            <div className="flex items-center">
-              <Input
-                id="bloodSugar"
-                name="bloodSugar"
-                type="number"
-                placeholder="e.g., 120"
-                className={`bg-black/20 border-white/10 flex-1 ${errors.bloodSugar ? 'border-red-500' : ''}`}
-                value={metrics.bloodSugar}
-                onChange={handleInputChange}
-              />
-              <span className="ml-2 text-gray-400 text-sm">mg/dL</span>
-            </div>
-            {errors.bloodSugar && (
-              <span className="text-red-500 text-xs mt-1">{errors.bloodSugar}</span>
-            )}
-          </div>
-        </div>
-
-        <div className="glass-morphism rounded-lg p-3">
-          <div className="flex items-center mb-2">
-            <Weight className="h-4 w-4 text-green-500 mr-2" />
-            <Label htmlFor="weight" className="text-white">Weight</Label>
-          </div>
-          <div className="flex flex-col">
-            <div className="flex items-center">
-              <Input
-                id="weight"
-                name="weight"
-                type="number"
-                step="0.1"
-                placeholder="e.g., 70"
-                className={`bg-black/20 border-white/10 flex-1 ${errors.weight ? 'border-red-500' : ''}`}
-                value={metrics.weight}
-                onChange={handleInputChange}
-              />
-              <span className="ml-2 text-gray-400 text-sm">kg</span>
-            </div>
-            {errors.weight && (
-              <span className="text-red-500 text-xs mt-1">{errors.weight}</span>
-            )}
-          </div>
-        </div>
+    <div className="space-y-6 mb-6">
+      <div className="flex justify-between items-center mb-2">
+        <h3 className="text-lg font-semibold text-white">Today's Health</h3>
+        <span className="text-sm text-gray-400">{new Date().toLocaleDateString()}</span>
       </div>
-
-      <Button type="submit" className="w-full bg-zepmeds-purple hover:bg-zepmeds-purple/90">
-        <Plus className="mr-2 h-4 w-4" />
-        Log Health Metrics
-      </Button>
-    </form>
+      
+      <motion.div 
+        className="glass-morphism rounded-xl p-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 mr-4">
+              <Footprints size={24} />
+            </div>
+            <div>
+              <h4 className="text-white font-medium">Daily Steps</h4>
+              {editingSteps ? (
+                <div className="flex items-center mt-1">
+                  <Input
+                    type="number"
+                    value={tempSteps}
+                    onChange={(e) => setTempSteps(e.target.value)}
+                    className="w-24 h-8 text-sm bg-black/20 border-white/20 text-white"
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-green-500 ml-1"
+                    onClick={handleSaveSteps}
+                  >
+                    <Check size={16} />
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-blue-400 text-xl font-bold">{steps.toLocaleString()}</p>
+              )}
+            </div>
+          </div>
+          
+          {!editingSteps && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-gray-400 hover:text-white"
+              onClick={() => {
+                setTempSteps(steps.toString());
+                setEditingSteps(true);
+              }}
+            >
+              <Edit size={16} />
+            </Button>
+          )}
+        </div>
+      </motion.div>
+      
+      <motion.div 
+        className="glass-morphism rounded-xl p-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <div className="w-12 h-12 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 mr-4">
+              <Droplets size={24} />
+            </div>
+            <div>
+              <h4 className="text-white font-medium">Water Intake</h4>
+              {editingWater ? (
+                <div className="flex items-center mt-1">
+                  <Input
+                    type="number"
+                    value={tempWater}
+                    onChange={(e) => setTempWater(e.target.value)}
+                    className="w-24 h-8 text-sm bg-black/20 border-white/20 text-white"
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-green-500 ml-1"
+                    onClick={handleSaveWater}
+                  >
+                    <Check size={16} />
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-cyan-400 text-xl font-bold">{waterIntake} glasses</p>
+              )}
+            </div>
+          </div>
+          
+          {!editingWater && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-gray-400 hover:text-white"
+              onClick={() => {
+                setTempWater(waterIntake.toString());
+                setEditingWater(true);
+              }}
+            >
+              <Edit size={16} />
+            </Button>
+          )}
+        </div>
+      </motion.div>
+      
+      <motion.div 
+        className="glass-morphism rounded-xl p-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <div className="w-12 h-12 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-400 mr-4">
+              <Award size={24} />
+            </div>
+            <div>
+              <h4 className="text-white font-medium">Calories Burned</h4>
+              {editingCalories ? (
+                <div className="flex items-center mt-1">
+                  <Input
+                    type="number"
+                    value={tempCalories}
+                    onChange={(e) => setTempCalories(e.target.value)}
+                    className="w-24 h-8 text-sm bg-black/20 border-white/20 text-white"
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-green-500 ml-1"
+                    onClick={handleSaveCalories}
+                  >
+                    <Check size={16} />
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-orange-400 text-xl font-bold">{caloriesBurned} cals</p>
+              )}
+            </div>
+          </div>
+          
+          {!editingCalories && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-gray-400 hover:text-white"
+              onClick={() => {
+                setTempCalories(caloriesBurned.toString());
+                setEditingCalories(true);
+              }}
+            >
+              <Edit size={16} />
+            </Button>
+          )}
+        </div>
+      </motion.div>
+      
+      <motion.div 
+        className="glass-morphism rounded-xl p-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 mr-4">
+              <Heart size={24} />
+            </div>
+            <div>
+              <h4 className="text-white font-medium">Heart Rate</h4>
+              <p className="text-red-400 text-xl font-bold">78 bpm</p>
+            </div>
+          </div>
+          <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white">
+            <PlusCircle size={16} />
+          </Button>
+        </div>
+      </motion.div>
+    </div>
   );
 };
 

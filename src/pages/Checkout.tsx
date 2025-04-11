@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -325,14 +326,14 @@ const Checkout = () => {
       <Header showBackButton title="Checkout" />
       <ExitConfirmDialog />
       
-      <div className="fixed bottom-20 left-0 right-0 p-4 bg-black/80 border-t border-white/10 backdrop-blur-lg z-20">
+      <div className="fixed bottom-20 left-0 right-0 p-4 bg-white/95 border-t border-gray-200 backdrop-blur-lg z-20 shadow-lg">
         <div className="flex justify-between items-center">
           <div>
-            <p className="text-gray-400 text-sm">Total Amount</p>
-            <p className="text-white text-xl font-bold">₹{finalAmount.toFixed(2)}</p>
+            <p className="text-gray-500 text-sm">Total Amount</p>
+            <p className="text-gray-900 text-xl font-bold">₹{finalAmount.toFixed(2)}</p>
           </div>
           <Button
-            className="bg-zepmeds-purple hover:bg-zepmeds-purple/90 text-white px-8"
+            className="bg-gradient-to-r from-zepmeds-purple to-purple-600 hover:from-purple-600 hover:to-zepmeds-purple text-white px-8 shadow-md"
             onClick={handlePlaceOrder}
           >
             Place Order
@@ -341,14 +342,17 @@ const Checkout = () => {
       </div>
       
       <div className="fixed top-16 right-4 z-20">
-        <div className="bg-zepmeds-purple px-3 py-2 rounded-lg shadow-lg">
+        <div className="bg-gradient-to-r from-green-500 to-green-600 px-3 py-2 rounded-lg shadow-lg">
           <p className="text-white text-sm font-bold">₹{finalAmount.toFixed(2)}</p>
         </div>
       </div>
       
       <main className="px-4 py-4 space-y-6 mb-20">
         <div>
-          <h2 className="text-lg font-bold text-white mb-4">Delivery Address</h2>
+          <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <MapPin className="mr-2 text-blue-500" size={20} />
+            Delivery Address
+          </h2>
           <RadioGroup 
             value={selectedAddress?.toString() || ""} 
             onValueChange={(value) => setSelectedAddress(parseInt(value))}
@@ -359,8 +363,8 @@ const Checkout = () => {
                 key={address.id}
                 className={`p-4 rounded-xl border transition-all ${
                   selectedAddress === address.id 
-                    ? "border-zepmeds-purple bg-zepmeds-purple/10" 
-                    : "border-white/10 bg-black/20"
+                    ? "border-zepmeds-purple bg-white shadow-md" 
+                    : "border-gray-200 bg-white/70"
                 }`}
                 onClick={() => setSelectedAddress(address.id)}
               >
@@ -370,20 +374,20 @@ const Checkout = () => {
                       <RadioGroupItem 
                         value={address.id.toString()} 
                         id={`address-${address.id}`} 
-                        className="text-zepmeds-purple border-white/20"
+                        className="text-zepmeds-purple"
                       />
                     </div>
                     <div>
                       <div className="flex items-center">
-                        <h3 className="text-white font-medium">{address.type}</h3>
+                        <h3 className="text-gray-800 font-medium">{address.type}</h3>
                         {address.isDefault && (
-                          <Badge variant="outline" className="ml-2 text-xs px-2 py-0 h-5 bg-white/5">
+                          <Badge variant="outline" className="ml-2 text-xs px-2 py-0 h-5 bg-green-50 text-green-600 border-green-200">
                             Default
                           </Badge>
                         )}
                       </div>
-                      <p className="text-gray-400 text-sm">{address.address}</p>
-                      <p className="text-gray-400 text-sm">{address.city}, {address.state} {address.zipCode}</p>
+                      <p className="text-gray-600 text-sm">{address.address}</p>
+                      <p className="text-gray-600 text-sm">{address.city}, {address.state} {address.zipCode}</p>
                     </div>
                   </div>
                 </div>
@@ -403,56 +407,59 @@ const Checkout = () => {
         </div>
         
         <div>
-          <h2 className="text-lg font-bold text-white mb-4">Delivery Time</h2>
+          <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <Truck className="mr-2 text-green-500" size={20} />
+            Delivery Time
+          </h2>
           <RadioGroup value={deliveryTime} onValueChange={setDeliveryTime} className="space-y-3">
             <div className={`p-4 rounded-xl border transition-all ${
               deliveryTime === "express" 
-                ? "border-zepmeds-purple bg-zepmeds-purple/10" 
-                : "border-white/10 bg-black/20"
+                ? "border-green-500 bg-green-50" 
+                : "border-gray-200 bg-white/70"
             }`}>
               <div className="flex items-start">
-                <RadioGroupItem value="express" id="express" className="text-zepmeds-purple border-white/20 mt-1 mr-3" />
+                <RadioGroupItem value="express" id="express" className="text-green-500 mt-1 mr-3" />
                 <div className="flex-1">
                   <div className="flex justify-between">
-                    <Label htmlFor="express" className="text-white font-medium">Express Delivery</Label>
-                    <Badge className="bg-zepmeds-purple">₹50</Badge>
+                    <Label htmlFor="express" className="text-gray-800 font-medium">Express Delivery</Label>
+                    <Badge className="bg-green-100 text-green-600 hover:bg-green-100 border-0">₹50</Badge>
                   </div>
-                  <p className="text-green-400 text-sm font-medium">Delivered within 15 minutes</p>
+                  <p className="text-green-600 text-sm font-medium">Delivered within 15 minutes</p>
                 </div>
               </div>
             </div>
             
             <div className={`p-4 rounded-xl border transition-all ${
               deliveryTime === "standard" 
-                ? "border-zepmeds-purple bg-zepmeds-purple/10" 
-                : "border-white/10 bg-black/20"
+                ? "border-orange-500 bg-orange-50" 
+                : "border-gray-200 bg-white/70"
             }`}>
               <div className="flex items-start">
-                <RadioGroupItem value="standard" id="standard" className="text-zepmeds-purple border-white/20 mt-1 mr-3" />
+                <RadioGroupItem value="standard" id="standard" className="text-orange-500 mt-1 mr-3" />
                 <div className="flex-1">
                   <div className="flex justify-between">
-                    <Label htmlFor="standard" className="text-white font-medium">Standard Delivery</Label>
-                    <Badge className="bg-green-600">FREE</Badge>
+                    <Label htmlFor="standard" className="text-gray-800 font-medium">Standard Delivery</Label>
+                    <Badge className="bg-blue-100 text-blue-600 hover:bg-blue-100 border-0">FREE</Badge>
                   </div>
-                  <p className="text-gray-400 text-sm">Delivered within 2 hours</p>
+                  <p className="text-gray-600 text-sm">Delivered within 2 hours</p>
                 </div>
               </div>
             </div>
             
             <div className={`p-4 rounded-xl border transition-all ${
               deliveryTime === "scheduled" 
-                ? "border-zepmeds-purple bg-zepmeds-purple/10" 
-                : "border-white/10 bg-black/20"
+                ? "border-purple-500 bg-purple-50" 
+                : "border-gray-200 bg-white/70"
             }`}>
               <div className="flex items-start">
-                <RadioGroupItem value="scheduled" id="scheduled" className="text-zepmeds-purple border-white/20 mt-1 mr-3" />
+                <RadioGroupItem value="scheduled" id="scheduled" className="text-purple-500 mt-1 mr-3" />
                 <div className="flex-1">
                   <div className="flex justify-between">
-                    <Label htmlFor="scheduled" className="text-white font-medium">Scheduled Delivery</Label>
-                    <Badge className="bg-green-600">FREE</Badge>
+                    <Label htmlFor="scheduled" className="text-gray-800 font-medium">Scheduled Delivery</Label>
+                    <Badge className="bg-blue-100 text-blue-600 hover:bg-blue-100 border-0">FREE</Badge>
                   </div>
-                  <div className="flex items-center mt-1 text-sm text-gray-400">
-                    <Calendar className="h-4 w-4 mr-1" />
+                  <div className="flex items-center mt-1 text-sm text-gray-600">
+                    <Calendar className="h-4 w-4 mr-1 text-purple-500" />
                     <span>Select time slot</span>
                   </div>
                 </div>
@@ -462,22 +469,25 @@ const Checkout = () => {
         </div>
         
         <div>
-          <h2 className="text-lg font-bold text-white mb-4">Apply Coupon</h2>
+          <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <Tag className="mr-2 text-pink-500" size={20} />
+            Apply Coupon
+          </h2>
           
           {appliedCoupon ? (
-            <div className="p-4 rounded-xl border border-zepmeds-purple bg-zepmeds-purple/10">
+            <div className="p-4 rounded-xl border border-pink-200 bg-pink-50">
               <div className="flex justify-between items-center">
                 <div className="flex items-center">
-                  <Tag className="h-5 w-5 text-zepmeds-purple mr-2" />
+                  <Tag className="h-5 w-5 text-pink-500 mr-2" />
                   <div>
-                    <h3 className="text-white font-medium">{appliedCoupon}</h3>
-                    <p className="text-green-400 text-sm">₹{couponDiscount} saved</p>
+                    <h3 className="text-gray-800 font-medium">{appliedCoupon}</h3>
+                    <p className="text-green-600 text-sm">₹{couponDiscount} saved</p>
                   </div>
                 </div>
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="text-zepmeds-purple h-8"
+                  className="text-red-500 h-8"
                   onClick={handleRemoveCoupon}
                 >
                   Remove
@@ -490,7 +500,7 @@ const Checkout = () => {
                 placeholder="Enter coupon code" 
                 value={couponCode}
                 onChange={(e) => setCouponCode(e.target.value)}
-                className="bg-black/20 border-white/10 text-white"
+                className="bg-white border-gray-200 text-gray-800"
               />
               <Button 
                 variant="outline" 
@@ -504,24 +514,27 @@ const Checkout = () => {
         </div>
         
         <div>
-          <h2 className="text-lg font-bold text-white mb-4">ZepMeds Wallet</h2>
-          <div className="p-4 rounded-xl border border-white/10 bg-black/20">
+          <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <Wallet className="mr-2 text-green-500" size={20} />
+            ZepMeds Wallet
+          </h2>
+          <div className="p-4 rounded-xl border border-green-200 bg-green-50">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <Wallet className="h-5 w-5 text-green-400 mr-2" />
+                <Wallet className="h-5 w-5 text-green-500 mr-2" />
                 <div>
-                  <h3 className="text-white font-medium">Available Balance</h3>
-                  <p className="text-green-400 font-bold">₹{walletBalance}</p>
+                  <h3 className="text-gray-800 font-medium">Available Balance</h3>
+                  <p className="text-green-600 font-bold">₹{walletBalance}</p>
                 </div>
               </div>
               <div className="flex items-center">
-                <Label htmlFor="use-wallet" className="mr-2 text-gray-300">Use wallet</Label>
+                <Label htmlFor="use-wallet" className="mr-2 text-gray-600">Use wallet</Label>
                 <input
                   type="checkbox"
                   id="use-wallet"
                   checked={useWallet}
                   onChange={handleToggleWallet}
-                  className="h-5 w-5 rounded border-white/10 bg-black/20 checked:bg-zepmeds-purple"
+                  className="h-5 w-5 rounded border-gray-300 bg-white checked:bg-green-500"
                 />
               </div>
             </div>
@@ -531,82 +544,85 @@ const Checkout = () => {
         <OrderForSomeoneElse onChange={handleRecipientDetailsChange} />
         
         <div>
-          <h2 className="text-lg font-bold text-white mb-4">Payment Method</h2>
+          <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <CreditCard className="mr-2 text-blue-500" size={20} />
+            Payment Method
+          </h2>
           <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="space-y-3">
             <div className={`p-4 rounded-xl border transition-all ${
               paymentMethod === "cod" 
-                ? "border-zepmeds-purple bg-zepmeds-purple/10" 
-                : "border-white/10 bg-black/20"
+                ? "border-orange-500 bg-orange-50" 
+                : "border-gray-200 bg-white/70"
             }`}>
               <div className="flex items-center">
-                <RadioGroupItem value="cod" id="cod" className="text-zepmeds-purple border-white/20 mr-3" />
+                <RadioGroupItem value="cod" id="cod" className="text-orange-500 mr-3" />
                 <div className="flex items-center">
-                  <DollarSign className="h-5 w-5 text-green-400 mr-2" />
-                  <Label htmlFor="cod" className="text-white font-medium">Cash on Delivery</Label>
+                  <DollarSign className="h-5 w-5 text-orange-500 mr-2" />
+                  <Label htmlFor="cod" className="text-gray-800 font-medium">Cash on Delivery</Label>
                 </div>
               </div>
             </div>
             
             <div className={`rounded-xl border transition-all ${
               paymentMethod === "card" 
-                ? "border-zepmeds-purple bg-zepmeds-purple/10" 
-                : "border-white/10 bg-black/20"
+                ? "border-blue-500 bg-blue-50" 
+                : "border-gray-200 bg-white/70"
             }`}>
               <div className="p-4" onClick={() => {
                 setPaymentMethod("card");
                 setShowCardDetails(true);
               }}>
                 <div className="flex items-center">
-                  <RadioGroupItem value="card" id="card" className="text-zepmeds-purple border-white/20 mr-3" />
+                  <RadioGroupItem value="card" id="card" className="text-blue-500 mr-3" />
                   <div className="flex items-center">
-                    <CreditCard className="h-5 w-5 text-blue-400 mr-2" />
-                    <Label htmlFor="card" className="text-white font-medium">Credit / Debit Card</Label>
+                    <CreditCard className="h-5 w-5 text-blue-500 mr-2" />
+                    <Label htmlFor="card" className="text-gray-800 font-medium">Credit / Debit Card</Label>
                   </div>
                 </div>
               </div>
               
               {paymentMethod === "card" && showCardDetails && (
                 <div className="p-4 pt-0 space-y-3">
-                  <Separator className="bg-white/10 my-3" />
+                  <Separator className="bg-blue-200 my-3" />
                   
                   <div>
-                    <Label htmlFor="cardNumber" className="text-gray-400 text-sm">Card Number</Label>
+                    <Label htmlFor="cardNumber" className="text-gray-600 text-sm">Card Number</Label>
                     <Input
                       id="cardNumber"
                       placeholder="1234 5678 9012 3456"
                       value={cardNumber}
                       onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
                       maxLength={19}
-                      className="bg-black/20 border-white/10 text-white mt-1"
+                      className="bg-white border-gray-200 text-gray-800 mt-1"
                     />
                   </div>
                   
                   <div>
-                    <Label htmlFor="cardName" className="text-gray-400 text-sm">Name on Card</Label>
+                    <Label htmlFor="cardName" className="text-gray-600 text-sm">Name on Card</Label>
                     <Input
                       id="cardName"
                       placeholder="John Doe"
                       value={cardName}
                       onChange={(e) => setCardName(e.target.value)}
-                      className="bg-black/20 border-white/10 text-white mt-1"
+                      className="bg-white border-gray-200 text-gray-800 mt-1"
                     />
                   </div>
                   
                   <div className="flex gap-3">
                     <div className="flex-1">
-                      <Label htmlFor="cardExpiry" className="text-gray-400 text-sm">Expiry Date</Label>
+                      <Label htmlFor="cardExpiry" className="text-gray-600 text-sm">Expiry Date</Label>
                       <Input
                         id="cardExpiry"
                         placeholder="MM/YY"
                         value={cardExpiry}
                         onChange={(e) => setCardExpiry(formatExpiryDate(e.target.value))}
                         maxLength={5}
-                        className="bg-black/20 border-white/10 text-white mt-1"
+                        className="bg-white border-gray-200 text-gray-800 mt-1"
                       />
                     </div>
                     
                     <div className="w-1/3">
-                      <Label htmlFor="cardCvv" className="text-gray-400 text-sm">CVV</Label>
+                      <Label htmlFor="cardCvv" className="text-gray-600 text-sm">CVV</Label>
                       <Input
                         id="cardCvv"
                         type="password"
@@ -614,13 +630,13 @@ const Checkout = () => {
                         value={cardCvv}
                         onChange={(e) => setCvv(e.target.value.replace(/\D/g, ""))}
                         maxLength={3}
-                        className="bg-black/20 border-white/10 text-white mt-1"
+                        className="bg-white border-gray-200 text-gray-800 mt-1"
                       />
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
-                    <Shield className="h-4 w-4 text-green-400" />
+                  <div className="flex items-center gap-2 mt-2 text-xs text-gray-600">
+                    <Shield className="h-4 w-4 text-green-500" />
                     <span>Your payment information is secure and encrypted</span>
                   </div>
                 </div>
@@ -629,25 +645,25 @@ const Checkout = () => {
             
             <div className={`rounded-xl border transition-all ${
               paymentMethod === "upi" 
-                ? "border-zepmeds-purple bg-zepmeds-purple/10" 
-                : "border-white/10 bg-black/20"
+                ? "border-green-500 bg-green-50" 
+                : "border-gray-200 bg-white/70"
             }`}>
               <div className="p-4" onClick={() => {
                 setPaymentMethod("upi");
                 setShowUpiDetails(true);
               }}>
                 <div className="flex items-center">
-                  <RadioGroupItem value="upi" id="upi" className="text-zepmeds-purple border-white/20 mr-3" />
+                  <RadioGroupItem value="upi" id="upi" className="text-green-500 mr-3" />
                   <div className="flex items-center">
                     <Smartphone className="h-5 w-5 text-green-500 mr-2" />
-                    <Label htmlFor="upi" className="text-white font-medium">UPI / Mobile Payments</Label>
+                    <Label htmlFor="upi" className="text-gray-800 font-medium">UPI / Mobile Payments</Label>
                   </div>
                 </div>
               </div>
               
               {paymentMethod === "upi" && showUpiDetails && (
                 <div className="p-4 pt-0">
-                  <Separator className="bg-white/10 my-3" />
+                  <Separator className="bg-green-200 my-3" />
                   
                   <RadioGroup value={upiProvider} onValueChange={setUpiProvider} className="grid grid-cols-2 gap-2">
                     {UPI_PROVIDERS.map(provider => (
@@ -655,8 +671,8 @@ const Checkout = () => {
                         key={provider.id}
                         className={`p-3 rounded-lg border transition-all ${
                           upiProvider === provider.id 
-                            ? "border-zepmeds-purple bg-zepmeds-purple/10" 
-                            : "border-white/10 bg-black/20"
+                            ? "border-green-500 bg-green-100" 
+                            : "border-gray-200 bg-white"
                         }`}
                       >
                         <RadioGroupItem 
@@ -671,15 +687,15 @@ const Checkout = () => {
                           <div className={`w-8 h-8 rounded-full ${provider.iconBg} flex items-center justify-center mr-2`}>
                             <IndianRupee className="h-4 w-4 text-white" />
                           </div>
-                          <span className="text-white text-sm">{provider.name}</span>
+                          <span className="text-gray-800 text-sm">{provider.name}</span>
                         </Label>
                       </div>
                     ))}
                   </RadioGroup>
                   
-                  <div className="flex items-center gap-2 mt-4 p-3 rounded-lg bg-black/30">
-                    <Smartphone className="h-4 w-4 text-green-400" />
-                    <span className="text-xs text-gray-300">You'll be redirected to complete the payment</span>
+                  <div className="flex items-center gap-2 mt-4 p-3 rounded-lg bg-green-100">
+                    <Smartphone className="h-4 w-4 text-green-500" />
+                    <span className="text-xs text-gray-600">You'll be redirected to complete the payment</span>
                   </div>
                 </div>
               )}
@@ -687,25 +703,25 @@ const Checkout = () => {
             
             <div className={`rounded-xl border transition-all ${
               paymentMethod === "bnpl" 
-                ? "border-zepmeds-purple bg-zepmeds-purple/10" 
-                : "border-white/10 bg-black/20"
+                ? "border-amber-500 bg-amber-50" 
+                : "border-gray-200 bg-white/70"
             }`}>
               <div className="p-4" onClick={() => {
                 setPaymentMethod("bnpl");
                 setShowBnplDetails(true);
               }}>
                 <div className="flex items-center">
-                  <RadioGroupItem value="bnpl" id="bnpl" className="text-zepmeds-purple border-white/20 mr-3" />
+                  <RadioGroupItem value="bnpl" id="bnpl" className="text-amber-500 mr-3" />
                   <div className="flex items-center">
-                    <Clock className="h-5 w-5 text-amber-400 mr-2" />
-                    <Label htmlFor="bnpl" className="text-white font-medium">Buy Now, Pay Later</Label>
+                    <Clock className="h-5 w-5 text-amber-500 mr-2" />
+                    <Label htmlFor="bnpl" className="text-gray-800 font-medium">Buy Now, Pay Later</Label>
                   </div>
                 </div>
               </div>
               
               {paymentMethod === "bnpl" && showBnplDetails && (
                 <div className="p-4 pt-0">
-                  <Separator className="bg-white/10 my-3" />
+                  <Separator className="bg-amber-200 my-3" />
                   
                   <RadioGroup value={bnplProvider} onValueChange={setBnplProvider} className="grid grid-cols-2 gap-2">
                     {BNPL_PROVIDERS.map(provider => (
@@ -713,8 +729,8 @@ const Checkout = () => {
                         key={provider.id}
                         className={`p-3 rounded-lg border transition-all ${
                           bnplProvider === provider.id 
-                            ? "border-zepmeds-purple bg-zepmeds-purple/10" 
-                            : "border-white/10 bg-black/20"
+                            ? "border-amber-500 bg-amber-100" 
+                            : "border-gray-200 bg-white"
                         }`}
                       >
                         <RadioGroupItem 
@@ -729,15 +745,15 @@ const Checkout = () => {
                           <div className={`w-8 h-8 rounded-full ${provider.iconBg} flex items-center justify-center mr-2`}>
                             <Clock className="h-4 w-4 text-white" />
                           </div>
-                          <span className="text-white text-sm">{provider.name}</span>
+                          <span className="text-gray-800 text-sm">{provider.name}</span>
                         </Label>
                       </div>
                     ))}
                   </RadioGroup>
                   
-                  <div className="flex items-center gap-2 mt-4 p-3 rounded-lg bg-black/30">
-                    <Server className="h-4 w-4 text-amber-400" />
-                    <span className="text-xs text-gray-300">Complete authentication to use BNPL service</span>
+                  <div className="flex items-center gap-2 mt-4 p-3 rounded-lg bg-amber-100">
+                    <Server className="h-4 w-4 text-amber-500" />
+                    <span className="text-xs text-gray-600">Complete authentication to use BNPL service</span>
                   </div>
                 </div>
               )}
@@ -745,14 +761,14 @@ const Checkout = () => {
             
             <div className={`p-4 rounded-xl border transition-all ${
               paymentMethod === "online" 
-                ? "border-zepmeds-purple bg-zepmeds-purple/10" 
-                : "border-white/10 bg-black/20"
+                ? "border-purple-500 bg-purple-50" 
+                : "border-gray-200 bg-white/70"
             }`}>
               <div className="flex items-center">
-                <RadioGroupItem value="online" id="online" className="text-zepmeds-purple border-white/20 mr-3" />
+                <RadioGroupItem value="online" id="online" className="text-purple-500 mr-3" />
                 <div className="flex items-center">
-                  <Server className="h-5 w-5 text-purple-400 mr-2" />
-                  <Label htmlFor="online" className="text-white font-medium">Other Payment Methods</Label>
+                  <Server className="h-5 w-5 text-purple-500 mr-2" />
+                  <Label htmlFor="online" className="text-gray-800 font-medium">Other Payment Methods</Label>
                 </div>
               </div>
             </div>
@@ -760,50 +776,53 @@ const Checkout = () => {
         </div>
         
         <div>
-          <h2 className="text-lg font-bold text-white mb-4">Order Summary</h2>
-          <div className="p-4 rounded-xl border border-white/10 bg-black/20">
+          <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <DollarSign className="mr-2 text-purple-500" size={20} />
+            Order Summary
+          </h2>
+          <div className="p-4 rounded-xl border border-gray-200 bg-white/90">
             <div className="space-y-2">
-              <div className="flex justify-between text-gray-300">
+              <div className="flex justify-between text-gray-600">
                 <span>Subtotal</span>
                 <span>₹{subTotal.toFixed(2)}</span>
               </div>
               
-              <div className="flex justify-between text-gray-300">
+              <div className="flex justify-between text-gray-600">
                 <span>Delivery Fee</span>
                 <span>{deliveryFee > 0 ? `₹${deliveryFee.toFixed(2)}` : "FREE"}</span>
               </div>
               
               {discount > 0 && (
-                <div className="flex justify-between text-green-400">
+                <div className="flex justify-between text-green-600">
                   <span>Discount</span>
                   <span>-₹{discount.toFixed(2)}</span>
                 </div>
               )}
               
               {couponDiscount > 0 && (
-                <div className="flex justify-between text-green-400">
+                <div className="flex justify-between text-green-600">
                   <span>Coupon Discount</span>
                   <span>-₹{couponDiscount.toFixed(2)}</span>
                 </div>
               )}
               
-              <Separator className="bg-white/10 my-2" />
+              <Separator className="bg-gray-200 my-2" />
               
-              <div className="flex justify-between text-white font-bold">
+              <div className="flex justify-between text-gray-900 font-bold">
                 <span>Total</span>
                 <span>₹{totalAmount.toFixed(2)}</span>
               </div>
               
               {useWallet && (
                 <>
-                  <div className="flex justify-between text-green-400">
+                  <div className="flex justify-between text-green-600">
                     <span>Wallet Amount</span>
                     <span>-₹{Math.min(walletBalance, totalAmount).toFixed(2)}</span>
                   </div>
                   
-                  <Separator className="bg-white/10 my-2" />
+                  <Separator className="bg-gray-200 my-2" />
                   
-                  <div className="flex justify-between text-white font-bold">
+                  <div className="flex justify-between text-gray-900 font-bold">
                     <span>To Pay</span>
                     <span>₹{finalAmount.toFixed(2)}</span>
                   </div>

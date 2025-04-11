@@ -34,6 +34,7 @@ import Support from "./pages/Support";
 import ScheduleMedicines from "./pages/ScheduleMedicines";
 import PetCare from "./pages/PetCare";
 import MedicalDevices from "./pages/MedicalDevices";
+import PastMedicines from "./pages/PastMedicines";
 
 const queryClient = new QueryClient();
 
@@ -56,8 +57,6 @@ const App = () => {
 
 // Separate component for app content so we can use hooks inside
 const AppContent = () => {
-  // No permission modal code - removed as requested
-
   return (
     <>
       <Routes>
@@ -79,6 +78,7 @@ const AppContent = () => {
         <Route path="/schedule-medicines" element={<ScheduleMedicines />} />
         <Route path="/pet-care" element={<PetCare />} />
         <Route path="/medical-devices" element={<MedicalDevices />} />
+        <Route path="/past-medicines" element={<PastMedicines />} />
         
         {/* Profile Section Routes */}
         <Route path="/patient-details" element={<PatientDetails />} />

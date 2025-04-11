@@ -10,7 +10,7 @@ import LogoutButton from "@/components/profile/LogoutButton";
 import { getProfileMenuItems } from "@/utils/profileMenuItems";
 import useBackNavigation from "@/hooks/useBackNavigation";
 import TrackOrderButton from "@/components/order/TrackOrderButton";
-import { MapPin, Wallet, Ticket } from "lucide-react";
+import { MapPin, Wallet, Ticket, Pill } from "lucide-react";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -18,13 +18,17 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   
   // Use the back navigation hook
-  useBackNavigation();
+  const { ExitConfirmDialog } = useBackNavigation();
 
   const menuItems = getProfileMenuItems();
+  
+  // Check if we have an active order
+  const hasActiveOrder = localStorage.getItem("currentOrder") !== null;
 
   return (
     <div className="min-h-screen bg-background pb-20">
       <Header title="Profile" showBackButton />
+      <ExitConfirmDialog />
 
       <main className="px-4 py-4">
         <ProfileHeader 
@@ -32,20 +36,45 @@ const Profile = () => {
           setIsEditing={setIsEditing}
         />
 
-        {/* Add track order button */}
-        <div className="mb-6 p-4 glass-morphism rounded-xl bg-gradient-to-br from-zepmeds-purple/20 to-purple-400/10">
+        {/* Add track order button only if there's an active order */}
+        {hasActiveOrder && (
+          <div className="mb-6 p-4 glass-morphism rounded-xl bg-gradient-to-br from-zepmeds-purple/20 to-purple-400/10">
+            <div className="flex flex-col">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="text-white text-lg font-medium mb-1">Your Orders</h3>
+                  <p className="text-gray-300">Track your current order</p>
+                </div>
+              </div>
+              <TrackOrderButton 
+                variant="default"
+                className="w-full bg-zepmeds-purple hover:bg-zepmeds-purple/90"
+                prominent={true}
+              />
+            </div>
+          </div>
+        )}
+        
+        {/* Past Medications Section */}
+        <div className="mb-6 p-4 glass-morphism rounded-xl bg-gradient-to-br from-pink-500/20 to-red-400/10">
           <div className="flex flex-col">
             <div className="flex items-center justify-between mb-3">
-              <div>
-                <h3 className="text-white text-lg font-medium mb-1">Your Orders</h3>
-                <p className="text-gray-300">Track your current order</p>
+              <div className="flex items-center">
+                <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center mr-3">
+                  <Pill className="h-5 w-5 text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-white text-lg font-medium mb-1">Past Medications</h3>
+                  <p className="text-gray-300">View your discontinued medications</p>
+                </div>
               </div>
             </div>
-            <TrackOrderButton 
-              variant="default"
-              className="w-full bg-zepmeds-purple hover:bg-zepmeds-purple/90"
-              prominent={true}
-            />
+            <button 
+              className="w-full py-2 px-4 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors"
+              onClick={() => navigate('/past-medicines')}
+            >
+              View Past Medications
+            </button>
           </div>
         </div>
         

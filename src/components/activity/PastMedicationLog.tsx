@@ -1,7 +1,9 @@
 
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Pill, Eye, AlertCircle, Heart, Brain, Stethoscope, Bone, Sun, Dog, Thermometer } from "lucide-react";
 import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
 
 interface Medication {
   id: string;
@@ -12,6 +14,7 @@ interface Medication {
 }
 
 const PastMedicationLog = () => {
+  const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [pastMedications, setPastMedications] = useState<Medication[]>([
     {
@@ -90,6 +93,34 @@ const PastMedicationLog = () => {
       category: "Devices",
       dateDiscontinued: "2025-01-15",
       reason: "Upgraded to newer model"
+    },
+    {
+      id: "med12",
+      name: "Paracetamol 500mg",
+      category: "Pain Relief",
+      dateDiscontinued: "2025-04-01",
+      reason: "Course completed"
+    },
+    {
+      id: "med13",
+      name: "Calcium 1000mg",
+      category: "Supplements",
+      dateDiscontinued: "2025-03-28",
+      reason: "Found better alternative"
+    },
+    {
+      id: "med14",
+      name: "Cetirizine 10mg",
+      category: "Allergy",
+      dateDiscontinued: "2025-02-10",
+      reason: "Season changed"
+    },
+    {
+      id: "med15",
+      name: "Moisturizing Lotion",
+      category: "Skin Care",
+      dateDiscontinued: "2025-01-05",
+      reason: "Found better product"
     }
   ]);
 
@@ -117,6 +148,7 @@ const PastMedicationLog = () => {
       case 'Summer Care': return <Sun className="h-5 w-5 text-yellow-500" />;
       case 'Pet Care': return <Dog className="h-5 w-5 text-green-500" />;
       case 'Devices': return <Thermometer className="h-5 w-5 text-indigo-500" />;
+      case 'Allergy': return <AlertCircle className="h-5 w-5 text-red-500" />;
       default: return <Pill className="h-5 w-5 text-red-500" />;
     }
   };
@@ -127,9 +159,20 @@ const PastMedicationLog = () => {
 
   return (
     <div className="w-full mb-6">
-      <div className="flex items-center mb-4">
-        <AlertCircle className="h-5 w-5 text-yellow-500 mr-2" />
-        <h3 className="text-lg font-semibold text-white">Past Medications</h3>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center">
+          <AlertCircle className="h-5 w-5 text-yellow-500 mr-2" />
+          <h3 className="text-lg font-semibold text-white">Past Medications</h3>
+        </div>
+        
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => navigate('/past-medicines')}
+          className="text-zepmeds-purple border-zepmeds-purple"
+        >
+          View All
+        </Button>
       </div>
       
       <div className="overflow-x-auto scrollbar-none -mx-4 px-4 mb-4">
@@ -156,7 +199,7 @@ const PastMedicationLog = () => {
       </div>
       
       <div className="space-y-3">
-        {filteredMedications.map((med, index) => (
+        {filteredMedications.slice(0, 5).map((med, index) => (
           <motion.div
             key={med.id}
             initial={{ opacity: 0, y: 10 }}
