@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
-import AnimatedSearchBar from "@/components/AnimatedSearchBar";
+import SearchBar from "@/components/SearchBar";
 import BottomNavigation from "@/components/BottomNavigation";
 import { useToast } from "@/components/ui/use-toast";
 import useBackNavigation from "@/hooks/useBackNavigation";
@@ -41,7 +41,7 @@ const Dashboard = () => {
       <Header cartCount={cartCount} />
 
       <main className="px-4 py-4">
-        <AnimatedSearchBar />
+        <SearchBar />
         <AdFlyer />
         <ServiceSection />
         <CategorySection />

@@ -25,6 +25,20 @@ const ProfileHeader = ({
     return user?.phoneNumber?.slice(-2) || "ZM";
   };
 
+  // Generate a random color for the avatar
+  const getRandomColor = () => {
+    const colors = [
+      "bg-red-500", "bg-green-500", "bg-blue-500", 
+      "bg-yellow-500", "bg-purple-500", "bg-pink-500", 
+      "bg-indigo-500", "bg-orange-500", "bg-teal-500"
+    ];
+    
+    // Use user ID or phone number as a seed for consistent color
+    const seed = user?.id || user?.phoneNumber || "";
+    const index = seed.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+    return colors[index];
+  };
+
   const handleSaveProfile = () => {
     setIsEditing(false);
   };
@@ -38,9 +52,9 @@ const ProfileHeader = ({
     >
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center">
-          <Avatar className="h-16 w-16 mr-4 border-2 border-zepmeds-purple">
+          <Avatar className={`h-16 w-16 mr-4 border-2 border-white/20`}>
             <AvatarImage src="" alt={user?.name || "User"} />
-            <AvatarFallback className="bg-zepmeds-purple text-white text-xl">
+            <AvatarFallback className={`${getRandomColor()} text-white text-xl`}>
               {getInitials()}
             </AvatarFallback>
           </Avatar>
@@ -59,10 +73,10 @@ const ProfileHeader = ({
           <Button
             variant="outline"
             size="icon"
-            className="h-9 w-9 border-white/10 text-white"
+            className="h-9 w-9 border-white/10 text-white bg-zepmeds-purple/20 hover:bg-zepmeds-purple/30"
             onClick={() => setIsEditing(true)}
           >
-            <Edit size={18} />
+            <Edit size={18} className="text-zepmeds-purple" />
           </Button>
         )}
       </div>
@@ -78,7 +92,7 @@ const ProfileHeader = ({
           className="w-full mt-3 flex items-center justify-center gap-2 text-white hover:bg-white/5"
           onClick={() => {}}
         >
-          <Camera size={18} />
+          <Camera size={18} className="text-amber-400" />
           <span>Change Profile Photo</span>
         </Button>
       )}

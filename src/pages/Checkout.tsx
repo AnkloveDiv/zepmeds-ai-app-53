@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, CreditCard, Clock, Truck, Wallet, Tag, Plus, Check, Calendar } from "lucide-react";
+import { MapPin, CreditCard, Clock, Truck, Wallet, Tag, Plus, Check, Calendar, Cash, Server, Shield } from "lucide-react";
 import useBackNavigation from "@/hooks/useBackNavigation";
 import OrderForSomeoneElse from "@/components/checkout/OrderForSomeoneElse";
 
@@ -52,6 +52,17 @@ const Checkout = () => {
   const [selectedAddress, setSelectedAddress] = useState<number | null>(null);
   const [deliveryTime, setDeliveryTime] = useState("express");
   const [recipientDetails, setRecipientDetails] = useState<any>(null);
+  const [showCardDetails, setShowCardDetails] = useState(false);
+  const [showBnplDetails, setShowBnplDetails] = useState(false);
+  
+  // Card details
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardName, setCardName] = useState("");
+  const [cardExpiry, setCardExpiry] = useState("");
+  const [cardCvv, setCvv] = useState("");
+  
+  // BNPL details
+  const [bnplProvider, setBnplProvider] = useState("simpl");
   
   useEffect(() => {
     const savedCart = localStorage.getItem("cart");
@@ -76,6 +87,17 @@ const Checkout = () => {
       navigate("/cart");
     }
   }, []);
+  
+  useEffect(() => {
+    // Reset card details when payment method changes
+    if (paymentMethod !== "card") {
+      setShowCardDetails(false);
+    }
+    
+    if (paymentMethod !== "bnpl") {
+      setShowBnplDetails(false);
+    }
+  }, [paymentMethod]);
   
   const handleApplyCoupon = () => {
     // Mock coupon codes
@@ -134,11 +156,87 @@ const Checkout = () => {
     setRecipientDetails(details);
   };
   
+  // Format credit card number with spaces
+  const formatCardNumber = (value: string) => {
+    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+    const matches = v.match(/\d{4,16}/g);
+    const match = (matches && matches[0]) || '';
+    const parts = [];
+
+    for (let i = 0; i < match.length; i += 4) {
+      parts.push(match.substring(i, i + 4));
+    }
+
+    if (parts.length) {
+      return parts.join(' ');
+    } else {
+      return value;
+    }
+  };
+  
+  // Format card expiry date (MM/YY)
+  const formatExpiryDate = (value: string) => {
+    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+    if (v.length > 2) {
+      return `${v.substring(0, 2)}/${v.substring(2, 4)}`;
+    }
+    return v;
+  };
+  
   const handlePlaceOrder = () => {
     if (!selectedAddress) {
       toast({
         title: "Address required",
         description: "Please select a delivery address to continue.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Validate credit card details if paying by card
+    if (paymentMethod === "card") {
+      if (cardNumber.replace(/\s/g, '').length !== 16) {
+        toast({
+          title: "Invalid card number",
+          description: "Please enter a valid 16-digit card number.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      if (!cardName) {
+        toast({
+          title: "Card name required",
+          description: "Please enter the name on your card.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      if (cardExpiry.length !== 5) { // MM/YY format
+        toast({
+          title: "Invalid expiry date",
+          description: "Please enter a valid expiry date in MM/YY format.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      if (cardCvv.length !== 3) {
+        toast({
+          title: "Invalid CVV",
+          description: "Please enter a valid 3-digit CVV number.",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+    
+    // Validate BNPL selection if paying by BNPL
+    if (paymentMethod === "bnpl" && !bnplProvider) {
+      toast({
+        title: "BNPL provider required",
+        description: "Please select a Buy Now Pay Later provider.",
         variant: "destructive"
       });
       return;
@@ -167,6 +265,11 @@ const Checkout = () => {
       walletAmountUsed: useWallet ? walletBalance : 0,
       total: Math.max(0, total),
       paymentMethod,
+      paymentDetails: paymentMethod === "card" ? {
+        cardNumber: `**** **** **** ${cardNumber.slice(-4)}`,
+        cardName,
+        cardExpiry
+      } : (paymentMethod === "bnpl" ? { provider: bnplProvider } : null),
       address: addresses.find(addr => addr.id === selectedAddress),
       deliveryTime,
       status: "confirmed",
@@ -198,7 +301,23 @@ const Checkout = () => {
       <Header showBackButton title="Checkout" />
       <ExitConfirmDialog />
       
-      <main className="px-4 py-4 space-y-6">
+      {/* Floating amount at the bottom */}
+      <div className="fixed bottom-20 left-0 right-0 p-4 bg-black/80 border-t border-white/10 backdrop-blur-lg z-20">
+        <div className="flex justify-between items-center">
+          <div>
+            <p className="text-gray-400 text-sm">Total Amount</p>
+            <p className="text-white text-xl font-bold">₹{finalAmount.toFixed(2)}</p>
+          </div>
+          <Button
+            className="bg-zepmeds-purple hover:bg-zepmeds-purple/90 text-white px-8"
+            onClick={handlePlaceOrder}
+          >
+            Place Order
+          </Button>
+        </div>
+      </div>
+      
+      <main className="px-4 py-4 space-y-6 mb-20">
         {/* Delivery Address */}
         <div>
           <h2 className="text-lg font-bold text-white mb-4">Delivery Address</h2>
@@ -390,7 +509,7 @@ const Checkout = () => {
         {/* Payment Method */}
         <div>
           <h2 className="text-lg font-bold text-white mb-4">Payment Method</h2>
-          <RadioGroup defaultValue="cod" onValueChange={setPaymentMethod} className="space-y-3">
+          <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="space-y-3">
             <div className={`p-4 rounded-xl border transition-all ${
               paymentMethod === "cod" 
                 ? "border-zepmeds-purple bg-zepmeds-purple/10" 
@@ -398,8 +517,137 @@ const Checkout = () => {
             }`}>
               <div className="flex items-center">
                 <RadioGroupItem value="cod" id="cod" className="text-zepmeds-purple border-white/20 mr-3" />
-                <Label htmlFor="cod" className="text-white font-medium">Cash on Delivery</Label>
+                <div className="flex items-center">
+                  <Cash className="h-5 w-5 text-green-400 mr-2" />
+                  <Label htmlFor="cod" className="text-white font-medium">Cash on Delivery</Label>
+                </div>
               </div>
+            </div>
+            
+            {/* Credit/Debit Card Option */}
+            <div className={`rounded-xl border transition-all ${
+              paymentMethod === "card" 
+                ? "border-zepmeds-purple bg-zepmeds-purple/10" 
+                : "border-white/10 bg-black/20"
+            }`}>
+              <div className="p-4" onClick={() => {
+                setPaymentMethod("card");
+                setShowCardDetails(true);
+              }}>
+                <div className="flex items-center">
+                  <RadioGroupItem value="card" id="card" className="text-zepmeds-purple border-white/20 mr-3" />
+                  <div className="flex items-center">
+                    <CreditCard className="h-5 w-5 text-blue-400 mr-2" />
+                    <Label htmlFor="card" className="text-white font-medium">Credit / Debit Card</Label>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Card Details Form */}
+              {paymentMethod === "card" && showCardDetails && (
+                <div className="p-4 pt-0 space-y-3">
+                  <Separator className="bg-white/10 my-3" />
+                  
+                  <div>
+                    <Label htmlFor="cardNumber" className="text-gray-400 text-sm">Card Number</Label>
+                    <Input
+                      id="cardNumber"
+                      placeholder="1234 5678 9012 3456"
+                      value={cardNumber}
+                      onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
+                      maxLength={19} // 16 digits + 3 spaces
+                      className="bg-black/20 border-white/10 text-white mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="cardName" className="text-gray-400 text-sm">Name on Card</Label>
+                    <Input
+                      id="cardName"
+                      placeholder="John Doe"
+                      value={cardName}
+                      onChange={(e) => setCardName(e.target.value)}
+                      className="bg-black/20 border-white/10 text-white mt-1"
+                    />
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <div className="flex-1">
+                      <Label htmlFor="cardExpiry" className="text-gray-400 text-sm">Expiry Date</Label>
+                      <Input
+                        id="cardExpiry"
+                        placeholder="MM/YY"
+                        value={cardExpiry}
+                        onChange={(e) => setCardExpiry(formatExpiryDate(e.target.value))}
+                        maxLength={5} // MM/YY format
+                        className="bg-black/20 border-white/10 text-white mt-1"
+                      />
+                    </div>
+                    
+                    <div className="w-1/3">
+                      <Label htmlFor="cardCvv" className="text-gray-400 text-sm">CVV</Label>
+                      <Input
+                        id="cardCvv"
+                        type="password"
+                        placeholder="123"
+                        value={cardCvv}
+                        onChange={(e) => setCvv(e.target.value.replace(/\D/g, ""))}
+                        maxLength={3}
+                        className="bg-black/20 border-white/10 text-white mt-1"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
+                    <Shield className="h-4 w-4 text-green-400" />
+                    <span>Your payment information is secure and encrypted</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Buy Now Pay Later Option */}
+            <div className={`rounded-xl border transition-all ${
+              paymentMethod === "bnpl" 
+                ? "border-zepmeds-purple bg-zepmeds-purple/10" 
+                : "border-white/10 bg-black/20"
+            }`}>
+              <div className="p-4" onClick={() => {
+                setPaymentMethod("bnpl");
+                setShowBnplDetails(true);
+              }}>
+                <div className="flex items-center">
+                  <RadioGroupItem value="bnpl" id="bnpl" className="text-zepmeds-purple border-white/20 mr-3" />
+                  <div className="flex items-center">
+                    <Clock className="h-5 w-5 text-amber-400 mr-2" />
+                    <Label htmlFor="bnpl" className="text-white font-medium">Buy Now, Pay Later</Label>
+                  </div>
+                </div>
+              </div>
+              
+              {/* BNPL Options */}
+              {paymentMethod === "bnpl" && showBnplDetails && (
+                <div className="p-4 pt-0 space-y-3">
+                  <Separator className="bg-white/10 my-3" />
+                  
+                  <RadioGroup value={bnplProvider} onValueChange={setBnplProvider} className="space-y-2">
+                    <div className="flex items-center p-2 rounded-lg hover:bg-white/5">
+                      <RadioGroupItem value="simpl" id="simpl" className="text-zepmeds-purple border-white/20 mr-3" />
+                      <Label htmlFor="simpl" className="text-white font-medium cursor-pointer">Simpl</Label>
+                    </div>
+                    
+                    <div className="flex items-center p-2 rounded-lg hover:bg-white/5">
+                      <RadioGroupItem value="lazypay" id="lazypay" className="text-zepmeds-purple border-white/20 mr-3" />
+                      <Label htmlFor="lazypay" className="text-white font-medium cursor-pointer">LazyPay</Label>
+                    </div>
+                  </RadioGroup>
+                  
+                  <div className="flex items-center gap-2 mt-2 p-3 rounded-lg bg-black/30">
+                    <Server className="h-4 w-4 text-amber-400" />
+                    <span className="text-xs text-gray-300">You'll be redirected to complete authentication</span>
+                  </div>
+                </div>
+              )}
             </div>
             
             <div className={`p-4 rounded-xl border transition-all ${
@@ -409,7 +657,10 @@ const Checkout = () => {
             }`}>
               <div className="flex items-center">
                 <RadioGroupItem value="online" id="online" className="text-zepmeds-purple border-white/20 mr-3" />
-                <Label htmlFor="online" className="text-white font-medium">Online Payment</Label>
+                <div className="flex items-center">
+                  <Server className="h-5 w-5 text-purple-400 mr-2" />
+                  <Label htmlFor="online" className="text-white font-medium">Other Payment Methods</Label>
+                </div>
               </div>
             </div>
           </RadioGroup>
@@ -469,14 +720,6 @@ const Checkout = () => {
             </div>
           </div>
         </div>
-        
-        {/* Place Order Button */}
-        <Button 
-          className="w-full bg-zepmeds-purple hover:bg-zepmeds-purple/90 text-white py-6 text-lg"
-          onClick={handlePlaceOrder}
-        >
-          Place Order
-        </Button>
       </main>
       
       <BottomNavigation />

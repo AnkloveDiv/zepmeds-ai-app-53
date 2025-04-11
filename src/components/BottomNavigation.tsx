@@ -28,16 +28,16 @@ const BottomNavigation = () => {
   ];
 
   const moreOptions = [
-    { name: "Help & Support", path: "/support", icon: "🛟" },
-    { name: "My Wallet", path: "/wallet", icon: "💰" },
-    { name: "Coupons", path: "/coupons", icon: "🎫" },
-    { name: "Offers", path: "/offers", icon: "🎁" },
-    { name: "Prescriptions", path: "/prescription-upload", icon: "📋" },
-    { name: "Medical Reports", path: "/reports", icon: "📊" },
-    { name: "Emergency Services", path: "/emergency", icon: "🚑" },
-    { name: "Order History", path: "/orders", icon: "📦" },
-    { name: "Manage Addresses", path: "/addresses", icon: "🏠" },
-    { name: "About Developers", path: "/about-developers", icon: "👨‍💻" },
+    { name: "Help & Support", path: "/support", icon: "🛟", color: "bg-blue-500/20" },
+    { name: "My Wallet", path: "/wallet", icon: "💰", color: "bg-amber-500/20" },
+    { name: "Coupons", path: "/coupons", icon: "🎫", color: "bg-green-500/20" },
+    { name: "Offers", path: "/offers", icon: "🎁", color: "bg-red-500/20" },
+    { name: "Prescriptions", path: "/prescription-upload", icon: "📋", color: "bg-purple-500/20" },
+    { name: "Medical Reports", path: "/reports", icon: "📊", color: "bg-blue-500/20" },
+    { name: "Emergency Services", path: "/emergency", icon: "🚑", color: "bg-red-500/20" },
+    { name: "Order History", path: "/orders", icon: "📦", color: "bg-amber-500/20" },
+    { name: "Manage Addresses", path: "/addresses", icon: "🏠", color: "bg-green-500/20" },
+    { name: "About Developers", path: "/about-developers", icon: "👨‍💻", color: "bg-purple-500/20" },
   ];
 
   return (
@@ -98,7 +98,9 @@ const BottomNavigation = () => {
                   to={option.path}
                   className="flex flex-col items-center gap-2 p-3 rounded-xl bg-black/30 border border-white/5 hover:bg-zepmeds-purple/10 transition-all"
                 >
-                  <span className="text-2xl">{option.icon}</span>
+                  <div className={`w-10 h-10 ${option.color} rounded-full flex items-center justify-center`}>
+                    <span className="text-2xl">{option.icon}</span>
+                  </div>
                   <span className="text-xs text-center text-white">{option.name}</span>
                 </Link>
               ))}
