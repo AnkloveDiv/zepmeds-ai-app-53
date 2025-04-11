@@ -33,8 +33,9 @@ const ProfileHeader = ({
       "bg-indigo-500", "bg-orange-500", "bg-teal-500"
     ];
     
-    // Use user ID or phone number as a seed for consistent color
-    const seed = user?.id || user?.phoneNumber || "";
+    // Use user phone number as a seed for consistent color
+    // since id doesn't exist in the User type
+    const seed = user?.phoneNumber || "";
     const index = seed.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
     return colors[index];
   };

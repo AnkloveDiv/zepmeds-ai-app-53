@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -10,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, CreditCard, Clock, Truck, Wallet, Tag, Plus, Check, Calendar, Cash, Server, Shield } from "lucide-react";
+import { MapPin, CreditCard, Clock, Truck, Wallet, Tag, Plus, Check, Calendar, DollarSign, Server, Shield } from "lucide-react";
 import useBackNavigation from "@/hooks/useBackNavigation";
 import OrderForSomeoneElse from "@/components/checkout/OrderForSomeoneElse";
 
@@ -55,13 +54,11 @@ const Checkout = () => {
   const [showCardDetails, setShowCardDetails] = useState(false);
   const [showBnplDetails, setShowBnplDetails] = useState(false);
   
-  // Card details
   const [cardNumber, setCardNumber] = useState("");
   const [cardName, setCardName] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCvv, setCvv] = useState("");
   
-  // BNPL details
   const [bnplProvider, setBnplProvider] = useState("simpl");
   
   useEffect(() => {
@@ -70,7 +67,6 @@ const Checkout = () => {
       const parsedCart = JSON.parse(savedCart);
       setCartItems(parsedCart);
       
-      // Calculate subtotal
       const total = parsedCart.reduce((acc: number, item: any) => {
         const itemPrice = item.discountPrice || item.price;
         return acc + (itemPrice * item.quantity);
@@ -78,7 +74,6 @@ const Checkout = () => {
       
       setSubTotal(total);
       
-      // Find default address
       const defaultAddress = addresses.find(addr => addr.isDefault);
       if (defaultAddress) {
         setSelectedAddress(defaultAddress.id);
@@ -89,7 +84,6 @@ const Checkout = () => {
   }, []);
   
   useEffect(() => {
-    // Reset card details when payment method changes
     if (paymentMethod !== "card") {
       setShowCardDetails(false);
     }
@@ -100,7 +94,6 @@ const Checkout = () => {
   }, [paymentMethod]);
   
   const handleApplyCoupon = () => {
-    // Mock coupon codes
     const validCoupons = [
       { code: "WELCOME10", discount: 10, type: "percent", maxDiscount: 100 },
       { code: "FLAT50", discount: 50, type: "flat" },
@@ -156,7 +149,6 @@ const Checkout = () => {
     setRecipientDetails(details);
   };
   
-  // Format credit card number with spaces
   const formatCardNumber = (value: string) => {
     const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
     const matches = v.match(/\d{4,16}/g);
@@ -174,7 +166,6 @@ const Checkout = () => {
     }
   };
   
-  // Format card expiry date (MM/YY)
   const formatExpiryDate = (value: string) => {
     const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
     if (v.length > 2) {
@@ -193,7 +184,6 @@ const Checkout = () => {
       return;
     }
     
-    // Validate credit card details if paying by card
     if (paymentMethod === "card") {
       if (cardNumber.replace(/\s/g, '').length !== 16) {
         toast({
@@ -213,7 +203,7 @@ const Checkout = () => {
         return;
       }
       
-      if (cardExpiry.length !== 5) { // MM/YY format
+      if (cardExpiry.length !== 5) {
         toast({
           title: "Invalid expiry date",
           description: "Please enter a valid expiry date in MM/YY format.",
@@ -232,7 +222,6 @@ const Checkout = () => {
       }
     }
     
-    // Validate BNPL selection if paying by BNPL
     if (paymentMethod === "bnpl" && !bnplProvider) {
       toast({
         title: "BNPL provider required",
@@ -242,7 +231,6 @@ const Checkout = () => {
       return;
     }
     
-    // Calculate total after all discounts
     const total = subTotal + deliveryFee - discount - couponDiscount - (useWallet ? walletBalance : 0);
     
     if (total < 0) {
@@ -254,7 +242,6 @@ const Checkout = () => {
       return;
     }
     
-    // Create order object
     const order = {
       id: `ZM${Math.floor(Math.random() * 10000)}`,
       items: cartItems,
@@ -277,19 +264,14 @@ const Checkout = () => {
       estimatedDelivery: new Date(Date.now() + (deliveryTime === "express" ? 30 : 120) * 60000).toISOString()
     };
     
-    // Save order in localStorage
     localStorage.setItem("currentOrder", JSON.stringify(order));
-    
-    // Clear cart
     localStorage.setItem("cart", JSON.stringify([]));
     
-    // Show success message
     toast({
       title: "Order placed successfully!",
       description: `Your order #${order.id} has been placed successfully.`,
     });
     
-    // Navigate to tracking page
     navigate(`/track-order/${order.id}`);
   };
   
@@ -301,7 +283,6 @@ const Checkout = () => {
       <Header showBackButton title="Checkout" />
       <ExitConfirmDialog />
       
-      {/* Floating amount at the bottom */}
       <div className="fixed bottom-20 left-0 right-0 p-4 bg-black/80 border-t border-white/10 backdrop-blur-lg z-20">
         <div className="flex justify-between items-center">
           <div>
@@ -318,7 +299,6 @@ const Checkout = () => {
       </div>
       
       <main className="px-4 py-4 space-y-6 mb-20">
-        {/* Delivery Address */}
         <div>
           <h2 className="text-lg font-bold text-white mb-4">Delivery Address</h2>
           <RadioGroup 
@@ -374,7 +354,6 @@ const Checkout = () => {
           </Button>
         </div>
         
-        {/* Delivery Time */}
         <div>
           <h2 className="text-lg font-bold text-white mb-4">Delivery Time</h2>
           <RadioGroup value={deliveryTime} onValueChange={setDeliveryTime} className="space-y-3">
@@ -434,7 +413,6 @@ const Checkout = () => {
           </RadioGroup>
         </div>
         
-        {/* Apply Coupon */}
         <div>
           <h2 className="text-lg font-bold text-white mb-4">Apply Coupon</h2>
           
@@ -477,7 +455,6 @@ const Checkout = () => {
           )}
         </div>
         
-        {/* Wallet */}
         <div>
           <h2 className="text-lg font-bold text-white mb-4">ZepMeds Wallet</h2>
           <div className="p-4 rounded-xl border border-white/10 bg-black/20">
@@ -503,10 +480,8 @@ const Checkout = () => {
           </div>
         </div>
         
-        {/* Order for Someone Else */}
         <OrderForSomeoneElse onChange={handleRecipientDetailsChange} />
         
-        {/* Payment Method */}
         <div>
           <h2 className="text-lg font-bold text-white mb-4">Payment Method</h2>
           <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="space-y-3">
@@ -518,13 +493,12 @@ const Checkout = () => {
               <div className="flex items-center">
                 <RadioGroupItem value="cod" id="cod" className="text-zepmeds-purple border-white/20 mr-3" />
                 <div className="flex items-center">
-                  <Cash className="h-5 w-5 text-green-400 mr-2" />
+                  <DollarSign className="h-5 w-5 text-green-400 mr-2" />
                   <Label htmlFor="cod" className="text-white font-medium">Cash on Delivery</Label>
                 </div>
               </div>
             </div>
             
-            {/* Credit/Debit Card Option */}
             <div className={`rounded-xl border transition-all ${
               paymentMethod === "card" 
                 ? "border-zepmeds-purple bg-zepmeds-purple/10" 
@@ -543,7 +517,6 @@ const Checkout = () => {
                 </div>
               </div>
               
-              {/* Card Details Form */}
               {paymentMethod === "card" && showCardDetails && (
                 <div className="p-4 pt-0 space-y-3">
                   <Separator className="bg-white/10 my-3" />
@@ -555,7 +528,7 @@ const Checkout = () => {
                       placeholder="1234 5678 9012 3456"
                       value={cardNumber}
                       onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
-                      maxLength={19} // 16 digits + 3 spaces
+                      maxLength={19}
                       className="bg-black/20 border-white/10 text-white mt-1"
                     />
                   </div>
@@ -579,7 +552,7 @@ const Checkout = () => {
                         placeholder="MM/YY"
                         value={cardExpiry}
                         onChange={(e) => setCardExpiry(formatExpiryDate(e.target.value))}
-                        maxLength={5} // MM/YY format
+                        maxLength={5}
                         className="bg-black/20 border-white/10 text-white mt-1"
                       />
                     </div>
@@ -606,7 +579,6 @@ const Checkout = () => {
               )}
             </div>
             
-            {/* Buy Now Pay Later Option */}
             <div className={`rounded-xl border transition-all ${
               paymentMethod === "bnpl" 
                 ? "border-zepmeds-purple bg-zepmeds-purple/10" 
@@ -625,7 +597,6 @@ const Checkout = () => {
                 </div>
               </div>
               
-              {/* BNPL Options */}
               {paymentMethod === "bnpl" && showBnplDetails && (
                 <div className="p-4 pt-0 space-y-3">
                   <Separator className="bg-white/10 my-3" />
@@ -666,7 +637,6 @@ const Checkout = () => {
           </RadioGroup>
         </div>
         
-        {/* Order Summary */}
         <div>
           <h2 className="text-lg font-bold text-white mb-4">Order Summary</h2>
           <div className="p-4 rounded-xl border border-white/10 bg-black/20">

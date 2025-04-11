@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
@@ -6,7 +5,7 @@ import BottomNavigation from "@/components/BottomNavigation";
 import SearchBar from "@/components/SearchBar";
 import TrackOrderButton from "@/components/order/TrackOrderButton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dog, Cat, Pill, Stethoscope, User, Bird, Rabbit, ShoppingBag, ChevronRight, Award, Crown, Bone, Fish, Paw } from "lucide-react";
+import { Dog, Cat, Pill, Stethoscope, User, Bird, Rabbit, ShoppingBag, ChevronRight, Award, Crown, Bone, Fish, PawPrint } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -29,7 +28,6 @@ const PetCare = () => {
     { id: "pm4", name: "Calming Treats", category: "Birds", price: 299, discountPrice: 249, rating: 4.4, image: "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80" },
   ];
 
-  // Additional dog products for the Dogs tab
   const dogProducts = [
     { id: "d1", name: "Premium Dog Food - Adult", price: 1299, discountPrice: 999, rating: 4.8, image: "https://images.unsplash.com/photo-1568640347023-a616a30bc3bd?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80" },
     { id: "d2", name: "Automatic Water Dispenser", price: 899, discountPrice: 799, rating: 4.7, image: "https://images.unsplash.com/photo-1601758125946-6ec2ef64daf8?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80" },
@@ -37,7 +35,6 @@ const PetCare = () => {
     { id: "d4", name: "Interactive Dog Toy", price: 599, discountPrice: null, rating: 4.6, image: "https://images.unsplash.com/photo-1568393691259-4501ea1edb9a?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80" },
   ];
 
-  // Additional cat products for the Cats tab
   const catProducts = [
     { id: "c1", name: "Premium Cat Litter - Odor Control", price: 899, discountPrice: 799, rating: 4.7, image: "https://images.unsplash.com/photo-1603098116978-17c53a75dc95?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80" },
     { id: "c2", name: "Cat Scratching Post", price: 1199, discountPrice: 999, rating: 4.8, image: "https://images.unsplash.com/photo-1636542495238-ea75fcace3f2?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80" },
@@ -45,7 +42,6 @@ const PetCare = () => {
     { id: "c4", name: "Interactive Laser Toy", price: 499, discountPrice: 399, rating: 4.6, image: "https://images.unsplash.com/photo-1573865526739-10659fec78a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80" },
   ];
 
-  // Additional products for the Others tab
   const otherPetProducts = [
     { id: "o1", name: "Bird Cage Deluxe", price: 1999, discountPrice: 1799, rating: 4.7, image: "https://images.unsplash.com/photo-1556485344-55942bb90f0b?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80", pet: "Birds" },
     { id: "o2", name: "Rabbit Hutch", price: 2499, discountPrice: 2199, rating: 4.8, image: "https://images.unsplash.com/photo-1535261550196-fada3295af46?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80", pet: "Rabbits" },
@@ -153,7 +149,7 @@ const PetCare = () => {
               </Button>
             </div>
             <div className="h-16 w-16 bg-amber-500/20 rounded-full flex items-center justify-center">
-              <Paw className="h-8 w-8 text-amber-400" />
+              <PawPrint className="h-8 w-8 text-amber-400" />
             </div>
           </div>
         </div>
