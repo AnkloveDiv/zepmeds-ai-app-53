@@ -7,6 +7,7 @@ export interface MenuItem {
   icon: React.ReactNode;
   title: string;
   path: string;
+  bgColor?: string;
 }
 
 interface ProfileMenuProps {
@@ -26,11 +27,11 @@ const ProfileMenu = ({ menuItems }: ProfileMenuProps) => {
           transition={{ delay: index * 0.05 + 0.3 }}
         >
           <button
-            className="w-full glass-morphism rounded-xl p-4 flex items-center justify-between hover:border-zepmeds-purple/40 transition-colors"
+            className="w-full glass-morphism rounded-xl p-4 flex items-center justify-between hover:border-white/40 transition-colors"
             onClick={() => navigate(item.path)}
           >
             <div className="flex items-center">
-              <div className="w-9 h-9 rounded-full bg-zepmeds-purple/10 flex items-center justify-center mr-3 text-zepmeds-purple">
+              <div className={`w-9 h-9 rounded-full ${item.bgColor || "bg-white/10"} flex items-center justify-center mr-3`}>
                 {item.icon}
               </div>
               <span className="text-white font-medium">{item.title}</span>

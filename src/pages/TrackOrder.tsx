@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -9,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Phone, MapPin, Package, ChevronDown, ChevronUp, Copy, MessageSquare, Clock, Info, Share2, Check } from "lucide-react";
 import DeliveryAnimation from "@/components/DeliveryAnimation";
 import DeliveryMap from "@/components/DeliveryMap";
+import OrderActions from "@/components/order/OrderActions";
 import useBackNavigation from "@/hooks/useBackNavigation";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -23,19 +23,16 @@ const TrackOrder = () => {
   const { ExitConfirmDialog } = useBackNavigation();
   
   useEffect(() => {
-    // In a real app, this would be an API call to get order details by ID
     const getOrderDetails = () => {
       setLoading(true);
       
       try {
         if (orderId) {
-          // Try to get from localStorage first (our mock data)
           const savedOrder = localStorage.getItem("currentOrder");
           
           if (savedOrder) {
             const parsedOrder = JSON.parse(savedOrder);
             
-            // Check if the IDs match
             if (parsedOrder.id === orderId) {
               setOrder(parsedOrder);
               setLoading(false);
@@ -43,8 +40,6 @@ const TrackOrder = () => {
             }
           }
           
-          // If not in localStorage, this would be a call to the backend API
-          // For demo purposes, create a mock order
           const mockOrder = {
             id: orderId,
             status: "in-transit",
@@ -186,12 +181,10 @@ const TrackOrder = () => {
     );
   }
   
-  // Format the estimated delivery time
   const estimatedDelivery = new Date(order.estimatedDelivery);
   const now = new Date();
   const minutesRemaining = Math.floor((estimatedDelivery.getTime() - now.getTime()) / (1000 * 60));
   
-  // Determine order status and progress
   const orderStatus = order.status || "confirmed";
   const statusMap = {
     "confirmed": { step: 0, text: "Order Confirmed" },
@@ -226,10 +219,10 @@ const TrackOrder = () => {
                 <motion.div
                   animate={{ 
                     scale: [1, 1.2, 1],
-                    color: ["#9b87f5", "#ffffff", "#9b87f5"]
+                    color: ["#f97316", "#ffffff", "#f97316"]
                   }}
                   transition={{ duration: 2, repeat: Infinity }}
-                  className="bg-zepmeds-purple/20 text-zepmeds-purple px-2 py-0.5 rounded text-xs font-medium"
+                  className="bg-orange-500/20 text-orange-500 px-2 py-0.5 rounded text-xs font-medium"
                 >
                   {minutesRemaining > 0 ? `Arriving in ${minutesRemaining} min` : "Arriving soon"}
                 </motion.div>
@@ -265,7 +258,7 @@ const TrackOrder = () => {
             </div>
             <Button
               variant="link"
-              className="text-zepmeds-purple p-0 h-auto text-sm"
+              className="text-orange-500 p-0 h-auto text-sm"
               onClick={() => setShowDetails(!showDetails)}
             >
               {showDetails ? "Hide Details" : "View Details"}
@@ -310,16 +303,16 @@ const TrackOrder = () => {
                          order.paymentMethod === "upi" ? "UPI" : 
                          order.paymentMethod === "bnpl" ? "Buy Now Pay Later" : "Online Payment"}</span>
                   </div>
+                  
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Number of items</span>
+                    <span className="text-white">{order.items?.length || 0}</span>
+                  </div>
                 </div>
                 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full mt-3 text-zepmeds-purple border-zepmeds-purple"
-                  onClick={handleViewInvoice}
-                >
-                  View Invoice
-                </Button>
+                <div className="mt-3">
+                  <OrderActions orderId={order.id} compact={true} />
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -331,6 +324,7 @@ const TrackOrder = () => {
             currentStep={currentStep}
             riderName={order.deliveryRider.name}
             eta={minutesRemaining}
+            totalItems={order.items?.length || 0}
           />
         </div>
         
@@ -339,7 +333,7 @@ const TrackOrder = () => {
           
           <div className="flex items-center">
             <div className="relative">
-              <div className="w-16 h-16 rounded-full bg-zepmeds-purple/20 overflow-hidden border-2 border-zepmeds-purple">
+              <div className="w-16 h-16 rounded-full bg-orange-500/20 overflow-hidden border-2 border-orange-500">
                 <img
                   src={order.deliveryRider.profileImage || "https://source.unsplash.com/random/100x100/?face"} 
                   alt={order.deliveryRider.name}
@@ -424,6 +418,11 @@ const TrackOrder = () => {
               </div>
             ))}
           </div>
+        </div>
+        
+        <div className="mb-6 glass-morphism rounded-xl p-4">
+          <h3 className="text-white font-bold mb-4">Need Help?</h3>
+          <OrderActions orderId={order.id} />
         </div>
       </main>
       

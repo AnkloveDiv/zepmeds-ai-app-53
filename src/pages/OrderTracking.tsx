@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
 import { Button } from "@/components/ui/button";
-import { PackageCheck, ArrowRight } from "lucide-react";
+import { PackageCheck, ArrowRight, Clock, MapPin, Truck } from "lucide-react";
 import useBackNavigation from "@/hooks/useBackNavigation";
 
 const OrderTracking = () => {
@@ -64,10 +64,10 @@ const OrderTracking = () => {
       <Header showBackButton title="Order Tracking" />
       
       <main className="px-4 py-6">
-        <div className="h-40 glass-morphism rounded-xl mb-6 flex items-center justify-center">
+        <div className="h-40 glass-morphism rounded-xl mb-6 flex items-center justify-center bg-gradient-to-br from-orange-500/20 to-red-600/10">
           <div className="text-center">
-            <div className="w-16 h-16 rounded-full bg-zepmeds-purple/20 flex items-center justify-center mx-auto mb-3">
-              <PackageCheck className="h-8 w-8 text-zepmeds-purple" />
+            <div className="w-16 h-16 rounded-full bg-orange-500/20 flex items-center justify-center mx-auto mb-3">
+              <PackageCheck className="h-8 w-8 text-orange-500" />
             </div>
             <h3 className="text-white text-lg font-medium">Track Your Order</h3>
             <p className="text-gray-400 text-sm">View real-time delivery status</p>
@@ -76,7 +76,7 @@ const OrderTracking = () => {
         
         <div className="space-y-4">
           <Button 
-            className="w-full h-14 bg-zepmeds-purple hover:bg-zepmeds-purple/90"
+            className="w-full h-14 bg-orange-500 hover:bg-orange-600"
             onClick={handleTrackByOrderId}
           >
             Track Current Order
@@ -85,7 +85,7 @@ const OrderTracking = () => {
           
           <Button 
             variant="outline" 
-            className="w-full h-14 border-zepmeds-purple text-zepmeds-purple hover:bg-zepmeds-purple/10"
+            className="w-full h-14 border-orange-500 text-orange-500 hover:bg-orange-500/10"
             onClick={handleViewPastOrders}
           >
             View Past Orders
@@ -98,24 +98,24 @@ const OrderTracking = () => {
           
           <div className="space-y-3">
             <div className="flex items-start">
-              <div className="w-6 h-6 rounded-full bg-zepmeds-purple/20 flex items-center justify-center text-zepmeds-purple mr-3 mt-0.5">
-                <span className="text-sm">1</span>
+              <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center text-green-500 mr-3 mt-0.5">
+                <Clock className="h-4 w-4" />
               </div>
-              <p className="text-gray-300 text-sm">You'll receive live updates on your order status</p>
+              <p className="text-gray-300 text-sm">Express delivery in as little as 15 minutes</p>
             </div>
             
             <div className="flex items-start">
-              <div className="w-6 h-6 rounded-full bg-zepmeds-purple/20 flex items-center justify-center text-zepmeds-purple mr-3 mt-0.5">
-                <span className="text-sm">2</span>
+              <div className="w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center text-red-500 mr-3 mt-0.5">
+                <MapPin className="h-4 w-4" />
               </div>
-              <p className="text-gray-300 text-sm">Contact your delivery partner directly from the tracking page</p>
+              <p className="text-gray-300 text-sm">Track your order's real-time location on the map</p>
             </div>
             
             <div className="flex items-start">
-              <div className="w-6 h-6 rounded-full bg-zepmeds-purple/20 flex items-center justify-center text-zepmeds-purple mr-3 mt-0.5">
-                <span className="text-sm">3</span>
+              <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-500 mr-3 mt-0.5">
+                <Truck className="h-4 w-4" />
               </div>
-              <p className="text-gray-300 text-sm">You can download your invoice once the order is confirmed</p>
+              <p className="text-gray-300 text-sm">Direct contact with your delivery partner</p>
             </div>
           </div>
         </div>

@@ -12,24 +12,102 @@ import {
   Ticket,
   Gift,
   Code,
-  Clock
+  Clock,
+  ShieldCheck,
+  Heart,
+  ShoppingBag,
+  FileCheck,
+  Settings,
+  Bell
 } from "lucide-react";
 import { MenuItem } from "@/components/profile/ProfileMenu";
 
+// Define colors for each category of icons
+const healthIconColor = "text-green-500";
+const orderIconColor = "text-orange-500";
+const supportIconColor = "text-amber-500";
+const accountIconColor = "text-red-500";
+const financeIconColor = "text-purple-500";
+
 export const getProfileMenuItems = (): MenuItem[] => {
   return [
-    { icon: <User size={20} />, title: "Patient Details", path: "/patient-details" },
-    { icon: <MapPin size={20} />, title: "Manage Addresses", path: "/addresses" },
-    { icon: <ClipboardList size={20} />, title: "Order History", path: "/orders" },
-    { icon: <Pill size={20} />, title: "Past Medicines", path: "/past-medicines" },
-    { icon: <FileText size={20} />, title: "Medical Reports", path: "/reports" },
-    { icon: <Stethoscope size={20} />, title: "Consult a Doctor", path: "/doctor" },
-    { icon: <AlertCircle size={20} />, title: "Emergency Services", path: "/emergency" },
-    { icon: <Headphones size={20} />, title: "Help & Support", path: "/support" },
-    { icon: <Wallet size={20} />, title: "Wallet", path: "/wallet" },
-    { icon: <Ticket size={20} />, title: "Coupons", path: "/coupons" },
-    { icon: <Gift size={20} />, title: "Offers", path: "/offers" },
-    { icon: <Clock size={20} />, title: "Schedule Medicines", path: "/schedule-medicines" },
-    { icon: <Code size={20} />, title: "About Developers", path: "/about-developers" }
+    { 
+      icon: <User size={20} className={accountIconColor} />, 
+      title: "Patient Details", 
+      path: "/patient-details",
+      bgColor: "bg-red-500/10" 
+    },
+    { 
+      icon: <MapPin size={20} className={accountIconColor} />, 
+      title: "Manage Addresses", 
+      path: "/addresses",
+      bgColor: "bg-red-500/10" 
+    },
+    { 
+      icon: <ClipboardList size={20} className={orderIconColor} />, 
+      title: "Order History", 
+      path: "/orders",
+      bgColor: "bg-orange-500/10" 
+    },
+    { 
+      icon: <Pill size={20} className={healthIconColor} />, 
+      title: "Past Medicines", 
+      path: "/past-medicines",
+      bgColor: "bg-green-500/10" 
+    },
+    { 
+      icon: <FileText size={20} className={healthIconColor} />, 
+      title: "Medical Reports", 
+      path: "/reports",
+      bgColor: "bg-green-500/10" 
+    },
+    { 
+      icon: <Stethoscope size={20} className={healthIconColor} />, 
+      title: "Consult a Doctor", 
+      path: "/doctor",
+      bgColor: "bg-green-500/10" 
+    },
+    { 
+      icon: <AlertCircle size={20} className={supportIconColor} />, 
+      title: "Emergency Services", 
+      path: "/emergency",
+      bgColor: "bg-amber-500/10" 
+    },
+    { 
+      icon: <Headphones size={20} className={supportIconColor} />, 
+      title: "Help & Support", 
+      path: "/support",
+      bgColor: "bg-amber-500/10" 
+    },
+    { 
+      icon: <Wallet size={20} className={financeIconColor} />, 
+      title: "Wallet", 
+      path: "/wallet",
+      bgColor: "bg-purple-500/10" 
+    },
+    { 
+      icon: <Ticket size={20} className={financeIconColor} />, 
+      title: "Coupons", 
+      path: "/coupons",
+      bgColor: "bg-purple-500/10" 
+    },
+    { 
+      icon: <Gift size={20} className={financeIconColor} />, 
+      title: "Offers", 
+      path: "/offers",
+      bgColor: "bg-purple-500/10" 
+    },
+    { 
+      icon: <Clock size={20} className={orderIconColor} />, 
+      title: "Schedule Medicines", 
+      path: "/schedule-medicines",
+      bgColor: "bg-orange-500/10" 
+    },
+    { 
+      icon: <Code size={20} className={accountIconColor} />, 
+      title: "About Developers", 
+      path: "/about-developers",
+      bgColor: "bg-red-500/10" 
+    }
   ];
 };
