@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Package, MapPin } from "lucide-react";
@@ -31,17 +30,38 @@ const TrackOrderButton = ({
     if (orderId) {
       navigate(`/track-order/${orderId}`);
     } else {
-      // Check for any ongoing orders
-      const currentOrder = localStorage.getItem("currentOrder");
-      if (currentOrder) {
-        const orderData = JSON.parse(currentOrder);
-        navigate(`/track-order/${orderData.id}`);
+      try {
+        // Check for any ongoing orders
+        const currentOrder = localStorage.getItem("currentOrder");
+        if (currentOrder) {
+          const orderData = JSON.parse(currentOrder);
+          if (orderData && orderData.id) {
+            navigate(`/track-order/${orderData.id}`);
+            toast({
+              title: "Tracking your order",
+              description: `Showing status for order #${orderData.id}`,
+            });
+          } else {
+            // If order data is incomplete
+            toast({
+              title: "Order data incomplete",
+              description: "Please create a new order",
+              variant: "destructive"
+            });
+            navigate("/order-tracking");
+          }
+        } else {
+          // Otherwise just go to the tracking page
+          navigate("/order-tracking");
+        }
+      } catch (error) {
+        // Handle JSON parse error
+        console.error("Error parsing order data:", error);
         toast({
-          title: "Tracking your order",
-          description: `Showing status for order #${orderData.id}`,
+          title: "Error tracking order",
+          description: "There was an issue with your order data",
+          variant: "destructive"
         });
-      } else {
-        // Otherwise just go to the tracking page
         navigate("/order-tracking");
       }
     }

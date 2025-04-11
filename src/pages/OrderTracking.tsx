@@ -24,7 +24,34 @@ const OrderTracking = () => {
   }, [location.search, navigate]);
 
   const handleTrackByOrderId = () => {
-    // Mock order ID for now
+    // Create a mock order with all required properties
+    const mockOrder = {
+      id: "ZM12345",
+      status: "in-transit",
+      estimatedDelivery: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+      deliveryRider: {
+        name: "Rahul Singh",
+        rating: 4.8,
+        phone: "+91 98765 43210",
+        eta: "15 minutes"
+      },
+      items: [
+        {
+          id: "med-1",
+          name: "Paracetamol",
+          image: "https://source.unsplash.com/random/100x100/?medicine",
+          quantity: 2,
+          stripQuantity: 10,
+          price: 25
+        }
+      ],
+      totalAmount: 500
+    };
+    
+    // Save the mock order to localStorage
+    localStorage.setItem("currentOrder", JSON.stringify(mockOrder));
+    
+    // Navigate to the order tracking page
     navigate(`/track-order/ZM12345`);
   };
 

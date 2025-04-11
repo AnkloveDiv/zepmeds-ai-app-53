@@ -91,7 +91,7 @@ const TrackOrder = () => {
   const handleCallRider = () => {
     toast({
       title: "Calling rider",
-      description: `Connecting you to ${order.deliveryRider.name}...`,
+      description: `Connecting you to ${order.deliveryRider?.name || 'rider'}...`,
     });
   };
   
@@ -109,6 +109,11 @@ const TrackOrder = () => {
     });
   };
   
+  // Ensure deliveryRider exists with fallbacks
+  const riderName = order.deliveryRider?.name || "Delivery Partner";
+  const riderRating = order.deliveryRider?.rating || "N/A";
+  const riderPhone = order.deliveryRider?.phone || "Not available";
+  
   return (
     <div className="min-h-screen bg-background pb-20">
       <Header showBackButton title={`Track Order #${order.id}`} />
@@ -123,10 +128,10 @@ const TrackOrder = () => {
             <div className="flex-1">
               <div className="flex justify-between">
                 <div>
-                  <h3 className="text-white font-medium">{order.deliveryRider.name}</h3>
+                  <h3 className="text-white font-medium">{riderName}</h3>
                   <div className="flex items-center text-sm">
                     <span className="text-yellow-400 mr-1">★</span>
-                    <span className="text-yellow-400 mr-2">{order.deliveryRider.rating}</span>
+                    <span className="text-yellow-400 mr-2">{riderRating}</span>
                     <span className="text-gray-400">Delivery Partner</span>
                   </div>
                 </div>
