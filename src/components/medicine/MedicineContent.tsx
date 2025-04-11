@@ -9,6 +9,7 @@ import DealBanners from "@/components/medicine/DealBanners";
 import OfferBanner from "@/components/medicine/OfferBanner";
 import LocationWeather from "@/components/medicine/LocationWeather";
 import { useToast } from "@/components/ui/use-toast";
+import ProductAddedAnimation from "@/components/medicine/ProductAddedAnimation";
 
 interface MedicineContentProps {
   products: any[];
@@ -20,6 +21,7 @@ const MedicineContent = ({ products, setCartItems }: MedicineContentProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [userLocation, setUserLocation] = useState("New York, NY");
+  const [addedProduct, setAddedProduct] = useState<{ name: string; visible: boolean }>({ name: "", visible: false });
   const location = useLocation();
   const { toast } = useToast();
   
@@ -63,15 +65,18 @@ const MedicineContent = ({ products, setCartItems }: MedicineContentProps) => {
     setCartItems(newCart);
     localStorage.setItem("cart", JSON.stringify(newCart));
     
-    // Show toast notification with animation
+    // Show toast notification
     toast({
       title: "Added to cart",
       description: `${product.name} has been added to your cart.`,
       duration: 3000,
     });
     
+    // Show animated notification
+    setAddedProduct({ name: product.name, visible: true });
+    
     // Trigger a cart animation
-    const cartIcon = document.querySelector('.cart-icon'); // You need to add this class to your cart icon
+    const cartIcon = document.querySelector('.cart-icon');
     if (cartIcon) {
       cartIcon.classList.add('cart-animation');
       setTimeout(() => {
@@ -136,18 +141,12 @@ const MedicineContent = ({ products, setCartItems }: MedicineContentProps) => {
       
       <OfferBanner />
       
-      {/* Add animations for cart */}
-      <style jsx>{`
-        @keyframes cartPulse {
-          0% { transform: scale(1); }
-          50% { transform: scale(1.3); }
-          100% { transform: scale(1); }
-        }
-        
-        .cart-animation {
-          animation: cartPulse 0.5s ease-in-out;
-        }
-      `}</style>
+      {/* Product added animation component */}
+      <ProductAddedAnimation
+        productName={addedProduct.name}
+        isVisible={addedProduct.visible}
+        onAnimationComplete={() => setAddedProduct({ ...addedProduct, visible: false })}
+      />
     </div>
   );
 };
