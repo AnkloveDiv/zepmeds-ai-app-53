@@ -20,6 +20,45 @@ interface AddressDetails {
   zipCode: string;
 }
 
+// Mock implementation for development environment
+const mockGoogleMaps = () => {
+  if (typeof window !== 'undefined' && !window.google) {
+    // @ts-ignore
+    window.google = {
+      maps: {
+        Map: class MockMap {
+          constructor() {}
+          setCenter() {}
+          panTo() {}
+          getCenter() { return { lat: () => 28.6139, lng: () => 77.2090 }; }
+          addListener(event: string, callback: Function) {
+            return { remove: () => {} };
+          }
+        },
+        Marker: class MockMarker {
+          constructor() {}
+          setPosition() {}
+          getPosition() { return { lat: () => 28.6139, lng: () => 77.2090 }; }
+          setMap() {}
+          addListener(event: string, callback: Function) {
+            return { remove: () => {} };
+          }
+        },
+        LatLng: class MockLatLng {
+          constructor(public lat: number, public lng: number) {}
+        },
+        Animation: {
+          DROP: 1,
+          BOUNCE: 2
+        },
+        SymbolPath: {
+          CIRCLE: 0
+        }
+      }
+    };
+  }
+};
+
 const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
@@ -31,16 +70,23 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
   const { toast } = useToast();
   
   useEffect(() => {
+    // Initialize mock Google Maps for development
+    mockGoogleMaps();
+    
     // Check if Google Maps API is available
     if (!window.google || !window.google.maps) {
-      // In a real app, you would load the Google Maps API here
       console.error("Google Maps API is not loaded");
       toast({
         title: "Maps API not available",
-        description: "Could not load Google Maps. Please try again later.",
+        description: "Could not load Google Maps. Using mock data instead.",
         variant: "destructive",
       });
-      setIsLoading(false);
+      
+      // Initialize with mock data anyway
+      setTimeout(() => {
+        setIsLoading(false);
+        simulateAddressSelection(28.6139, 77.2090);
+      }, 1000);
       return;
     }
     
@@ -108,7 +154,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     });
     
     // Add event listener for map click
-    newMap.addListener("click", (e: google.maps.MapMouseEvent) => {
+    newMap.addListener("click", (e: any) => {
       const position = e.latLng;
       if (position && newMarker) {
         newMarker.setPosition(position);
@@ -119,15 +165,31 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     setIsLoading(false);
   };
   
+  const simulateAddressSelection = (lat: number, lng: number) => {
+    // For development - simulate address selection
+    const mockAddress: AddressDetails = {
+      fullAddress: "123 Example Street, New Delhi, India, 110001",
+      latitude: lat,
+      longitude: lng,
+      city: "New Delhi",
+      state: "Delhi",
+      zipCode: "110001"
+    };
+    
+    setSelectedAddress(mockAddress);
+  };
+  
   const getAddressFromCoordinates = (lat: number, lng: number) => {
     setLoadingAddress(true);
     
     // In a real app, you would use the Google Maps Geocoding API
     // For demo purposes, we'll simulate a geocoding response
     setTimeout(() => {
-      // Simulate geocoding response
+      // Create a "realistic" address based on coordinates
+      const latRounded = lat.toFixed(2);
+      const lngRounded = lng.toFixed(2);
       const mockAddress: AddressDetails = {
-        fullAddress: "123 Example Street, City, State, ZIP",
+        fullAddress: `${latRounded}, ${lngRounded} Avenue, Example City, State, ZIP`,
         latitude: lat,
         longitude: lng,
         city: "Example City",
@@ -139,7 +201,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       setLoadingAddress(false);
     }, 1000);
     
-    // With actual Google Maps API:
+    // With actual Google Maps API, you would use:
     /*
     const geocoder = new google.maps.Geocoder();
     geocoder.geocode({ location: { lat, lng } }, (results, status) => {

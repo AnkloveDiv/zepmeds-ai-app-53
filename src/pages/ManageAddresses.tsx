@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
@@ -412,7 +411,7 @@ const ManageAddresses = () => {
       </Dialog>
       
       <Dialog open={showMapDialog} onOpenChange={setShowMapDialog}>
-        <DialogContent className="bg-background border-gray-800 text-white max-w-xl" showClose={false}>
+        <DialogContent className="bg-background border-gray-800 text-white max-w-xl">
           <DialogHeader>
             <DialogTitle>Select Location on Map</DialogTitle>
           </DialogHeader>
