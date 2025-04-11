@@ -29,6 +29,7 @@ const mockGoogleMaps = () => {
         Map: class MockMap {
           constructor() {}
           setCenter() {}
+          setZoom() {}
           panTo() {}
           getCenter() { return { lat: () => 28.6139, lng: () => 77.2090 }; }
           addListener(event: string, callback: Function) {
@@ -43,16 +44,23 @@ const mockGoogleMaps = () => {
           addListener(event: string, callback: Function) {
             return { remove: () => {} };
           }
+          setAnimation() {}
         },
         LatLng: class MockLatLng {
           constructor(public lat: number, public lng: number) {}
+          lat() { return this.lat; }
+          lng() { return this.lng; }
         },
         Animation: {
           DROP: 1,
           BOUNCE: 2
         },
         SymbolPath: {
-          CIRCLE: 0
+          CIRCLE: 0,
+          FORWARD_CLOSED_ARROW: 1,
+          FORWARD_OPEN_ARROW: 2,
+          BACKWARD_CLOSED_ARROW: 3,
+          BACKWARD_OPEN_ARROW: 4
         }
       }
     };
