@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -201,7 +202,11 @@ const Checkout = () => {
         {/* Delivery Address */}
         <div>
           <h2 className="text-lg font-bold text-white mb-4">Delivery Address</h2>
-          <div className="space-y-3">
+          <RadioGroup 
+            value={selectedAddress?.toString() || ""} 
+            onValueChange={(value) => setSelectedAddress(parseInt(value))}
+            className="space-y-3"
+          >
             {addresses.map(address => (
               <div 
                 key={address.id}
@@ -218,7 +223,6 @@ const Checkout = () => {
                       <RadioGroupItem 
                         value={address.id.toString()} 
                         id={`address-${address.id}`} 
-                        checked={selectedAddress === address.id}
                         className="text-zepmeds-purple border-white/20"
                       />
                     </div>
@@ -238,7 +242,7 @@ const Checkout = () => {
                 </div>
               </div>
             ))}
-          </div>
+          </RadioGroup>
           
           <Button 
             variant="outline" 
