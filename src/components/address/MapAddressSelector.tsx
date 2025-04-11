@@ -58,6 +58,29 @@ const mockGoogleMaps = () => {
           lat() { return this._lat; }
           lng() { return this._lng; }
         },
+        Geocoder: class MockGeocoder {
+          geocode(request: any, callback: Function) {
+            // Simulate a geocoding response
+            setTimeout(() => {
+              const mockResult = [{
+                address_components: [
+                  { long_name: 'City', short_name: 'CT', types: ['locality'] },
+                  { long_name: 'State', short_name: 'ST', types: ['administrative_area_level_1'] },
+                  { long_name: '12345', short_name: '12345', types: ['postal_code'] }
+                ],
+                formatted_address: 'Mock Address, City, State 12345',
+                geometry: {
+                  location: { lat: () => 28.6139, lng: () => 77.2090 }
+                },
+                place_id: 'mock-place-id'
+              }];
+              callback(mockResult, 'OK');
+            }, 500);
+          }
+        },
+        MapsEventListener: class MockMapsEventListener {
+          remove() {}
+        },
         Animation: {
           DROP: 1,
           BOUNCE: 2
