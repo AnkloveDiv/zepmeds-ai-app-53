@@ -32,6 +32,8 @@ import Offers from "./pages/Offers";
 import DeveloperInfo from "./pages/DeveloperInfo";
 import Support from "./pages/Support";
 import ScheduleMedicines from "./pages/ScheduleMedicines";
+import PetCare from "./pages/PetCare";
+import MedicalDevices from "./pages/MedicalDevices";
 
 const queryClient = new QueryClient();
 
@@ -75,6 +77,8 @@ const AppContent = () => {
         <Route path="/track-order/:orderId" element={<TrackOrder />} />
         <Route path="/support" element={<Support />} />
         <Route path="/schedule-medicines" element={<ScheduleMedicines />} />
+        <Route path="/pet-care" element={<PetCare />} />
+        <Route path="/medical-devices" element={<MedicalDevices />} />
         
         {/* Profile Section Routes */}
         <Route path="/patient-details" element={<PatientDetails />} />

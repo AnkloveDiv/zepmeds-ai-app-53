@@ -14,6 +14,7 @@ import OfferBanner from "@/components/medicine/OfferBanner";
 import FloatingCartButton from "@/components/medicine/FloatingCartButton";
 import SearchBar from "@/components/SearchBar";
 import DeliveryTracking from "@/components/medicine/DeliveryTracking";
+import TrackOrderButton from "@/components/order/TrackOrderButton";
 
 interface MedicineContentProps {
   products: any[];
@@ -25,7 +26,7 @@ const MedicineContent = ({ products, setCartItems }: MedicineContentProps) => {
   const location = useLocation();
   const { toast } = useToast();
   const [activeCategory, setActiveCategory] = useState("All");
-  const [userLocation] = useState("Current Location");
+  const [userLocation, setUserLocation] = useState("Current Location");
   const [temperature] = useState("28°C");
   const [weather] = useState("Sunny");
   const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
@@ -33,6 +34,12 @@ const MedicineContent = ({ products, setCartItems }: MedicineContentProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
+    // Try to get saved location from localStorage
+    const savedLocation = localStorage.getItem("userLocation");
+    if (savedLocation) {
+      setUserLocation(savedLocation);
+    }
+    
     const params = new URLSearchParams(location.search);
     const categoryParam = params.get("category");
     
@@ -131,6 +138,15 @@ const MedicineContent = ({ products, setCartItems }: MedicineContentProps) => {
   const handleViewCart = () => {
     navigate("/cart");
   };
+  
+  const handleSaveLocation = (location: string) => {
+    setUserLocation(location);
+    localStorage.setItem("userLocation", location);
+    toast({
+      title: "Location saved",
+      description: `Delivery location set to ${location}`,
+    });
+  };
 
   return (
     <div className="px-4 py-4">
@@ -138,15 +154,23 @@ const MedicineContent = ({ products, setCartItems }: MedicineContentProps) => {
         location={userLocation} 
         temperature={temperature} 
         weather={weather} 
+        onLocationSave={handleSaveLocation}
       />
 
       <SearchBar placeholder="Search for medicines, health products..." />
+      
+      <div className="mt-4 mb-6">
+        <TrackOrderButton
+          variant="outline"
+          className="w-full border-zepmeds-purple text-zepmeds-purple hover:bg-zepmeds-purple/10"
+          prominent={true}
+        />
+      </div>
       
       <DealBanners />
 
       <ActionButtons onUploadPrescription={handleUploadPrescription} />
       
-      {/* Add track order section */}
       <DeliveryTracking />
 
       <CategoriesNav 

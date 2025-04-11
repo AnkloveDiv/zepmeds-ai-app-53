@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Package, MapPin } from "lucide-react";
@@ -10,6 +11,7 @@ interface TrackOrderButtonProps {
   size?: "default" | "sm" | "lg" | "icon";
   showIcon?: boolean;
   label?: string;
+  prominent?: boolean;
 }
 
 const TrackOrderButton = ({ 
@@ -18,7 +20,8 @@ const TrackOrderButton = ({
   variant = "default", 
   size = "default",
   showIcon = true,
-  label = "Track Order"
+  label = "Track Order",
+  prominent = false
 }: TrackOrderButtonProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -44,11 +47,18 @@ const TrackOrderButton = ({
     }
   };
   
+  // If it's prominent, we override some of the styling
+  const buttonVariant = prominent ? "default" : variant;
+  const buttonSize = prominent ? "lg" : size;
+  const buttonClass = prominent 
+    ? `bg-zepmeds-purple hover:bg-zepmeds-purple/90 text-white font-medium ${className || ""}`
+    : className || "";
+  
   return (
     <Button 
-      variant={variant} 
-      size={size}
-      className={`flex items-center ${className || ""}`}
+      variant={buttonVariant} 
+      size={buttonSize}
+      className={`flex items-center ${buttonClass}`}
       onClick={handleTrackOrder}
     >
       {showIcon && <Package className="mr-2 h-4 w-4" />}

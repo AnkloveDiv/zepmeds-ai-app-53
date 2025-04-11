@@ -2,7 +2,7 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import ServiceCard from "@/components/ServiceCard";
-import { Pill, FileUp, MessageSquareText, Stethoscope, Dog, Package } from "lucide-react";
+import { Pill, FileUp, MessageSquareText, Stethoscope, Dog, Package, Thermometer } from "lucide-react";
 
 const ServiceSection = () => {
   const navigate = useNavigate();
@@ -41,7 +41,7 @@ const ServiceSection = () => {
       description: "Medicines & vet consult",
       icon: <Dog className="h-6 w-6 text-white" />,
       color: "bg-gradient-to-br from-amber-600 to-amber-400",
-      onClick: () => navigate("/medicine-delivery?category=petcare")
+      onClick: () => navigate("/pet-care")
     },
     {
       title: "Track Order",
@@ -49,6 +49,13 @@ const ServiceSection = () => {
       icon: <Package className="h-6 w-6 text-white" />,
       color: "bg-gradient-to-br from-teal-600 to-teal-400",
       onClick: () => navigate("/order-tracking")
+    },
+    {
+      title: "Medical Devices",
+      description: "Health monitoring gadgets",
+      icon: <Thermometer className="h-6 w-6 text-white" />,
+      color: "bg-gradient-to-br from-blue-600 to-blue-400",
+      onClick: () => navigate("/medical-devices")
     }
   ];
 
