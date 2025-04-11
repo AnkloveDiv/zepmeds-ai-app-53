@@ -2,7 +2,7 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import CategoryCard from "@/components/CategoryCard";
-import { Heart, Pill, Eye, Stethoscope, Bone, Brain, Sun, Thermometer } from "lucide-react";
+import { Heart, Pill, Eye, Stethoscope, Bone, Brain, Sun, Thermometer, Dog } from "lucide-react";
 
 const categories = [
   { name: "Skin Care", icon: <Heart className="h-6 w-6 text-white" />, gradient: "linear-gradient(135deg, #FF6B6B, #FFD166)", onClick: () => {} },
@@ -12,6 +12,7 @@ const categories = [
   { name: "Pain Relief", icon: <Bone className="h-6 w-6 text-white" />, gradient: "linear-gradient(135deg, #FF5E3A, #FF9E80)", onClick: () => {} },
   { name: "Brain", icon: <Brain className="h-6 w-6 text-white" />, gradient: "linear-gradient(135deg, #6A5ACD, #A17FE0)", onClick: () => {} },
   { name: "Summer Care", icon: <Sun className="h-6 w-6 text-white" />, gradient: "linear-gradient(135deg, #FF9E2C, #FFD66B)", onClick: () => {} },
+  { name: "Pet Care", icon: <Dog className="h-6 w-6 text-white" />, gradient: "linear-gradient(135deg, #4776E6, #8E54E9)", onClick: () => {} },
   { name: "Devices", icon: <Thermometer className="h-6 w-6 text-white" />, gradient: "linear-gradient(135deg, #4776E6, #8E54E9)", onClick: () => {} }
 ];
 

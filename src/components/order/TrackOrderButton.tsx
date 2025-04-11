@@ -14,7 +14,7 @@ const TrackOrderButton = ({ orderId, className, variant = "default" }: TrackOrde
   const handleTrackOrder = () => {
     // If we have a specific order ID, navigate to that order
     if (orderId) {
-      navigate(`/order-tracking?id=${orderId}`);
+      navigate(`/track-order/${orderId}`);
     } else {
       // Otherwise just go to the tracking page
       navigate("/order-tracking");

@@ -1,5 +1,5 @@
 
-import { Pill, Heart, Brain, Eye, Stethoscope, Bone, Sun } from "lucide-react";
+import { Pill, Heart, Brain, Eye, Stethoscope, Bone, Sun, Dog } from "lucide-react";
 
 interface CategoryProps {
   activeCategory: string;
@@ -14,6 +14,7 @@ const CategoriesNav = ({ activeCategory, onCategoryClick }: CategoryProps) => {
     { name: "Eye Care", icon: <Eye className="h-5 w-5" /> },
     { name: "Dental", icon: <Stethoscope className="h-5 w-5" /> },
     { name: "Pain", icon: <Bone className="h-5 w-5" /> },
+    { name: "Pet Care", icon: <Dog className="h-5 w-5" /> },
     { name: "Summer", icon: <Sun className="h-5 w-5" /> }
   ];
 

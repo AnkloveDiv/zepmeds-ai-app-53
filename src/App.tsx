@@ -20,6 +20,7 @@ import PrescriptionUpload from "./pages/PrescriptionUpload";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import OrderTracking from "./pages/OrderTracking";
+import TrackOrder from "./pages/TrackOrder";
 import PatientDetails from "./pages/PatientDetails";
 import ManageAddresses from "./pages/ManageAddresses";
 import OrderHistory from "./pages/OrderHistory";
@@ -71,6 +72,7 @@ const AppContent = () => {
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/order-tracking" element={<OrderTracking />} />
+        <Route path="/track-order/:orderId" element={<TrackOrder />} />
         <Route path="/support" element={<Support />} />
         <Route path="/schedule-medicines" element={<ScheduleMedicines />} />
         

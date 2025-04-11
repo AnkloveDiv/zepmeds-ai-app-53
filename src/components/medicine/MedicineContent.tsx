@@ -11,7 +11,6 @@ import ActionButtons from "@/components/medicine/ActionButtons";
 import CategoriesNav from "@/components/medicine/CategoriesNav";
 import ProductGrid from "@/components/medicine/ProductGrid";
 import OfferBanner from "@/components/medicine/OfferBanner";
-import DeliveryTracking from "@/components/medicine/DeliveryTracking";
 import FloatingCartButton from "@/components/medicine/FloatingCartButton";
 import SearchBar from "@/components/SearchBar";
 
@@ -45,6 +44,7 @@ const MedicineContent = ({ products, setCartItems }: MedicineContentProps) => {
         "painrelief": "Pain",
         "brain": "Brain",
         "summercare": "Summer",
+        "petcare": "Pet Care",
         "devices": "Popular"
       };
       
@@ -140,8 +140,6 @@ const MedicineContent = ({ products, setCartItems }: MedicineContentProps) => {
       />
 
       <SearchBar placeholder="Search for medicines, health products..." />
-      
-      <DeliveryTracking />
       
       <DealBanners />
 
