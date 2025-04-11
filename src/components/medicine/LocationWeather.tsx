@@ -5,13 +5,18 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 interface LocationWeatherProps {
-  location: string;
-  temperature: string;
-  weather: string;
+  location?: string;
+  temperature?: string;
+  weather?: string;
   onLocationSave?: (location: string) => void;
 }
 
-const LocationWeather = ({ location, temperature, weather, onLocationSave }: LocationWeatherProps) => {
+const LocationWeather = ({ 
+  location = "New York, NY", 
+  temperature = "24°C", 
+  weather = "Sunny", 
+  onLocationSave 
+}: LocationWeatherProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [locationInput, setLocationInput] = useState(location);
   

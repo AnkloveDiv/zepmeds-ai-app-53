@@ -1,12 +1,16 @@
 
+import { useState } from "react";
 import { Pill, Heart, Brain, Eye, Stethoscope, Bone, Sun, Dog } from "lucide-react";
 
 interface CategoryProps {
-  activeCategory: string;
-  onCategoryClick: (categoryName: string) => void;
+  activeCategory?: string;
+  onCategoryClick?: (categoryName: string) => void;
 }
 
-const CategoriesNav = ({ activeCategory, onCategoryClick }: CategoryProps) => {
+const CategoriesNav = ({ 
+  activeCategory = "All", 
+  onCategoryClick = () => {} 
+}: CategoryProps) => {
   const categories = [
     { name: "All", icon: <Pill className="h-5 w-5" /> },
     { name: "Popular", icon: <Heart className="h-5 w-5" /> },

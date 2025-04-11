@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -17,6 +18,8 @@ interface MedicineContentProps {
 const MedicineContent = ({ products, setCartItems }: MedicineContentProps) => {
   const [cartItems, setLocalCartItems] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState("All");
+  const [userLocation, setUserLocation] = useState("New York, NY");
   const location = useLocation();
   
   useEffect(() => {
@@ -49,6 +52,16 @@ const MedicineContent = ({ products, setCartItems }: MedicineContentProps) => {
     localStorage.setItem("cart", JSON.stringify(newCart));
   };
 
+  const handleCategoryClick = (categoryName: string) => {
+    setActiveCategory(categoryName);
+    // In a real app, you might filter products by category here
+  };
+
+  const handleLocationSave = (newLocation: string) => {
+    setUserLocation(newLocation);
+    // In a real app, you might update user preferences or fetch weather for the new location
+  };
+
   return (
     <div className="px-4 py-4">
       <motion.div
@@ -59,11 +72,19 @@ const MedicineContent = ({ products, setCartItems }: MedicineContentProps) => {
         <SearchBar placeholder="Search medicines and healthcare products" />
       </motion.div>
       
-      <LocationWeather />
+      <LocationWeather 
+        location={userLocation} 
+        temperature="24°C" 
+        weather="Sunny"
+        onLocationSave={handleLocationSave}
+      />
       
       <DeliveryTracking />
       
-      <CategoriesNav />
+      <CategoriesNav 
+        activeCategory={activeCategory}
+        onCategoryClick={handleCategoryClick}
+      />
       
       <DealBanners />
       

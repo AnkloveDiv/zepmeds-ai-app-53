@@ -6,10 +6,21 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Search, AlertTriangle } from "lucide-react";
 
+interface Product {
+  id: string;
+  name: string;
+  image: string;
+  price: number;
+  discountPrice: number | null;
+  rating: number;
+  description: string;
+  category?: string;
+}
+
 interface EnhancedProductGridProps {
-  products: any[];
+  products: Product[];
   searchQuery?: string;
-  onAddToCart: (product: any, quantity: number) => void;
+  onAddToCart: (product: Product, quantity: number) => void;
 }
 
 const EnhancedProductGrid = ({ 
@@ -85,6 +96,7 @@ const EnhancedProductGrid = ({
             <ProductGrid 
               products={products.slice(0, 4)} 
               onAddToCart={onAddToCart}
+              onProductClick={() => {}}
             />
           </div>
         </motion.div>
@@ -92,6 +104,7 @@ const EnhancedProductGrid = ({
         <ProductGrid 
           products={filteredProducts} 
           onAddToCart={onAddToCart}
+          onProductClick={() => {}}
         />
       )}
     </div>

@@ -21,8 +21,8 @@ interface Product {
 
 interface ProductGridProps {
   products: Product[];
-  onAddToCart: (product: Product) => void;
-  onProductClick: (product: Product) => void;
+  onAddToCart: (product: Product, quantity: number) => void;
+  onProductClick?: (product: Product) => void;
 }
 
 const ProductGrid = ({ products, onAddToCart, onProductClick }: ProductGridProps) => {
@@ -42,8 +42,8 @@ const ProductGrid = ({ products, onAddToCart, onProductClick }: ProductGridProps
             discountPrice={product.discountPrice}
             rating={product.rating}
             description={product.description}
-            onAddToCart={() => onAddToCart(product)}
-            onClick={() => onProductClick(product)}
+            onAddToCart={() => onAddToCart(product, 1)}
+            onClick={() => onProductClick && onProductClick(product)}
           />
         </motion.div>
       ))}

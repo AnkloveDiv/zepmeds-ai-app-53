@@ -21,6 +21,8 @@ import { allProducts, advertisements } from "@/data/medicineData";
 const MedicineDelivery = () => {
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState("All");
+  const [userLocation, setUserLocation] = useState("New York, NY");
   const location = useLocation();
   
   useBackNavigation();
@@ -53,6 +55,16 @@ const MedicineDelivery = () => {
     localStorage.setItem("cart", JSON.stringify(newCart));
   };
 
+  const handleCategoryClick = (categoryName: string) => {
+    setActiveCategory(categoryName);
+    // In a real app, you might filter products by category here
+  };
+
+  const handleLocationSave = (newLocation: string) => {
+    setUserLocation(newLocation);
+    // In a real app, you might update user preferences or fetch weather for the new location
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <Header showBackButton title="Medicine Delivery" cartCount={cartItems.length} />
@@ -60,11 +72,19 @@ const MedicineDelivery = () => {
       <main className="px-4 py-4">
         <SearchBar placeholder="Search medicines and healthcare products" />
         
-        <LocationWeather />
+        <LocationWeather 
+          location={userLocation} 
+          temperature="24°C" 
+          weather="Sunny"
+          onLocationSave={handleLocationSave}
+        />
         
         <DeliveryTracking />
         
-        <CategoriesNav />
+        <CategoriesNav 
+          activeCategory={activeCategory}
+          onCategoryClick={handleCategoryClick}
+        />
         
         <DealBanners />
         

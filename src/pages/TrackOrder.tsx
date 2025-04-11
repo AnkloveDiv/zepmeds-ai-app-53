@@ -6,7 +6,7 @@ import BottomNavigation from "@/components/BottomNavigation";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/use-toast";
-import { Phone, MapPin, Package, ChevronDown, ChevronUp, Copy, MessageSquare, Clock, Info, Share2 } from "lucide-react";
+import { Phone, MapPin, Package, ChevronDown, ChevronUp, Copy, MessageSquare, Clock, Info, Share2, Check } from "lucide-react";
 import DeliveryAnimation from "@/components/DeliveryAnimation";
 import DeliveryMap from "@/components/DeliveryMap";
 import useBackNavigation from "@/hooks/useBackNavigation";
