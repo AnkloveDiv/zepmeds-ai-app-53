@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
@@ -134,7 +135,7 @@ const DoctorConsultation = () => {
                     specialty={doctor.specialty}
                     experience={doctor.experience}
                     rating={doctor.rating}
-                    price={doctor.price}
+                    price={doctor.price.toString()}
                     available={doctor.available}
                     onConsult={() => handleDoctorConsult(doctor)}
                   />

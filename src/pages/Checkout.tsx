@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -51,6 +50,7 @@ const Checkout = () => {
   ]);
   const [selectedAddress, setSelectedAddress] = useState<number | null>(null);
   const [deliveryTime, setDeliveryTime] = useState("express");
+  const [recipientDetails, setRecipientDetails] = useState<any>(null);
   
   useEffect(() => {
     const savedCart = localStorage.getItem("cart");
@@ -127,6 +127,10 @@ const Checkout = () => {
   
   const handleToggleWallet = () => {
     setUseWallet(!useWallet);
+  };
+  
+  const handleRecipientDetailsChange = (details: any) => {
+    setRecipientDetails(details);
   };
   
   const handlePlaceOrder = () => {
@@ -377,7 +381,7 @@ const Checkout = () => {
         </div>
         
         {/* Order for Someone Else */}
-        <OrderForSomeoneElse />
+        <OrderForSomeoneElse onChange={handleRecipientDetailsChange} />
         
         {/* Payment Method */}
         <div>
