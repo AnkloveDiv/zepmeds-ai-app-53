@@ -62,7 +62,7 @@ const Index = () => {
           initial="hidden"
           animate="visible"
           variants={titleVariants}
-          className="mb-8 z-10 relative"
+          className="mb-4 z-10 relative"
         >
           <h1 className="text-6xl font-bold mb-2 text-gradient-primary inline-flex">
             {titleText.split('').map((letter, index) => (
@@ -82,7 +82,7 @@ const Index = () => {
           initial={{ opacity: 0, scale: 0 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 1.5, duration: 1 }}
-          className="text-white text-xl font-medium"
+          className="text-white text-sm font-medium"
         >
           India's First Fastest Medicine Delivery App
         </motion.div>

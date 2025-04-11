@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import OrderForSomeoneElse, { RecipientDetails } from "@/components/checkout/OrderForSomeoneElse";
 import { 
   MapPin, 
   CreditCard, 
@@ -58,8 +59,11 @@ const Checkout = () => {
     pincode: "",
     landmark: ""
   });
+  const [recipientDetails, setRecipientDetails] = useState<RecipientDetails | null>(null);
   const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
   const [showCardDetails, setShowCardDetails] = useState(false);
+  const [walletBalance, setWalletBalance] = useState(500); // Mock wallet balance
+  const [showLowBalance, setShowLowBalance] = useState(false);
   const [cardDetails, setCardDetails] = useState({
     number: "",
     name: "",
@@ -168,6 +172,10 @@ const Checkout = () => {
     setShowBNPLVerify(false);
   };
 
+  const handleRecipientDetailsChange = (details: RecipientDetails) => {
+    setRecipientDetails(Object.values(details).some(value => value) ? details : null);
+  };
+
   const handlePlaceOrder = () => {
     // Validate form
     if (!deliveryAddress.fullName || !deliveryAddress.phone || !deliveryAddress.address || 
@@ -212,19 +220,49 @@ const Checkout = () => {
       });
       return;
     }
+
+    // For wallet, check balance
+    if (paymentMethod === "wallet") {
+      const cartItems = JSON.parse(localStorage.getItem("cart") || "[]");
+      const total = cartItems.reduce((acc: number, item: any) => 
+        acc + (item.price * item.quantity * item.stripQuantity), 0) + 40; // Adding delivery fee
+        
+      if (walletBalance < total) {
+        setShowLowBalance(true);
+        return;
+      }
+    }
     
     // Save address if option is selected
     if (saveAddress) {
       saveCurrentAddress();
     }
 
+    // Get cart total
+    const cartItems = JSON.parse(localStorage.getItem("cart") || "[]");
+    const subtotal = cartItems.reduce((acc: number, item: any) => 
+      acc + (item.price * item.quantity * item.stripQuantity), 0);
+    const deliveryFee = 40;
+    const total = subtotal + deliveryFee;
+
+    // Determine which address to use (recipient's or buyer's)
+    const finalDeliveryAddress = recipientDetails ? {
+      fullName: recipientDetails.name,
+      phone: recipientDetails.phone,
+      address: recipientDetails.address,
+      city: recipientDetails.city,
+      pincode: recipientDetails.pincode,
+      landmark: recipientDetails.landmark
+    } : deliveryAddress;
+
     // Save order details (in a real app, this would be an API call)
     const orderDetails = {
       id: `ORD${Math.floor(Math.random() * 10000)}`,
       paymentMethod,
       paymentDetails: paymentMethod === "upi" ? { method: upiOption } : {},
-      deliveryAddress,
-      items: JSON.parse(localStorage.getItem("cart") || "[]"),
+      deliveryAddress: finalDeliveryAddress,
+      recipientDetails: recipientDetails, // Store recipient details if order is for someone else
+      items: cartItems,
       status: "confirmed",
       timestamp: new Date().toISOString(),
       deliveryRider: {
@@ -235,11 +273,11 @@ const Checkout = () => {
       },
       estimatedDelivery: "30-45 minutes",
       paymentInfo: {
-        subtotal: 760,
-        deliveryFee: 40,
+        subtotal,
+        deliveryFee,
         taxes: 0,
         discount: 0,
-        total: 800
+        total
       },
       trackingUpdates: [
         {
@@ -267,12 +305,12 @@ const Checkout = () => {
   const renderUPIOptions = () => (
     <div className="mt-4 grid grid-cols-3 gap-3">
       {[
-        { id: "gpay", name: "Google Pay", logo: "🇬" },
-        { id: "phonepe", name: "PhonePe", logo: "🇵" },
-        { id: "paytm", name: "Paytm", logo: "🇵🇹" },
-        { id: "bhim", name: "BHIM UPI", logo: "🇮🇳" },
-        { id: "mobikwik", name: "MobiKwik", logo: "🇲" },
-        { id: "amazon", name: "Amazon Pay", logo: "🇦" }
+        { id: "gpay", name: "Google Pay", logo: "/images/gpay.png", fallbackLogo: "G" },
+        { id: "phonepe", name: "PhonePe", logo: "/images/phonepe.png", fallbackLogo: "P" },
+        { id: "paytm", name: "Paytm", logo: "/images/paytm.png", fallbackLogo: "PT" },
+        { id: "bhim", name: "BHIM UPI", logo: "/images/bhim.png", fallbackLogo: "B" },
+        { id: "mobikwik", name: "MobiKwik", logo: "/images/mobikwik.png", fallbackLogo: "M" },
+        { id: "amazon", name: "Amazon Pay", logo: "/images/amazon.png", fallbackLogo: "A" }
       ].map(option => (
         <div 
           key={option.id}
@@ -283,7 +321,9 @@ const Checkout = () => {
               : "border-gray-700 bg-black/20"
           }`}
         >
-          <div className="text-2xl mb-1">{option.logo}</div>
+          <div className="text-2xl mb-1 h-8 w-8 flex items-center justify-center bg-gray-800 rounded-full">
+            {option.fallbackLogo}
+          </div>
           <span className="text-xs text-center">{option.name}</span>
           {upiOption === option.id && (
             <Check size={16} className="text-zepmeds-purple mt-1" />
@@ -298,6 +338,9 @@ const Checkout = () => {
       <Header showBackButton title="Checkout" />
       
       <main className="px-4 py-4">
+        {/* Order For Someone Else Section */}
+        <OrderForSomeoneElse onChange={handleRecipientDetailsChange} />
+        
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -559,6 +602,9 @@ const Checkout = () => {
                 <Label htmlFor="wallet" className="flex items-center cursor-pointer">
                   <Wallet size={18} className="mr-2 text-zepmeds-purple" />
                   <span>Wallet</span>
+                  <span className="ml-2 text-xs bg-gray-700 text-white px-2 py-0.5 rounded-full">
+                    Balance: ₹{walletBalance}
+                  </span>
                 </Label>
               </div>
               
@@ -687,6 +733,45 @@ const Checkout = () => {
                 onClick={verifyPAN}
               >
                 Verify PAN
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Low Balance Warning Dialog */}
+      <Dialog open={showLowBalance} onOpenChange={setShowLowBalance}>
+        <DialogContent className="bg-background border-gray-800">
+          <DialogHeader>
+            <DialogTitle className="text-white">Insufficient Wallet Balance</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-start">
+              <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5 mr-2" />
+              <div>
+                <p className="text-sm text-amber-400">Your wallet balance is insufficient for this purchase.</p>
+                <p className="text-xs text-amber-400/70 mt-1">Current balance: ₹{walletBalance}</p>
+                <p className="text-xs text-amber-400/70">Required amount: ₹800</p>
+              </div>
+            </div>
+            
+            <div className="flex space-x-3 mt-4">
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => setShowLowBalance(false)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                className="flex-1 bg-zepmeds-purple hover:bg-zepmeds-purple-light"
+                onClick={() => {
+                  setShowLowBalance(false);
+                  navigate("/wallet"); // Navigate to wallet to add funds
+                }}
+              >
+                Add Money to Wallet
               </Button>
             </div>
           </div>

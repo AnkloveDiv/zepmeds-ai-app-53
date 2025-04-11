@@ -1,13 +1,16 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
-import { Phone, Star, Clock, MapPin, DollarSign, ShoppingBag, AlertTriangle } from "lucide-react";
+import { Phone, Star, Clock, MapPin, ShoppingBag, AlertTriangle, Package, FileText } from "lucide-react";
 import DeliveryMap from "@/components/DeliveryMap";
 import DeliveryAnimation from "@/components/DeliveryAnimation";
 import { useToast } from "@/components/ui/use-toast";
+import OrderFAQ from "@/components/order/OrderFAQ";
+import OrderInvoice from "@/components/order/OrderInvoice";
+import useBackNavigation from "@/hooks/useBackNavigation";
 
 interface OrderDetails {
   id: string;
@@ -27,18 +30,28 @@ interface OrderDetails {
   }>;
   expectedDeliveryTime?: Date;
   totalAmount?: number;
+  date?: string;
 }
 
 const OrderTracking = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [timeLeft, setTimeLeft] = useState({ minutes: 12, seconds: 0 });
   const [isLate, setIsLate] = useState(false);
   const [totalItems, setTotalItems] = useState(0);
+  const [showMap, setShowMap] = useState(true);
+  
+  // Use the back navigation hook
+  useBackNavigation();
   
   useEffect(() => {
-    // Get order details
+    // Extract order ID from URL if present
+    const params = new URLSearchParams(location.search);
+    const orderId = params.get('id');
+    
+    // Get order details from local storage
     const savedOrder = localStorage.getItem("currentOrder");
     if (savedOrder) {
       const parsedOrder = JSON.parse(savedOrder);
@@ -53,6 +66,15 @@ const OrderTracking = () => {
         const total = parsedOrder.items.reduce((acc: number, item: any) => 
           acc + (item.price * item.quantity * item.stripQuantity), 0);
         parsedOrder.totalAmount = total;
+      }
+      
+      // Add date if not present
+      if (!parsedOrder.date) {
+        parsedOrder.date = new Date().toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
       }
       
       setOrder(parsedOrder);
@@ -70,6 +92,15 @@ const OrderTracking = () => {
           });
         }
       }
+    } else if (orderId) {
+      // If we have an order ID but no current order, we could fetch it from an API
+      // For now, redirect to orders page
+      navigate("/orders");
+      toast({
+        title: "Order not found",
+        description: "The order you're looking for couldn't be found",
+        variant: "destructive"
+      });
     } else {
       navigate("/dashboard");
     }
@@ -91,7 +122,17 @@ const OrderTracking = () => {
     }, 1000);
     
     return () => clearInterval(timer);
-  }, [navigate, toast]);
+  }, [navigate, toast, location.search]);
+  
+  const handleCallRider = () => {
+    if (order?.deliveryRider?.phone) {
+      // In a real app, this would initiate a phone call
+      toast({
+        title: "Calling delivery partner",
+        description: `Connecting you to ${order.deliveryRider.name}...`,
+      });
+    }
+  };
   
   if (!order) {
     return (
@@ -113,11 +154,7 @@ const OrderTracking = () => {
         >
           <div className="flex items-start">
             <div className="w-12 h-12 rounded-full bg-zepmeds-purple/20 flex items-center justify-center text-zepmeds-purple mr-3">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4Z" fill="#9b87f5"/>
-                <path d="M16 14H8C5.79 14 4 15.79 4 18V20H20V18C20 15.79 18.21 14 16 14Z" fill="#9b87f5"/>
-                <path d="M12 2C7.58 2 4 5.58 4 10V11H7L9 7H15L17 11H20V10C20 5.58 16.42 2 12 2Z" fill="#9b87f5"/>
-              </svg>
+              <Package className="h-6 w-6" />
             </div>
             
             <div className="flex-1">
@@ -137,6 +174,7 @@ const OrderTracking = () => {
                   variant="outline" 
                   size="sm" 
                   className="border-zepmeds-purple text-zepmeds-purple hover:bg-zepmeds-purple/10"
+                  onClick={handleCallRider}
                 >
                   <Phone size={16} className="mr-1" /> Call
                 </Button>
@@ -164,15 +202,29 @@ const OrderTracking = () => {
         
         <div className="glass-morphism rounded-xl overflow-hidden mb-6">
           <div className="h-48 relative">
-            <DeliveryMap />
+            {showMap ? (
+              <DeliveryMap showRider={true} />
+            ) : (
+              <div className="h-full flex items-center justify-center">
+                <DeliveryAnimation />
+              </div>
+            )}
             <div className="absolute bottom-4 left-4 glass-morphism rounded-lg p-2 flex items-center">
               <MapPin className="h-4 w-4 text-zepmeds-purple mr-1" />
               <span className="text-sm text-white">Delivering to your location</span>
             </div>
           </div>
           
-          <div className="p-4 flex justify-center">
+          <div className="p-4 flex justify-between items-center">
             <DeliveryAnimation />
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-xs text-zepmeds-purple"
+              onClick={() => setShowMap(!showMap)}
+            >
+              {showMap ? "Hide map" : "Show map"}
+            </Button>
           </div>
         </div>
         
@@ -183,10 +235,25 @@ const OrderTracking = () => {
           className="glass-morphism rounded-xl p-4 mb-6"
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-white font-medium">Order Items</h3>
-            <div className="flex items-center bg-zepmeds-purple/20 px-3 py-1 rounded-full">
-              <ShoppingBag className="h-3 w-3 text-zepmeds-purple mr-1" />
-              <span className="text-xs text-white">{totalItems} items</span>
+            <div className="flex items-center">
+              <ShoppingBag className="h-5 w-5 text-zepmeds-purple mr-2" />
+              <h3 className="text-white font-medium">Order Items</h3>
+            </div>
+            <div className="flex items-center">
+              <div className="bg-zepmeds-purple/20 px-3 py-1 rounded-full mr-2">
+                <span className="text-xs text-white">{totalItems} items</span>
+              </div>
+              
+              <OrderInvoice 
+                orderId={order.id}
+                orderDate={order.date || new Date().toDateString()}
+                items={order.items.map(item => ({
+                  name: item.name,
+                  quantity: item.quantity * item.stripQuantity,
+                  price: item.price * item.quantity * item.stripQuantity
+                }))}
+                totalAmount={order.totalAmount || 0}
+              />
             </div>
           </div>
           
@@ -224,6 +291,9 @@ const OrderTracking = () => {
             </div>
           </div>
         </motion.div>
+
+        {/* FAQ Section */}
+        <OrderFAQ />
         
         <div className="glass-morphism rounded-xl p-4 overflow-hidden">
           <h3 className="text-white font-medium mb-2">Special Offers</h3>

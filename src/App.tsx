@@ -53,7 +53,7 @@ const App = () => {
 
 // Separate component for app content so we can use hooks inside
 const AppContent = () => {
-  // Removed permission modal code
+  // No permission modal code - removed as requested
 
   return (
     <>
