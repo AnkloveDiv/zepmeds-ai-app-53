@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Calendar, ShoppingBag, Tag, ChevronRight } from "lucide-react";
+import { Calendar, ShoppingBag, Tag, ChevronRight, Diamond, Heart, Gift, Pill, Users, Zap } from "lucide-react";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
 import useBackNavigation from "@/hooks/useBackNavigation";
@@ -15,7 +15,8 @@ const Offers = () => {
       discount: "20% OFF",
       description: "On all health supplements",
       validTill: "15 Apr 2025",
-      image: "https://source.unsplash.com/random/400x200/?medicine"
+      image: "https://source.unsplash.com/random/400x200/?medicine",
+      category: "supplement"
     },
     {
       id: 2,
@@ -23,7 +24,8 @@ const Offers = () => {
       discount: "FLAT ₹200 OFF",
       description: "On orders above ₹999",
       validTill: "30 Apr 2025",
-      image: "https://source.unsplash.com/random/400x200/?pharmacy"
+      image: "https://source.unsplash.com/random/400x200/?pharmacy",
+      category: "general"
     },
     {
       id: 3,
@@ -31,9 +33,48 @@ const Offers = () => {
       discount: "50% OFF",
       description: "On your first online consultation",
       validTill: "10 May 2025",
-      image: "https://source.unsplash.com/random/400x200/?doctor"
+      image: "https://source.unsplash.com/random/400x200/?doctor",
+      category: "consultation"
+    },
+    {
+      id: 4,
+      title: "Lab Test Package",
+      discount: "25% OFF",
+      description: "On all comprehensive health packages",
+      validTill: "12 Apr 2025",
+      image: "https://source.unsplash.com/random/400x200/?laboratory",
+      category: "test"
+    },
+    {
+      id: 5,
+      title: "First Time User",
+      discount: "FLAT ₹300 OFF",
+      description: "On minimum purchase of ₹1000",
+      validTill: "Ongoing",
+      image: "https://source.unsplash.com/random/400x200/?pharmacy-store",
+      category: "new-user"
+    },
+    {
+      id: 6,
+      title: "Diabetes Care",
+      discount: "15% OFF",
+      description: "On all diabetes management products",
+      validTill: "20 Apr 2025",
+      image: "https://source.unsplash.com/random/400x200/?diabetes",
+      category: "health"
     }
   ]);
+
+  const getCategoryIcon = (category: string) => {
+    switch(category) {
+      case 'supplement': return <Pill className="h-6 w-6 text-zepmeds-purple" />;
+      case 'consultation': return <Users className="h-6 w-6 text-zepmeds-purple" />;
+      case 'test': return <Zap className="h-6 w-6 text-zepmeds-purple" />;
+      case 'new-user': return <Gift className="h-6 w-6 text-zepmeds-purple" />;
+      case 'health': return <Heart className="h-6 w-6 text-zepmeds-purple" />;
+      default: return <Diamond className="h-6 w-6 text-zepmeds-purple" />;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -87,7 +128,7 @@ const Offers = () => {
           <h2 className="text-xl font-bold text-white mb-5">Categories with Offers</h2>
           
           <div className="grid grid-cols-2 gap-4">
-            {['Medicine', 'Health Supplements', 'Personal Care', 'Medical Devices'].map((category, index) => (
+            {['Medicine', 'Health Supplements', 'Personal Care', 'Medical Devices', 'Baby Care', 'Senior Care'].map((category, index) => (
               <motion.div
                 key={category}
                 initial={{ opacity: 0, scale: 0.9 }}

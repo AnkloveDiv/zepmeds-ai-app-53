@@ -22,12 +22,67 @@ export const useBackNavigation = (homeRoute: string = "/dashboard") => {
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [doubleBackToExitPressedOnce, setDoubleBackToExitPressedOnce] = useState(false);
   
+  // Profile section routes
+  const profileSectionRoutes = [
+    "/patient-details", 
+    "/addresses", 
+    "/orders", 
+    "/reports", 
+    "/emergency", 
+    "/wallet", 
+    "/coupons", 
+    "/offers"
+  ];
+  
+  const isProfileSection = profileSectionRoutes.includes(location.pathname);
+  
   useEffect(() => {
     // Check if running on a mobile device
     const isNative = Capacitor.isNativePlatform();
     
+    // Handle profile section pages differently - go back to profile instead of home
+    if (isProfileSection) {
+      const handleProfileSectionBack = (e: PopStateEvent) => {
+        e.preventDefault();
+        navigate("/profile");
+        
+        toast({
+          title: "Navigated to Profile",
+          description: "Returned to your profile page",
+          duration: 2000,
+        });
+        
+        window.history.pushState(null, "", "/profile");
+      };
+      
+      window.history.pushState(null, "", location.pathname);
+      window.addEventListener("popstate", handleProfileSectionBack);
+      
+      // Android hardware back button for profile section
+      const setupProfileHardwareBackPress = () => {
+        if (isNative && (window as any).Capacitor?.Plugins?.App) {
+          (window as any).Capacitor.Plugins.App.addListener('backButton', () => {
+            navigate("/profile");
+            toast({
+              title: "Navigated to Profile",
+              description: "Returned to your profile page",
+              duration: 2000,
+            });
+          });
+        }
+      };
+      
+      setupProfileHardwareBackPress();
+      
+      return () => {
+        window.removeEventListener("popstate", handleProfileSectionBack);
+        if (isNative && (window as any).Capacitor?.Plugins?.App) {
+          (window as any).Capacitor.Plugins.App.removeAllListeners();
+        }
+      };
+    }
     // Only add the back button handler if we're not already on the home route
-    if (location.pathname !== homeRoute) {
+    else if (location.pathname !== homeRoute) {
       // Handle back button
       const handleBackButton = (e: PopStateEvent) => {
         e.preventDefault();
@@ -118,7 +173,7 @@ export const useBackNavigation = (homeRoute: string = "/dashboard") => {
         }
       };
     }
-  }, [navigate, homeRoute, toast, location.pathname, doubleBackToExitPressedOnce]);
+  }, [navigate, homeRoute, toast, location.pathname, doubleBackToExitPressedOnce, isProfileSection]);
 
   // The dialog component that will be shown when user is on home page and presses back
   const ExitConfirmDialog = () => {

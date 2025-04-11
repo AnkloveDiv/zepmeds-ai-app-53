@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -40,7 +41,7 @@ const HealthMetricsLogger = () => {
     if (!newMetricValue || !newMetricUnit || !newMetricType) return;
     
     const newMetric = {
-      date: new Date(),
+      date: date || new Date(),
       type: newMetricType,
       value: Number(newMetricValue),
       unit: newMetricUnit
@@ -59,7 +60,7 @@ const HealthMetricsLogger = () => {
   };
 
   return (
-    <Card className="w-[500px] bg-background shadow-md rounded-lg">
+    <Card className="w-full max-w-[500px] bg-background shadow-md rounded-lg">
       <CardHeader>
         <CardTitle className="text-lg font-semibold">Health Metrics Logger</CardTitle>
       </CardHeader>
@@ -112,7 +113,7 @@ const HealthMetricsLogger = () => {
                 <Button
                   variant={"outline"}
                   className={cn(
-                    "w-[240px] justify-start text-left font-normal",
+                    "w-full max-w-[240px] justify-start text-left font-normal",
                     !date && "text-muted-foreground"
                   )}
                 >

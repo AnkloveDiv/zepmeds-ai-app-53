@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
@@ -19,19 +19,37 @@ import {
   CreditCard as CreditCardIcon,
   Calendar,
   ShieldCheck,
-  AlertCircle
+  AlertCircle,
+  Home,
+  Briefcase,
+  Check,
+  Save
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import useBackNavigation from "@/hooks/useBackNavigation";
 
+interface Address {
+  id: string;
+  name: string;
+  phone: string;
+  type: 'home' | 'work' | 'other';
+  address: string;
+  city: string;
+  pincode: string;
+  landmark?: string;
+  isDefault: boolean;
+}
+
 const Checkout = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [paymentMethod, setPaymentMethod] = useState("online");
+  const [upiOption, setUpiOption] = useState("");
   const [showBNPLVerify, setShowBNPLVerify] = useState(false);
   const [panNumber, setPanNumber] = useState("");
   const [bnplVerified, setBnplVerified] = useState(false);
+  const [saveAddress, setSaveAddress] = useState(false);
   const [deliveryAddress, setDeliveryAddress] = useState({
     fullName: "",
     phone: "",
@@ -40,13 +58,91 @@ const Checkout = () => {
     pincode: "",
     landmark: ""
   });
+  const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
+  const [showCardDetails, setShowCardDetails] = useState(false);
+  const [cardDetails, setCardDetails] = useState({
+    number: "",
+    name: "",
+    expiry: "",
+    cvv: ""
+  });
   
   // Use back navigation hook
   useBackNavigation();
 
+  useEffect(() => {
+    // Load saved addresses from local storage
+    const addresses = localStorage.getItem('savedAddresses');
+    if (addresses) {
+      setSavedAddresses(JSON.parse(addresses));
+      
+      // Set default address if available
+      const defaultAddress = JSON.parse(addresses).find((addr: Address) => addr.isDefault);
+      if (defaultAddress) {
+        setDeliveryAddress({
+          fullName: defaultAddress.name,
+          phone: defaultAddress.phone,
+          address: defaultAddress.address,
+          city: defaultAddress.city,
+          pincode: defaultAddress.pincode,
+          landmark: defaultAddress.landmark || ""
+        });
+      }
+    }
+  }, []);
+
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setDeliveryAddress(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleCardDetailsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setCardDetails(prev => ({ ...prev, [name]: value }));
+  };
+
+  const selectAddress = (address: Address) => {
+    setDeliveryAddress({
+      fullName: address.name,
+      phone: address.phone,
+      address: address.address,
+      city: address.city,
+      pincode: address.pincode,
+      landmark: address.landmark || ""
+    });
+  };
+
+  const saveCurrentAddress = () => {
+    if (!deliveryAddress.fullName || !deliveryAddress.phone || !deliveryAddress.address || 
+        !deliveryAddress.city || !deliveryAddress.pincode) {
+      toast({
+        title: "Missing information",
+        description: "Please fill all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const newAddress: Address = {
+      id: `addr_${Date.now()}`,
+      name: deliveryAddress.fullName,
+      phone: deliveryAddress.phone,
+      type: 'home',
+      address: deliveryAddress.address,
+      city: deliveryAddress.city,
+      pincode: deliveryAddress.pincode,
+      landmark: deliveryAddress.landmark,
+      isDefault: savedAddresses.length === 0 // Make it default if it's the first address
+    };
+    
+    const updatedAddresses = [...savedAddresses, newAddress];
+    setSavedAddresses(updatedAddresses);
+    localStorage.setItem('savedAddresses', JSON.stringify(updatedAddresses));
+    
+    toast({
+      title: "Address saved",
+      description: "Your address has been saved for future use"
+    });
   };
 
   const verifyPAN = () => {
@@ -94,11 +190,39 @@ const Checkout = () => {
       setShowBNPLVerify(true);
       return;
     }
+    
+    // For card payment, validate card details
+    if (paymentMethod === "online" && showCardDetails) {
+      if (!cardDetails.number || !cardDetails.name || !cardDetails.expiry || !cardDetails.cvv) {
+        toast({
+          title: "Missing card information",
+          description: "Please fill all card details",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+    
+    // For UPI, validate selection
+    if (paymentMethod === "upi" && !upiOption) {
+      toast({
+        title: "Missing UPI option",
+        description: "Please select a UPI payment option",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Save address if option is selected
+    if (saveAddress) {
+      saveCurrentAddress();
+    }
 
     // Save order details (in a real app, this would be an API call)
     const orderDetails = {
       id: `ORD${Math.floor(Math.random() * 10000)}`,
       paymentMethod,
+      paymentDetails: paymentMethod === "upi" ? { method: upiOption } : {},
       deliveryAddress,
       items: JSON.parse(localStorage.getItem("cart") || "[]"),
       status: "confirmed",
@@ -110,7 +234,7 @@ const Checkout = () => {
         eta: "15 minutes"
       },
       estimatedDelivery: "30-45 minutes",
-      paymentDetails: {
+      paymentInfo: {
         subtotal: 760,
         deliveryFee: 40,
         taxes: 0,
@@ -140,6 +264,35 @@ const Checkout = () => {
     navigate("/order-tracking");
   };
 
+  const renderUPIOptions = () => (
+    <div className="mt-4 grid grid-cols-3 gap-3">
+      {[
+        { id: "gpay", name: "Google Pay", logo: "🇬" },
+        { id: "phonepe", name: "PhonePe", logo: "🇵" },
+        { id: "paytm", name: "Paytm", logo: "🇵🇹" },
+        { id: "bhim", name: "BHIM UPI", logo: "🇮🇳" },
+        { id: "mobikwik", name: "MobiKwik", logo: "🇲" },
+        { id: "amazon", name: "Amazon Pay", logo: "🇦" }
+      ].map(option => (
+        <div 
+          key={option.id}
+          onClick={() => setUpiOption(option.id)}
+          className={`p-3 rounded-lg border transition-colors cursor-pointer flex flex-col items-center justify-center ${
+            upiOption === option.id 
+              ? "border-zepmeds-purple bg-zepmeds-purple/10" 
+              : "border-gray-700 bg-black/20"
+          }`}
+        >
+          <div className="text-2xl mb-1">{option.logo}</div>
+          <span className="text-xs text-center">{option.name}</span>
+          {upiOption === option.id && (
+            <Check size={16} className="text-zepmeds-purple mt-1" />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background pb-6">
       <Header showBackButton title="Checkout" />
@@ -155,9 +308,62 @@ const Checkout = () => {
               <MapPin className="text-zepmeds-purple mr-2" size={20} />
               <h3 className="text-white font-medium">Delivery Address</h3>
             </div>
-            <Button variant="ghost" size="sm" className="text-zepmeds-purple">
-              <Plus size={16} className="mr-1" /> New
-            </Button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-zepmeds-purple">
+                  <Plus size={16} className="mr-1" /> Select
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-background border-gray-800">
+                <DialogHeader>
+                  <DialogTitle>Saved Addresses</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3 my-4 max-h-[300px] overflow-y-auto">
+                  {savedAddresses.length === 0 ? (
+                    <p className="text-gray-400 text-center py-4">No saved addresses found</p>
+                  ) : (
+                    savedAddresses.map(address => (
+                      <div 
+                        key={address.id}
+                        className="border border-gray-700 rounded-lg p-3 hover:border-zepmeds-purple/50 cursor-pointer transition-colors"
+                        onClick={() => {
+                          selectAddress(address);
+                          (document.activeElement as HTMLElement)?.blur();
+                        }}
+                      >
+                        <div className="flex items-start">
+                          <div className="rounded-full p-2 mr-3 bg-zepmeds-purple/10 text-zepmeds-purple">
+                            {address.type === 'home' ? (
+                              <Home size={16} />
+                            ) : address.type === 'work' ? (
+                              <Briefcase size={16} />
+                            ) : (
+                              <MapPin size={16} />
+                            )}
+                          </div>
+                          <div>
+                            <h4 className="font-medium text-white">{address.name}</h4>
+                            <p className="text-sm text-gray-400">{address.phone}</p>
+                            <p className="text-sm text-gray-400 mt-1">{address.address}, {address.city}, {address.pincode}</p>
+                            {address.landmark && <p className="text-xs text-gray-500">Landmark: {address.landmark}</p>}
+                            {address.isDefault && (
+                              <span className="text-xs bg-zepmeds-purple/20 text-zepmeds-purple px-2 py-0.5 rounded-full mt-2 inline-block">
+                                Default
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <DialogClose asChild>
+                  <Button className="w-full bg-zepmeds-purple hover:bg-zepmeds-purple/90">
+                    Done
+                  </Button>
+                </DialogClose>
+              </DialogContent>
+            </Dialog>
           </div>
           
           <div className="space-y-4">
@@ -229,6 +435,19 @@ const Checkout = () => {
                 className="bg-black/20 border-white/10"
               />
             </div>
+            
+            <div className="flex items-center mt-2">
+              <input
+                type="checkbox"
+                id="saveAddress"
+                checked={saveAddress}
+                onChange={() => setSaveAddress(!saveAddress)}
+                className="rounded border-gray-700 bg-black/20 mr-2"
+              />
+              <Label htmlFor="saveAddress" className="text-sm cursor-pointer">
+                Save this address for future orders
+              </Label>
+            </div>
           </div>
         </motion.div>
         
@@ -250,6 +469,81 @@ const Checkout = () => {
                 </Label>
               </div>
               
+              {paymentMethod === "online" && (
+                <div className="ml-8 p-3 bg-black/10 rounded-lg border border-gray-800">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="mb-3 text-zepmeds-purple border-zepmeds-purple/30"
+                    onClick={() => setShowCardDetails(!showCardDetails)}
+                  >
+                    {showCardDetails ? "Hide Card Details" : "Enter Card Details"}
+                  </Button>
+                  
+                  {showCardDetails && (
+                    <div className="space-y-3">
+                      <div>
+                        <Label htmlFor="cardNumber">Card Number</Label>
+                        <Input
+                          id="cardNumber"
+                          name="number"
+                          placeholder="XXXX XXXX XXXX XXXX"
+                          value={cardDetails.number}
+                          onChange={handleCardDetailsChange}
+                          className="bg-black/20 border-white/10"
+                          maxLength={19}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="cardName">Cardholder Name</Label>
+                        <Input
+                          id="cardName"
+                          name="name"
+                          placeholder="Name on card"
+                          value={cardDetails.name}
+                          onChange={handleCardDetailsChange}
+                          className="bg-black/20 border-white/10"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="cardExpiry">Expiry (MM/YY)</Label>
+                          <Input
+                            id="cardExpiry"
+                            name="expiry"
+                            placeholder="MM/YY"
+                            value={cardDetails.expiry}
+                            onChange={handleCardDetailsChange}
+                            className="bg-black/20 border-white/10"
+                            maxLength={5}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="cardCVV">CVV</Label>
+                          <Input
+                            id="cardCVV"
+                            name="cvv"
+                            type="password"
+                            placeholder="XXX"
+                            value={cardDetails.cvv}
+                            onChange={handleCardDetailsChange}
+                            className="bg-black/20 border-white/10"
+                            maxLength={3}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-gray-400 mt-2">
+                        <div className="flex items-center">
+                          <ShieldCheck size={14} className="mr-1 text-green-500" />
+                          <span>Secure payment</span>
+                        </div>
+                        <span>Your card info is encrypted</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              
               <div className="flex items-center space-x-2 bg-black/20 rounded-lg p-3">
                 <RadioGroupItem value="upi" id="upi" />
                 <Label htmlFor="upi" className="flex items-center cursor-pointer">
@@ -257,6 +551,8 @@ const Checkout = () => {
                   <span>UPI Payment</span>
                 </Label>
               </div>
+              
+              {paymentMethod === "upi" && renderUPIOptions()}
               
               <div className="flex items-center space-x-2 bg-black/20 rounded-lg p-3">
                 <RadioGroupItem value="wallet" id="wallet" />
