@@ -9,6 +9,7 @@ import ProfileMenu from "@/components/profile/ProfileMenu";
 import LogoutButton from "@/components/profile/LogoutButton";
 import { getProfileMenuItems } from "@/utils/profileMenuItems";
 import useBackNavigation from "@/hooks/useBackNavigation";
+import TrackOrderButton from "@/components/order/TrackOrderButton";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -29,6 +30,20 @@ const Profile = () => {
           isEditing={isEditing}
           setIsEditing={setIsEditing}
         />
+
+        {/* Add track order button */}
+        <div className="mb-6 p-4 glass-morphism rounded-xl bg-gradient-to-br from-zepmeds-purple/20 to-purple-400/10">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-white text-lg font-medium mb-1">Your Orders</h3>
+              <p className="text-gray-300">Track your current order</p>
+            </div>
+            <TrackOrderButton 
+              variant="outline"
+              className="border-zepmeds-purple text-zepmeds-purple bg-white/10 hover:bg-white/20"
+            />
+          </div>
+        </div>
 
         <ProfileMenu menuItems={menuItems} />
         <LogoutButton />

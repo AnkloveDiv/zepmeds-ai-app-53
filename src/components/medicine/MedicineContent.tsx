@@ -13,6 +13,7 @@ import ProductGrid from "@/components/medicine/ProductGrid";
 import OfferBanner from "@/components/medicine/OfferBanner";
 import FloatingCartButton from "@/components/medicine/FloatingCartButton";
 import SearchBar from "@/components/SearchBar";
+import DeliveryTracking from "@/components/medicine/DeliveryTracking";
 
 interface MedicineContentProps {
   products: any[];
@@ -144,6 +145,9 @@ const MedicineContent = ({ products, setCartItems }: MedicineContentProps) => {
       <DealBanners />
 
       <ActionButtons onUploadPrescription={handleUploadPrescription} />
+      
+      {/* Add track order section */}
+      <DeliveryTracking />
 
       <CategoriesNav 
         activeCategory={activeCategory}

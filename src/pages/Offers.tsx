@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Calendar, ShoppingBag, Tag, ChevronRight, Diamond, Heart, Gift, Pill, Users, Zap, Dog, Activity } from "lucide-react";
@@ -15,7 +16,7 @@ const Offers = () => {
       discount: "25% OFF",
       description: "On heart health medicines & supplements",
       validTill: "15 Apr 2025",
-      image: "https://source.unsplash.com/random/400x200/?heart",
+      image: "https://images.unsplash.com/photo-1505576399279-565b52d4ac71?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2340&q=80",
       category: "health",
       gradient: "linear-gradient(135deg, #FF6B6B, #FFD166)"
     },
@@ -25,7 +26,7 @@ const Offers = () => {
       discount: "FLAT ₹200 OFF",
       description: "On orders above ₹999",
       validTill: "30 Apr 2025",
-      image: "https://source.unsplash.com/random/400x200/?water",
+      image: "https://images.unsplash.com/photo-1523362628745-0c100150b504?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2336&q=80",
       category: "general",
       gradient: "linear-gradient(135deg, #4E65FF, #92EFFD)"
     },
@@ -35,7 +36,7 @@ const Offers = () => {
       discount: "30% OFF",
       description: "On all pet medications & supplements",
       validTill: "10 May 2025",
-      image: "https://source.unsplash.com/random/400x200/?pets",
+      image: "https://images.unsplash.com/photo-1450778869180-41d0601e046e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2360&q=80",
       category: "pet",
       gradient: "linear-gradient(135deg, #33D9B2, #00B5AA)"
     },
@@ -45,7 +46,7 @@ const Offers = () => {
       discount: "25% OFF",
       description: "On all comprehensive health packages",
       validTill: "12 Apr 2025",
-      image: "https://source.unsplash.com/random/400x200/?laboratory",
+      image: "https://images.unsplash.com/photo-1579154204601-01588f351e67?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2340&q=80",
       category: "test",
       gradient: "linear-gradient(135deg, #706FD3, #98D9EA)"
     },
@@ -55,7 +56,7 @@ const Offers = () => {
       discount: "FLAT ₹300 OFF",
       description: "On minimum purchase of ₹1000",
       validTill: "Ongoing",
-      image: "https://source.unsplash.com/random/400x200/?pharmacy-store",
+      image: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2340&q=80",
       category: "new-user",
       gradient: "linear-gradient(135deg, #FF5E3A, #FF9E80)"
     },
@@ -65,7 +66,7 @@ const Offers = () => {
       discount: "15% OFF",
       description: "On all diabetes management products",
       validTill: "20 Apr 2025",
-      image: "https://source.unsplash.com/random/400x200/?diabetes",
+      image: "https://images.unsplash.com/photo-1544829894-b1681a007b06?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2340&q=80",
       category: "health",
       gradient: "linear-gradient(135deg, #6A5ACD, #A17FE0)"
     }
@@ -100,21 +101,22 @@ const Offers = () => {
               transition={{ delay: index * 0.1 }}
               className="glass-morphism rounded-xl overflow-hidden"
             >
-              <div className="relative h-40" style={{ 
-                background: offer.gradient,
-                backgroundSize: "cover",
-                backgroundPosition: "center"
-              }}>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10"></div>
-                <div className="absolute top-4 left-4 z-20 rounded-full p-2" style={{ background: `${offer.gradient}80` }}>
+              <div 
+                className="relative h-40 bg-cover bg-center" 
+                style={{ 
+                  backgroundImage: `url(${offer.image})`,
+                }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10"></div>
+                <div className="absolute top-4 left-4 z-20 rounded-full p-2" style={{ background: `${offer.gradient}90` }}>
                   {getCategoryIcon(offer.category)}
                 </div>
                 <div className="absolute bottom-0 left-0 p-4 z-20">
                   <div className="bg-white text-black text-xl font-bold px-3 py-1 rounded-lg inline-block mb-2">
                     {offer.discount}
                   </div>
-                  <h3 className="text-white text-xl font-bold">{offer.title}</h3>
-                  <p className="text-gray-100">{offer.description}</p>
+                  <h3 className="text-white text-xl font-bold shadow-text">{offer.title}</h3>
+                  <p className="text-gray-100 shadow-text">{offer.description}</p>
                 </div>
               </div>
               
@@ -136,9 +138,12 @@ const Offers = () => {
         <div className="mt-8">
           <h2 className="text-xl font-bold text-white mb-5">Heart Health Week Special</h2>
           
-          <div className="glass-morphism rounded-xl p-5 mb-6" style={{ 
-            background: "linear-gradient(135deg, #FF6B6B30, #FFD16630)",
-          }}>
+          <div 
+            className="glass-morphism rounded-xl p-5 mb-6 bg-cover bg-center" 
+            style={{ 
+              backgroundImage: 'linear-gradient(rgba(255, 107, 107, 0.3), rgba(255, 209, 102, 0.3)), url("https://images.unsplash.com/photo-1505576399279-565b52d4ac71?ixlib=rb-4.0.3&auto=format&fit=crop&w=2340&q=80")',
+            }}
+          >
             <div className="flex items-start mb-4">
               <div className="w-12 h-12 rounded-full flex items-center justify-center mr-3" style={{ background: "linear-gradient(135deg, #FF6B6B, #FFD166)" }}>
                 <Heart className="h-6 w-6 text-white" />
@@ -150,46 +155,46 @@ const Offers = () => {
             </div>
             
             <div className="space-y-3">
-              <div className="p-3 bg-black/20 rounded-lg flex items-start">
+              <div className="p-3 bg-black/40 rounded-lg flex items-start backdrop-blur-sm">
                 <Pill className="h-5 w-5 text-red-400 mr-2 mt-1" />
                 <div>
                   <h4 className="text-white text-sm font-medium">Blood Pressure Medications</h4>
-                  <p className="text-gray-400 text-xs">ACE inhibitors, beta-blockers, and more</p>
+                  <p className="text-gray-300 text-xs">ACE inhibitors, beta-blockers, and more</p>
                 </div>
               </div>
               
-              <div className="p-3 bg-black/20 rounded-lg flex items-start">
+              <div className="p-3 bg-black/40 rounded-lg flex items-start backdrop-blur-sm">
                 <Pill className="h-5 w-5 text-red-400 mr-2 mt-1" />
                 <div>
                   <h4 className="text-white text-sm font-medium">Cholesterol Management</h4>
-                  <p className="text-gray-400 text-xs">Statins and other cholesterol-lowering drugs</p>
+                  <p className="text-gray-300 text-xs">Statins and other cholesterol-lowering drugs</p>
                 </div>
               </div>
               
-              <div className="p-3 bg-black/20 rounded-lg flex items-start">
+              <div className="p-3 bg-black/40 rounded-lg flex items-start backdrop-blur-sm">
                 <ShoppingBag className="h-5 w-5 text-orange-400 mr-2 mt-1" />
                 <div>
                   <h4 className="text-white text-sm font-medium">Heart-Healthy Supplements</h4>
-                  <p className="text-gray-400 text-xs">Omega-3, CoQ10, and other heart-supporting nutrients</p>
+                  <p className="text-gray-300 text-xs">Omega-3, CoQ10, and other heart-supporting nutrients</p>
                 </div>
               </div>
             </div>
             
             <h3 className="text-white text-lg font-bold mt-6 mb-3">Recommended Activities</h3>
             <div className="space-y-3">
-              <div className="p-3 bg-black/20 rounded-lg flex items-start">
+              <div className="p-3 bg-black/40 rounded-lg flex items-start backdrop-blur-sm">
                 <Activity className="h-5 w-5 text-green-400 mr-2 mt-1" />
                 <div>
                   <h4 className="text-white text-sm font-medium">Cardio Exercises</h4>
-                  <p className="text-gray-400 text-xs">30 minutes of walking, swimming, or cycling daily</p>
+                  <p className="text-gray-300 text-xs">30 minutes of walking, swimming, or cycling daily</p>
                 </div>
               </div>
               
-              <div className="p-3 bg-black/20 rounded-lg flex items-start">
+              <div className="p-3 bg-black/40 rounded-lg flex items-start backdrop-blur-sm">
                 <Utensils className="h-5 w-5 text-green-400 mr-2 mt-1" />
                 <div>
                   <h4 className="text-white text-sm font-medium">Heart-Healthy Diet</h4>
-                  <p className="text-gray-400 text-xs">Rich in fruits, vegetables, whole grains, and lean proteins</p>
+                  <p className="text-gray-300 text-xs">Fish, nuts, berries, leafy greens, whole grains, olive oil</p>
                 </div>
               </div>
             </div>
@@ -200,29 +205,32 @@ const Offers = () => {
           <h2 className="text-xl font-bold text-white mb-5">Categories with Offers</h2>
           
           <div className="grid grid-cols-2 gap-4">
-            {['Medicine', 'Health Supplements', 'Personal Care', 'Medical Devices', 'Pet Care', 'Senior Care'].map((category, index) => (
+            {[
+              {name: 'Medicine', icon: <Pill className="h-6 w-6 text-white" />, discount: 'Up to 30% off', gradient: 'linear-gradient(135deg, #4E65FF, #92EFFD)'},
+              {name: 'Health Supplements', icon: <Gift className="h-6 w-6 text-white" />, discount: 'Up to 25% off', gradient: 'linear-gradient(135deg, #FF6B6B, #FFD166)'},
+              {name: 'Personal Care', icon: <ShoppingBag className="h-6 w-6 text-white" />, discount: 'Up to 15% off', gradient: 'linear-gradient(135deg, #33D9B2, #00B5AA)'},
+              {name: 'Medical Devices', icon: <Zap className="h-6 w-6 text-white" />, discount: 'Up to 20% off', gradient: 'linear-gradient(135deg, #6A5ACD, #A17FE0)'},
+              {name: 'Pet Care', icon: <Dog className="h-6 w-6 text-white" />, discount: 'Up to 30% off', gradient: 'linear-gradient(135deg, #FF5E3A, #FF9E80)'},
+              {name: 'Senior Care', icon: <Heart className="h-6 w-6 text-white" />, discount: 'Up to 20% off', gradient: 'linear-gradient(135deg, #4E65FF, #92EFFD)'}
+            ].map((category, index) => (
               <motion.div
-                key={category}
+                key={category.name}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.1 }}
                 className="glass-morphism rounded-xl p-4 flex flex-col items-center justify-center text-center"
                 style={{ 
-                  background: index % 2 === 0 
-                    ? "linear-gradient(135deg, rgba(78, 101, 255, 0.2), rgba(146, 239, 253, 0.2))" 
-                    : "linear-gradient(135deg, rgba(255, 107, 107, 0.2), rgba(255, 209, 102, 0.2))"
+                  background: `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), ${category.gradient}`
                 }}
               >
                 <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3" style={{ 
-                  background: index % 2 === 0 
-                    ? "linear-gradient(135deg, #4E65FF, #92EFFD)" 
-                    : "linear-gradient(135deg, #FF6B6B, #FFD166)"
+                  background: category.gradient
                 }}>
-                  <ShoppingBag className="h-6 w-6 text-white" />
+                  {category.icon}
                 </div>
-                <h3 className="text-white font-medium mb-1">{category}</h3>
-                <p className="text-xs text-gray-400">Up to 30% off</p>
-                <button className="mt-3 text-xs text-zepmeds-purple flex items-center">
+                <h3 className="text-white font-medium mb-1">{category.name}</h3>
+                <p className="text-xs text-gray-200">{category.discount}</p>
+                <button className="mt-3 text-xs text-white flex items-center">
                   <span>View Offers</span>
                   <ChevronRight className="h-3 w-3 ml-0.5" />
                 </button>
@@ -233,11 +241,11 @@ const Offers = () => {
         
         <div className="mt-8">
           <div className="glass-morphism rounded-xl p-4 flex items-center justify-between" style={{ 
-            background: "linear-gradient(135deg, rgba(106, 90, 205, 0.2), rgba(161, 127, 224, 0.2))"
+            background: "linear-gradient(135deg, rgba(106, 90, 205, 0.4), rgba(161, 127, 224, 0.4))"
           }}>
             <div>
               <h3 className="text-white font-medium mb-1">Have a coupon code?</h3>
-              <p className="text-sm text-gray-400">Redeem it during checkout</p>
+              <p className="text-sm text-gray-300">Redeem it during checkout</p>
             </div>
             
             <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ 

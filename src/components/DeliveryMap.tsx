@@ -1,11 +1,18 @@
 
 import { useEffect, useRef, useState } from "react";
+import { useToast } from "@/components/ui/use-toast";
 
-const DeliveryMap = ({ showRider = true }) => {
+interface DeliveryMapProps {
+  showRider?: boolean;
+  orderId?: string;
+}
+
+const DeliveryMap = ({ showRider = true, orderId }: DeliveryMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [distance, setDistance] = useState(2.4);
   const [eta, setEta] = useState(15);
   const [animating, setAnimating] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     // This is a placeholder for a real map integration

@@ -2,7 +2,7 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import ServiceCard from "@/components/ServiceCard";
-import { Pill, FileUp, MessageSquareText, Stethoscope } from "lucide-react";
+import { Pill, FileUp, MessageSquareText, Stethoscope, Dog, Package } from "lucide-react";
 
 const ServiceSection = () => {
   const navigate = useNavigate();
@@ -35,6 +35,20 @@ const ServiceSection = () => {
       icon: <Stethoscope className="h-6 w-6 text-white" />,
       color: "bg-gradient-to-br from-red-600 to-red-400",
       onClick: () => navigate("/doctor")
+    },
+    {
+      title: "Pet Care",
+      description: "Medicines & vet consult",
+      icon: <Dog className="h-6 w-6 text-white" />,
+      color: "bg-gradient-to-br from-amber-600 to-amber-400",
+      onClick: () => navigate("/medicine-delivery?category=petcare")
+    },
+    {
+      title: "Track Order",
+      description: "Real-time delivery status",
+      icon: <Package className="h-6 w-6 text-white" />,
+      color: "bg-gradient-to-br from-teal-600 to-teal-400",
+      onClick: () => navigate("/order-tracking")
     }
   ];
 
