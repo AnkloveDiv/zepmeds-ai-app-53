@@ -8,7 +8,6 @@ import SearchBar from "@/components/SearchBar";
 
 // Import refactored components
 import AdvertisementSection from "@/components/medicine/AdvertisementSection";
-import DeliveryTracking from "@/components/medicine/DeliveryTracking";
 import CategoriesNav from "@/components/medicine/CategoriesNav";
 import DealBanners from "@/components/medicine/DealBanners";
 import OfferBanner from "@/components/medicine/OfferBanner";
@@ -23,6 +22,7 @@ const MedicineDelivery = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [userLocation, setUserLocation] = useState("New York, NY");
+  const [filteredProducts, setFilteredProducts] = useState(allProducts);
   const location = useLocation();
   
   useBackNavigation();
@@ -39,9 +39,25 @@ const MedicineDelivery = () => {
     if (searchParam) {
       setSearchQuery(searchParam);
     }
+    
+    // Check for category param from URL
+    const categoryParam = params.get("category");
+    if (categoryParam) {
+      const formattedCategory = formatCategory(categoryParam);
+      setActiveCategory(formattedCategory);
+      filterProductsByCategory(formattedCategory);
+    }
   }, [location.search]);
 
+  const formatCategory = (category: string): string => {
+    // Convert camelCase or lowercase to proper format
+    // e.g. 'skincare' -> 'Skin Care'
+    const words = category.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().split(' ');
+    return words.map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  };
+
   const handleAddToCart = (product: any, quantity: number) => {
+    // Animation is handled by CSS classes and transitions
     const newCart = [...cartItems];
     const existingItemIndex = newCart.findIndex(item => item.id === product.id);
     
@@ -57,7 +73,18 @@ const MedicineDelivery = () => {
 
   const handleCategoryClick = (categoryName: string) => {
     setActiveCategory(categoryName);
-    // In a real app, you might filter products by category here
+    filterProductsByCategory(categoryName);
+  };
+  
+  const filterProductsByCategory = (categoryName: string) => {
+    if (categoryName === "All" || categoryName === "Popular") {
+      setFilteredProducts(allProducts);
+    } else {
+      const filtered = allProducts.filter(product => 
+        product.category && product.category.includes(categoryName)
+      );
+      setFilteredProducts(filtered);
+    }
   };
 
   const handleLocationSave = (newLocation: string) => {
@@ -79,8 +106,6 @@ const MedicineDelivery = () => {
           onLocationSave={handleLocationSave}
         />
         
-        <DeliveryTracking />
-        
         <CategoriesNav 
           activeCategory={activeCategory}
           onCategoryClick={handleCategoryClick}
@@ -89,9 +114,11 @@ const MedicineDelivery = () => {
         <DealBanners />
         
         <div className="my-4">
-          <h2 className="text-xl font-bold text-white mb-3">All Products</h2>
+          <h2 className="text-xl font-bold text-white mb-3">
+            {activeCategory === "All" ? "All Products" : `${activeCategory} Products`}
+          </h2>
           <EnhancedProductGrid 
-            products={allProducts} 
+            products={filteredProducts} 
             searchQuery={searchQuery}
             onAddToCart={handleAddToCart} 
           />

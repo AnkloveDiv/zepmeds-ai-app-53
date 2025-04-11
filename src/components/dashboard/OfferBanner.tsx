@@ -2,6 +2,7 @@
 import { ShoppingBag, ChevronRight, Pill, CreditCard, Truck, Clock, Gift, Heart } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 const OfferBanner = () => {
   const navigate = useNavigate();
@@ -12,32 +13,40 @@ const OfferBanner = () => {
       description: "Use code ZEPMEDS for 20% off",
       icon: <ShoppingBag className="h-6 w-6 text-zepmeds-purple" />,
       bgClass: "bg-zepmeds-purple-transparent",
-      path: "/coupons"
+      path: "/coupons",
+      buttonColor: "bg-zepmeds-purple hover:bg-zepmeds-purple/90",
+      buttonIcon: <Gift className="h-4 w-4 mr-2" />
     },
     {
       title: "Cashback on Card Payments",
       description: "Get 5% cashback with any card",
       icon: <CreditCard className="h-6 w-6 text-green-400" />,
       bgClass: "bg-green-500/20",
-      path: "/offers"
+      path: "/offers",
+      buttonColor: "bg-green-500 hover:bg-green-600",
+      buttonIcon: <CreditCard className="h-4 w-4 mr-2" />
     },
     {
       title: "Buy Now, Pay Later",
       description: "Zero interest EMI available",
       icon: <Clock className="h-6 w-6 text-amber-400" />,
       bgClass: "bg-amber-500/20",
-      path: "/offers"
+      path: "/offers",
+      buttonColor: "bg-amber-500 hover:bg-amber-600",
+      buttonIcon: <Clock className="h-4 w-4 mr-2" />
     },
     {
       title: "Free Express Delivery",
       description: "On orders above ₹500",
       icon: <Truck className="h-6 w-6 text-blue-400" />,
       bgClass: "bg-blue-500/20",
-      path: "/offers"
+      path: "/medicine-delivery",
+      buttonColor: "bg-blue-500 hover:bg-blue-600",
+      buttonIcon: <Truck className="h-4 w-4 mr-2" />
     }
   ];
   
-  const handleOfferClick = (path) => {
+  const handleOfferClick = (path: string) => {
     navigate(path);
   };
   
@@ -52,7 +61,6 @@ const OfferBanner = () => {
             className="glass-morphism rounded-xl p-4 overflow-hidden relative"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => handleOfferClick(offer.path)}
           >
             <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-zepmeds-purple/20 to-purple-500/30 rounded-full -translate-y-1/2 translate-x-1/2" />
             
@@ -67,7 +75,14 @@ const OfferBanner = () => {
                 </div>
               </div>
               
-              <ChevronRight className="h-5 w-5 text-gray-400" />
+              <Button 
+                size="sm" 
+                className={`flex items-center ${offer.buttonColor}`}
+                onClick={() => handleOfferClick(offer.path)}
+              >
+                {offer.buttonIcon}
+                Shop Now
+              </Button>
             </div>
           </motion.div>
         ))}

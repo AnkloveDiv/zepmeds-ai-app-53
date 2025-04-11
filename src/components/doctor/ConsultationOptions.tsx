@@ -4,9 +4,10 @@ import { Calendar, Clock, ChevronRight } from "lucide-react";
 
 interface ConsultationOptionsProps {
   onBookAppointment: () => void;
+  onInstantConsultation: () => void;
 }
 
-const ConsultationOptions = ({ onBookAppointment }: ConsultationOptionsProps) => {
+const ConsultationOptions = ({ onBookAppointment, onInstantConsultation }: ConsultationOptionsProps) => {
   return (
     <>
       <motion.div 
@@ -28,7 +29,11 @@ const ConsultationOptions = ({ onBookAppointment }: ConsultationOptionsProps) =>
         </div>
       </motion.div>
       
-      <div className="glass-morphism rounded-xl p-4 mb-6">
+      <motion.div 
+        className="glass-morphism rounded-xl p-4 mb-6 cursor-pointer"
+        whileHover={{ scale: 1.02 }}
+        onClick={onInstantConsultation}
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <div className="w-10 h-10 rounded-full bg-zepmeds-purple/10 flex items-center justify-center mr-3 text-zepmeds-purple">
@@ -41,7 +46,7 @@ const ConsultationOptions = ({ onBookAppointment }: ConsultationOptionsProps) =>
           </div>
           <ChevronRight size={20} className="text-gray-400" />
         </div>
-      </div>
+      </motion.div>
     </>
   );
 };

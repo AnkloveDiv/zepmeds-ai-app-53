@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { Pill, Eye, AlertCircle } from "lucide-react";
+import { Pill, Eye, AlertCircle, Heart, Brain, Stethoscope, Bone, Sun, Dog, Thermometer } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface Medication {
@@ -16,32 +16,96 @@ const PastMedicationLog = () => {
     {
       id: "med1",
       name: "Atorvastatin 10mg",
-      category: "Cholesterol",
+      category: "Supplements",
       dateDiscontinued: "2025-03-15",
       reason: "Doctor prescribed different medication"
     },
     {
       id: "med2",
       name: "Metformin 500mg",
-      category: "Diabetes",
+      category: "Supplements",
       dateDiscontinued: "2025-02-28",
       reason: "Side effects reported"
     },
     {
       id: "med3", 
       name: "Amlodipine 5mg",
-      category: "Blood Pressure",
+      category: "Brain",
       dateDiscontinued: "2025-01-10",
       reason: "No longer needed"
     },
     {
       id: "med4",
       name: "Vitamin D3 1000IU",
-      category: "Supplement",
+      category: "Supplements",
       dateDiscontinued: "2025-03-20",
       reason: "Switched to higher dosage"
+    },
+    {
+      id: "med5",
+      name: "Retinol Cream",
+      category: "Skin Care",
+      dateDiscontinued: "2025-03-10",
+      reason: "Allergic reaction"
+    },
+    {
+      id: "med6",
+      name: "Eye Drops",
+      category: "Eye Care",
+      dateDiscontinued: "2025-02-15",
+      reason: "Condition resolved"
+    },
+    {
+      id: "med7",
+      name: "Dental Rinse",
+      category: "Dental",
+      dateDiscontinued: "2025-01-25",
+      reason: "Dentist recommended alternative"
+    },
+    {
+      id: "med8",
+      name: "Ibuprofen 400mg",
+      category: "Pain Relief",
+      dateDiscontinued: "2025-03-05",
+      reason: "No longer needed"
+    },
+    {
+      id: "med9",
+      name: "Sunscreen SPF 50",
+      category: "Summer Care",
+      dateDiscontinued: "2025-02-01",
+      reason: "Switched to higher SPF"
+    },
+    {
+      id: "med10",
+      name: "Flea Treatment",
+      category: "Pet Care",
+      dateDiscontinued: "2025-03-25",
+      reason: "Pet allergy to ingredients"
+    },
+    {
+      id: "med11",
+      name: "Blood Pressure Monitor",
+      category: "Devices",
+      dateDiscontinued: "2025-01-15",
+      reason: "Upgraded to newer model"
     }
   ]);
+
+  const getCategoryIcon = (category: string) => {
+    switch(category) {
+      case 'Skin Care': return <Heart className="h-5 w-5 text-pink-500" />;
+      case 'Supplements': return <Pill className="h-5 w-5 text-blue-500" />;
+      case 'Eye Care': return <Eye className="h-5 w-5 text-cyan-500" />;
+      case 'Dental': return <Stethoscope className="h-5 w-5 text-purple-500" />;
+      case 'Pain Relief': return <Bone className="h-5 w-5 text-orange-500" />;
+      case 'Brain': return <Brain className="h-5 w-5 text-violet-500" />;
+      case 'Summer Care': return <Sun className="h-5 w-5 text-yellow-500" />;
+      case 'Pet Care': return <Dog className="h-5 w-5 text-green-500" />;
+      case 'Devices': return <Thermometer className="h-5 w-5 text-indigo-500" />;
+      default: return <Pill className="h-5 w-5 text-red-500" />;
+    }
+  };
 
   return (
     <div className="w-full mb-6">
@@ -61,7 +125,7 @@ const PastMedicationLog = () => {
           >
             <div className="flex items-start">
               <div className="bg-red-500/10 rounded-lg p-2 mr-3">
-                <Pill className="h-5 w-5 text-red-500" />
+                {getCategoryIcon(med.category)}
               </div>
               
               <div className="flex-1">
