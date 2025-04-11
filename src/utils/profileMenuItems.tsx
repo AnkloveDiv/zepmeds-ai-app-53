@@ -12,7 +12,7 @@ import {
   Ticket,
   Gift,
   Code,
-  Smartphone
+  Clock
 } from "lucide-react";
 import { MenuItem } from "@/components/profile/ProfileMenu";
 
@@ -29,7 +29,7 @@ export const getProfileMenuItems = (): MenuItem[] => {
     { icon: <Wallet size={20} />, title: "Wallet", path: "/wallet" },
     { icon: <Ticket size={20} />, title: "Coupons", path: "/coupons" },
     { icon: <Gift size={20} />, title: "Offers", path: "/offers" },
-    { icon: <Smartphone size={20} />, title: "App Guide", path: "/app-guide" },
+    { icon: <Clock size={20} />, title: "Schedule Medicines", path: "/schedule-medicines" },
     { icon: <Code size={20} />, title: "About Developers", path: "/about-developers" }
   ];
 };

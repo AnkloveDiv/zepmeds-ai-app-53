@@ -60,7 +60,7 @@ const HealthMetricsLogger = () => {
   };
 
   return (
-    <Card className="w-full max-w-[500px] bg-background shadow-md rounded-lg">
+    <Card className="w-full max-w-full bg-background shadow-md rounded-lg">
       <CardHeader>
         <CardTitle className="text-lg font-semibold">Health Metrics Logger</CardTitle>
       </CardHeader>
@@ -113,7 +113,7 @@ const HealthMetricsLogger = () => {
                 <Button
                   variant={"outline"}
                   className={cn(
-                    "w-full max-w-[240px] justify-start text-left font-normal",
+                    "w-full max-w-full justify-start text-left font-normal",
                     !date && "text-muted-foreground"
                   )}
                 >

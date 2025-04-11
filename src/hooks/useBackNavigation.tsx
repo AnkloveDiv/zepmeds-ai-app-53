@@ -31,7 +31,9 @@ export const useBackNavigation = (homeRoute: string = "/dashboard") => {
     "/emergency", 
     "/wallet", 
     "/coupons", 
-    "/offers"
+    "/offers",
+    "/schedule-medicines",
+    "/about-developers"
   ];
   
   const isProfileSection = profileSectionRoutes.includes(location.pathname);

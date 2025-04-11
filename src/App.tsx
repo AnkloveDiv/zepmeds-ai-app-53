@@ -14,7 +14,6 @@ import Profile from "./pages/Profile";
 import MedicineDelivery from "./pages/MedicineDelivery";
 import DoctorConsultation from "./pages/DoctorConsultation";
 import NotFound from "./pages/NotFound";
-import PermissionsModal from "./components/PermissionsModal";
 import Activity from "./pages/Activity";
 import AISymptomChecker from "./pages/AISymptomChecker";
 import PrescriptionUpload from "./pages/PrescriptionUpload";
@@ -30,8 +29,8 @@ import Wallet from "./pages/Wallet";
 import Coupons from "./pages/Coupons";
 import Offers from "./pages/Offers";
 import DeveloperInfo from "./pages/DeveloperInfo";
-import AppGuide from "./pages/AppGuide";
 import Support from "./pages/Support";
+import ScheduleMedicines from "./pages/ScheduleMedicines";
 
 const queryClient = new QueryClient();
 
@@ -54,26 +53,10 @@ const App = () => {
 
 // Separate component for app content so we can use hooks inside
 const AppContent = () => {
-  const [showPermissions, setShowPermissions] = React.useState(false);
-
-  // Check if user is logged in and needs to show permissions
-  React.useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isLoggedIn");
-    const permissionsGranted = localStorage.getItem("permissionsGranted");
-    
-    if (isLoggedIn === "true" && permissionsGranted !== "true") {
-      setShowPermissions(true);
-    }
-  }, []);
-
-  const handlePermissionsGranted = () => {
-    localStorage.setItem("permissionsGranted", "true");
-    setShowPermissions(false);
-  };
+  // Removed permission modal code
 
   return (
     <>
-      {showPermissions && <PermissionsModal onGranted={handlePermissionsGranted} />}
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/login" element={<Login />} />
@@ -88,8 +71,8 @@ const AppContent = () => {
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/order-tracking" element={<OrderTracking />} />
-        <Route path="/app-guide" element={<AppGuide />} />
         <Route path="/support" element={<Support />} />
+        <Route path="/schedule-medicines" element={<ScheduleMedicines />} />
         
         {/* Profile Section Routes */}
         <Route path="/patient-details" element={<PatientDetails />} />

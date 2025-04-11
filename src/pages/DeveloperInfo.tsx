@@ -11,36 +11,36 @@ const DeveloperInfo = () => {
   const [developers] = useState([
     {
       id: 1,
-      name: "Adarsh Kumar",
+      name: "Ankit",
       role: "Full Stack Developer",
       image: "https://source.unsplash.com/random/150x150/?portrait",
       description: "Senior developer with 5+ years of experience in React and Node.js",
       github: "https://github.com",
       linkedin: "https://linkedin.com",
       website: "https://example.com",
-      email: "adarsh@example.com"
+      email: "ankit@example.com"
     },
     {
       id: 2,
-      name: "Priya Sharma",
+      name: "Shivanshu",
       role: "UI/UX Designer",
-      image: "https://source.unsplash.com/random/150x150/?woman",
+      image: "https://source.unsplash.com/random/150x150/?man",
       description: "Creative designer with expertise in mobile app interfaces",
       github: "https://github.com",
       linkedin: "https://linkedin.com",
       website: "https://example.com",
-      email: "priya@example.com"
+      email: "shivanshu@example.com"
     },
     {
       id: 3,
-      name: "Rahul Verma",
+      name: "Shivam Kumar Singla",
       role: "Backend Developer",
       image: "https://source.unsplash.com/random/150x150/?man",
       description: "Specialized in database architecture and API development",
       github: "https://github.com",
       linkedin: "https://linkedin.com",
       website: "https://example.com",
-      email: "rahul@example.com"
+      email: "shivam@example.com"
     }
   ]);
 
