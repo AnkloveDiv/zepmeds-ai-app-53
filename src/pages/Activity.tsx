@@ -2,7 +2,7 @@
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
-import WeeklyStatsGraph from "@/components/activity/WeeklyStatsGraph";
+import { WeeklyStatsGraph } from "@/components/activity/WeeklyStatsGraph";
 import HealthMetricsLogger from "@/components/activity/HealthMetricsLogger";
 import PastMedicationLog from "@/components/activity/PastMedicationLog";
 
