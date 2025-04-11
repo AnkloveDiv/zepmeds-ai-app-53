@@ -47,9 +47,16 @@ const mockGoogleMaps = () => {
           setAnimation() {}
         },
         LatLng: class MockLatLng {
-          constructor(public lat: number, public lng: number) {}
-          lat() { return this.lat; }
-          lng() { return this.lng; }
+          private _lat: number;
+          private _lng: number;
+          
+          constructor(lat: number, lng: number) {
+            this._lat = lat;
+            this._lng = lng;
+          }
+          
+          lat() { return this._lat; }
+          lng() { return this._lng; }
         },
         Animation: {
           DROP: 1,
