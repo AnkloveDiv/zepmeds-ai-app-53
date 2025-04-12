@@ -57,6 +57,7 @@ const ProductCard = ({
   const [isAnimating, setIsAnimating] = useState(false);
   const [floatingElements, setFloatingElements] = useState<number[]>([]);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const getDiscountPercentage = () => {
     if (!discountPrice) return 0;
@@ -71,6 +72,11 @@ const ProductCard = ({
 
   const handleImageLoad = () => {
     setImageLoaded(true);
+  };
+  
+  const handleImageError = () => {
+    setImageError(true);
+    setImageLoaded(true); // Consider it loaded even if it's an error
   };
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -106,7 +112,7 @@ const ProductCard = ({
     <>
       <style>{cartAnimationStyle}</style>
       <motion.div
-        className="glass-morphism rounded-xl overflow-hidden relative"
+        className="glass-morphism rounded-xl overflow-hidden relative h-full flex flex-col"
         whileHover={{ scale: 1.03 }}
         whileTap={{ scale: 0.98 }}
         onClick={onClick}
@@ -116,12 +122,19 @@ const ProductCard = ({
             {!imageLoaded && (
               <div className="animate-pulse w-12 h-12 rounded-full bg-gray-700"></div>
             )}
-            <img 
-              src={image} 
-              alt={name} 
-              className={`w-full h-full object-contain ${!imageLoaded ? 'opacity-0' : 'opacity-100 transition-opacity duration-300'}`} 
-              onLoad={handleImageLoad}
-            />
+            {imageError ? (
+              <div className="flex items-center justify-center h-full w-full text-gray-400 text-xs">
+                Image not available
+              </div>
+            ) : (
+              <img 
+                src={image} 
+                alt={name} 
+                className={`w-full h-full object-contain p-2 ${!imageLoaded ? 'opacity-0' : 'opacity-100 transition-opacity duration-300'}`}
+                onLoad={handleImageLoad}
+                onError={handleImageError}
+              />
+            )}
           </div>
           
           {discountPrice && (
@@ -136,14 +149,14 @@ const ProductCard = ({
           </div>
         </div>
         
-        <div className="p-3">
+        <div className="p-3 flex-1 flex flex-col">
           <h3 className="text-white font-medium truncate">{name}</h3>
           
           {description && (
             <p className="text-gray-400 text-xs mt-1 line-clamp-2">{description}</p>
           )}
           
-          <div className="flex justify-between items-center mt-2">
+          <div className="flex justify-between items-center mt-auto pt-2">
             <div>
               {discountPrice ? (
                 <div className="flex flex-col">

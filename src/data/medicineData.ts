@@ -1,14 +1,15 @@
+
 export const vitaminCImg = "public/lovable-uploads/dc2b9862-8412-4aab-a048-3f4f99be1b92.png";
 export const thermometerImg = "public/lovable-uploads/e5ea8812-e4a9-417f-a5ea-550ee2118033.png";
-export const painReliefImg = "https://images.unsplash.com/photo-1558956546-130eb5b8ba93?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
-export const multivitaminImg = "https://images.unsplash.com/photo-1579165466741-7f35e4755183?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
-export const bpMonitorImg = "https://images.unsplash.com/photo-1631815588090-d4bfec5b9a1e?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
+export const painReliefImg = "public/lovable-uploads/6bb42333-19b2-427c-8513-33700eab7846.png";
+export const multivitaminImg = "public/lovable-uploads/8e2869b3-2f4a-429c-93a4-75e1011e9c3e.png";
+export const bpMonitorImg = "public/lovable-uploads/6d2f2fdd-2890-4d6a-8a19-e29674e2424e.png";
 export const sanitizerImg = "https://images.unsplash.com/photo-1584483720412-ce931f4aefa8?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
-export const eyeDropsImg = "https://images.unsplash.com/photo-1616668983570-a971f3e35c62?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
-export const dentalFlossImg = "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
-export const sunscreenImg = "https://images.unsplash.com/photo-1521223619409-8071a04a1b78?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
-export const memorySupplementImg = "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
-export const readingGlassesImg = "https://images.unsplash.com/photo-1483412468200-72182a492cdb?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
+export const eyeDropsImg = "public/lovable-uploads/2c409cfa-35bb-4435-8085-96a5172bfb23.png";
+export const dentalFlossImg = "public/lovable-uploads/d99e64a7-6f7d-432b-8248-977079ffdb52.png";
+export const sunscreenImg = "public/lovable-uploads/8c1600b9-be8f-44d2-b739-73ae97b8352c.png";
+export const memorySupplementImg = "public/lovable-uploads/4eef09cb-e7b9-47de-9d7e-a5a8e1a3a2de.png";
+export const readingGlassesImg = "public/lovable-uploads/58b52a15-d4c7-4b68-b54f-e25882f87a4f.png";
 export const musclePainImg = "https://images.unsplash.com/photo-1616091238995-af68d2711aec?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
 
 export const allProducts = [
