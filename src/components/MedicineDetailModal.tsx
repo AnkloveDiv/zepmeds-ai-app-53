@@ -1,7 +1,7 @@
 
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Star, Pill, Clock, Truck, ShieldCheck, Info } from "lucide-react";
+import { X, Star, Pill, Clock, Truck, ShieldCheck, Info, Flask, ThermometerSnow, CircleHelp, Factory, ScrollText, ArrowRight, Droplets, Drop } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface MedicineDetailModalProps {
@@ -21,6 +21,12 @@ interface MedicineDetailModalProps {
     dosage?: string;
     sideEffects?: string[];
     ingredients?: string[];
+    saltComposition?: string;
+    howItWorks?: string;
+    directions?: string;
+    quickTips?: string[];
+    faqs?: { question: string; answer: string }[];
+    category?: string;
   } | null;
   onAddToCart: (quantity: number, strips: number) => void;
 }
@@ -33,6 +39,7 @@ const MedicineDetailModal: React.FC<MedicineDetailModalProps> = ({
 }) => {
   const [quantity, setQuantity] = React.useState(1);
   const [strips, setStrips] = React.useState(1);
+  const [activeTab, setActiveTab] = React.useState("description");
 
   React.useEffect(() => {
     if (isOpen) {
@@ -52,6 +59,7 @@ const MedicineDetailModal: React.FC<MedicineDetailModalProps> = ({
     if (isOpen && medicine) {
       setQuantity(1);
       setStrips(1);
+      setActiveTab("description");
     }
   }, [isOpen, medicine]);
 
@@ -75,6 +83,17 @@ const MedicineDetailModal: React.FC<MedicineDetailModalProps> = ({
   const discount = medicine.discountPrice 
     ? Math.round(((medicine.price - medicine.discountPrice) / medicine.price) * 100) 
     : 0;
+
+  // Determine if this is a liquid medicine, tablet, or device
+  const isLiquid = medicine.name.toLowerCase().includes("solution") || 
+                  medicine.name.toLowerCase().includes("gel") || 
+                  medicine.name.toLowerCase().includes("drops") ||
+                  medicine.name.toLowerCase().includes("cream") ||
+                  medicine.name.toLowerCase().includes("lotion");
+                  
+  const isDevice = medicine.name.toLowerCase().includes("monitor") || 
+                  medicine.name.toLowerCase().includes("thermometer") ||
+                  medicine.name.toLowerCase().includes("glasses");
 
   return (
     <AnimatePresence>
@@ -102,7 +121,7 @@ const MedicineDetailModal: React.FC<MedicineDetailModalProps> = ({
               />
               
               {discount > 0 && (
-                <div className="absolute top-4 left-4 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                <div className="absolute top-4 left-4 bg-gradient-to-r from-red-500 to-pink-500 text-white px-2 py-1 rounded-full text-xs font-bold shadow-md">
                   {discount}% OFF
                 </div>
               )}
@@ -139,7 +158,7 @@ const MedicineDetailModal: React.FC<MedicineDetailModalProps> = ({
               
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="flex items-center gap-2">
-                  <Pill className="h-4 w-4 text-zepmeds-purple" />
+                  <Factory className="h-4 w-4 text-zepmeds-purple" />
                   <span className="text-sm text-gray-300">
                     {medicine.manufacturer || "Zepmeds"}
                   </span>
@@ -164,49 +183,274 @@ const MedicineDetailModal: React.FC<MedicineDetailModalProps> = ({
                 </div>
               </div>
               
-              {medicine.fullDescription && (
-                <div className="mb-4">
-                  <h3 className="text-white font-medium flex items-center gap-2 mb-2">
-                    <Info className="h-4 w-4" />
-                    Description
-                  </h3>
-                  <p className="text-sm text-gray-300">{medicine.fullDescription}</p>
-                </div>
-              )}
+              {/* Tabs navigation */}
+              <div className="flex overflow-x-auto gap-2 pb-2 mb-4 scrollbar-none">
+                <button
+                  className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium ${
+                    activeTab === "description"
+                      ? "bg-zepmeds-purple text-white"
+                      : "bg-gray-800 text-gray-400"
+                  }`}
+                  onClick={() => setActiveTab("description")}
+                >
+                  Description
+                </button>
+                <button
+                  className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium ${
+                    activeTab === "directions"
+                      ? "bg-zepmeds-purple text-white"
+                      : "bg-gray-800 text-gray-400"
+                  }`}
+                  onClick={() => setActiveTab("directions")}
+                >
+                  Directions
+                </button>
+                <button
+                  className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium ${
+                    activeTab === "howItWorks"
+                      ? "bg-zepmeds-purple text-white"
+                      : "bg-gray-800 text-gray-400"
+                  }`}
+                  onClick={() => setActiveTab("howItWorks")}
+                >
+                  How it Works
+                </button>
+                <button
+                  className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium ${
+                    activeTab === "quickTips"
+                      ? "bg-zepmeds-purple text-white"
+                      : "bg-gray-800 text-gray-400"
+                  }`}
+                  onClick={() => setActiveTab("quickTips")}
+                >
+                  Quick Tips
+                </button>
+                <button
+                  className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium ${
+                    activeTab === "faqs"
+                      ? "bg-zepmeds-purple text-white"
+                      : "bg-gray-800 text-gray-400"
+                  }`}
+                  onClick={() => setActiveTab("faqs")}
+                >
+                  FAQs
+                </button>
+              </div>
               
-              {medicine.dosage && (
-                <div className="mb-4">
-                  <h3 className="text-white font-medium mb-2">Dosage Instructions</h3>
-                  <p className="text-sm text-gray-300">{medicine.dosage}</p>
-                </div>
-              )}
+              {/* Tab content */}
+              <div className="border border-gray-800 rounded-lg p-4 mb-6 bg-black/20 min-h-[150px]">
+                {activeTab === "description" && (
+                  <div>
+                    <h3 className="text-white font-medium flex items-center gap-2 mb-2">
+                      <Info className="h-4 w-4" />
+                      Description
+                    </h3>
+                    <p className="text-sm text-gray-300">{medicine.fullDescription || medicine.description || "No description available."}</p>
+                    
+                    {medicine.saltComposition && (
+                      <div className="mt-4">
+                        <h4 className="text-white text-sm font-medium mb-1">Salt Composition:</h4>
+                        <p className="text-sm text-gray-300">{medicine.saltComposition}</p>
+                      </div>
+                    )}
+                    
+                    {medicine.ingredients && medicine.ingredients.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="text-white text-sm font-medium mb-1">Ingredients:</h4>
+                        <ul className="list-disc list-inside text-sm text-gray-300">
+                          {medicine.ingredients.map((ingredient, idx) => (
+                            <li key={idx}>{ingredient}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {medicine.sideEffects && medicine.sideEffects.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="text-white text-sm font-medium mb-1">Side Effects:</h4>
+                        <ul className="list-disc list-inside text-sm text-gray-300">
+                          {medicine.sideEffects.map((effect, idx) => (
+                            <li key={idx}>{effect}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {activeTab === "directions" && (
+                  <div>
+                    <h3 className="text-white font-medium flex items-center gap-2 mb-2">
+                      <ScrollText className="h-4 w-4" />
+                      Directions of Use
+                    </h3>
+                    <p className="text-sm text-gray-300">
+                      {medicine.directions || medicine.dosage || "Take as directed by your physician."}
+                    </p>
+                  </div>
+                )}
+                
+                {activeTab === "howItWorks" && (
+                  <div>
+                    <h3 className="text-white font-medium flex items-center gap-2 mb-2">
+                      {isLiquid ? (
+                        <Droplets className="h-4 w-4" />
+                      ) : isDevice ? (
+                        <ThermometerSnow className="h-4 w-4" />
+                      ) : (
+                        <Pill className="h-4 w-4" />
+                      )}
+                      How it Works
+                    </h3>
+                    <p className="text-sm text-gray-300">
+                      {medicine.howItWorks || (isLiquid 
+                        ? "This solution works by direct application to the affected area to provide relief." 
+                        : isDevice 
+                          ? "This device helps monitor and track your health metrics with precision." 
+                          : "This medicine works by targeting specific receptors in the body to provide relief.")}
+                    </p>
+                  </div>
+                )}
+                
+                {activeTab === "quickTips" && (
+                  <div>
+                    <h3 className="text-white font-medium flex items-center gap-2 mb-2">
+                      <ArrowRight className="h-4 w-4" />
+                      Quick Tips
+                    </h3>
+                    {medicine.quickTips && medicine.quickTips.length > 0 ? (
+                      <ul className="list-disc list-inside text-sm text-gray-300">
+                        {medicine.quickTips.map((tip, idx) => (
+                          <li key={idx}>{tip}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <ul className="list-disc list-inside text-sm text-gray-300">
+                        <li>Store in a cool, dry place away from direct sunlight</li>
+                        <li>Keep out of reach of children</li>
+                        <li>Do not use after expiry date</li>
+                        {isLiquid && <li>Shake well before use</li>}
+                      </ul>
+                    )}
+                  </div>
+                )}
+                
+                {activeTab === "faqs" && (
+                  <div>
+                    <h3 className="text-white font-medium flex items-center gap-2 mb-2">
+                      <CircleHelp className="h-4 w-4" />
+                      Frequently Asked Questions
+                    </h3>
+                    {medicine.faqs && medicine.faqs.length > 0 ? (
+                      <div className="space-y-3">
+                        {medicine.faqs.map((faq, idx) => (
+                          <div key={idx}>
+                            <h4 className="text-white text-sm font-medium">{faq.question}</h4>
+                            <p className="text-sm text-gray-300">{faq.answer}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div>
+                          <h4 className="text-white text-sm font-medium">Is this medicine safe for long-term use?</h4>
+                          <p className="text-sm text-gray-300">Consult with your doctor for long-term use recommendations.</p>
+                        </div>
+                        <div>
+                          <h4 className="text-white text-sm font-medium">Can I take this with other medications?</h4>
+                          <p className="text-sm text-gray-300">Always inform your doctor about all medications you are taking.</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
               
               <div className="border-t border-gray-700 my-5"></div>
               
               <div className="grid grid-cols-2 gap-6 mb-6">
-                <div>
-                  <label className="text-sm text-gray-300 mb-2 block">Strips</label>
-                  <div className="flex items-center">
-                    <button 
-                      className="w-8 h-8 rounded-l-lg bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors"
-                      onClick={() => handleDecrement(setStrips, strips)}
-                    >
-                      -
-                    </button>
-                    <input 
-                      type="number" 
-                      value={strips}
-                      onChange={(e) => setStrips(Math.max(1, parseInt(e.target.value) || 1))}
-                      className="w-12 h-8 bg-black/20 text-white text-center border-none"
-                    />
-                    <button 
-                      className="w-8 h-8 rounded-r-lg bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors"
-                      onClick={() => handleIncrement(setStrips, strips)}
-                    >
-                      +
-                    </button>
+                {isLiquid ? (
+                  <div>
+                    <label className="text-sm text-gray-300 mb-2 block flex items-center">
+                      <Drop className="h-4 w-4 mr-1" />
+                      Volume (ml)
+                    </label>
+                    <div className="flex items-center">
+                      <button 
+                        className="w-8 h-8 rounded-l-lg bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors"
+                        onClick={() => handleDecrement(setQuantity, quantity)}
+                      >
+                        -
+                      </button>
+                      <input 
+                        type="number" 
+                        value={quantity}
+                        onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-12 h-8 bg-black/20 text-white text-center border-none"
+                      />
+                      <button 
+                        className="w-8 h-8 rounded-r-lg bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors"
+                        onClick={() => handleIncrement(setQuantity, quantity)}
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
-                </div>
+                ) : isDevice ? (
+                  <div>
+                    <label className="text-sm text-gray-300 mb-2 block flex items-center">
+                      <ThermometerSnow className="h-4 w-4 mr-1" />
+                      Quantity
+                    </label>
+                    <div className="flex items-center">
+                      <button 
+                        className="w-8 h-8 rounded-l-lg bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors"
+                        onClick={() => handleDecrement(setQuantity, quantity)}
+                      >
+                        -
+                      </button>
+                      <input 
+                        type="number" 
+                        value={quantity}
+                        onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-12 h-8 bg-black/20 text-white text-center border-none"
+                      />
+                      <button 
+                        className="w-8 h-8 rounded-r-lg bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors"
+                        onClick={() => handleIncrement(setQuantity, quantity)}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="text-sm text-gray-300 mb-2 block flex items-center">
+                      <Pill className="h-4 w-4 mr-1" />
+                      Strips
+                    </label>
+                    <div className="flex items-center">
+                      <button 
+                        className="w-8 h-8 rounded-l-lg bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors"
+                        onClick={() => handleDecrement(setStrips, strips)}
+                      >
+                        -
+                      </button>
+                      <input 
+                        type="number" 
+                        value={strips}
+                        onChange={(e) => setStrips(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-12 h-8 bg-black/20 text-white text-center border-none"
+                      />
+                      <button 
+                        className="w-8 h-8 rounded-r-lg bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors"
+                        onClick={() => handleIncrement(setStrips, strips)}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                )}
                 
                 <div>
                   <label className="text-sm text-gray-300 mb-2 block">Quantity</label>

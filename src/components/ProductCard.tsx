@@ -1,4 +1,3 @@
-
 import { motion } from "framer-motion";
 import { Star, ShoppingCart, Plus, Minus } from "lucide-react";
 import { useState } from "react";
@@ -138,7 +137,7 @@ const ProductCard = ({
           </div>
           
           {discountPrice && (
-            <div className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+            <div className="absolute top-2 left-2 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs px-2 py-1 rounded-full font-semibold shadow-sm">
               {getDiscountPercentage()}% OFF
             </div>
           )}
