@@ -1,3 +1,4 @@
+
 import { motion } from "framer-motion";
 import { Star, ShoppingCart, Plus, Minus } from "lucide-react";
 import { useState } from "react";
@@ -111,7 +112,7 @@ const ProductCard = ({
     <>
       <style>{cartAnimationStyle}</style>
       <motion.div
-        className="glass-morphism rounded-xl overflow-hidden relative h-full flex flex-col"
+        className="glass-morphism rounded-xl overflow-hidden relative h-full flex flex-col cursor-pointer"
         whileHover={{ scale: 1.03 }}
         whileTap={{ scale: 0.98 }}
         onClick={onClick}

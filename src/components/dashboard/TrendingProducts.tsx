@@ -175,11 +175,16 @@ const TrendingProducts = ({ setCartCount }: TrendingProductsProps) => {
     // Show animation
     setAnimatedProduct(product.name);
     setShowAnimation(true);
+    
+    setTimeout(() => {
+      setShowAnimation(false);
+    }, 1500);
   };
 
   const handleModalAddToCart = (quantity: number, strips: number) => {
     if (selectedMedicine) {
       handleAddToCart(selectedMedicine, quantity, strips);
+      setIsModalOpen(false);
     }
   };
 
@@ -198,7 +203,7 @@ const TrendingProducts = ({ setCartCount }: TrendingProductsProps) => {
       <div className="grid grid-cols-2 gap-4">
         {products.map((product, index) => (
           <motion.div
-            key={product.name}
+            key={product.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 + 0.4 }}
