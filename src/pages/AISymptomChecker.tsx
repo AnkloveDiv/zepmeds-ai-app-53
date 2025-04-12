@@ -1,11 +1,12 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Stethoscope, Plus, Minus, AlertTriangle, Check, ArrowRight, X, Loader2 } from "lucide-react";
+import { Stethoscope, Plus, Minus, AlertTriangle, Check, ArrowRight, X, Loader2, XOctagon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
 import { analyzeSymptoms, GeminiResponse } from "@/services/geminiService";
@@ -18,6 +19,7 @@ const AISymptomChecker = () => {
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<GeminiResponse | null>(null);
   const [showInput, setShowInput] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const addSymptom = () => {
     if (currentSymptom.trim() !== "" && !symptoms.includes(currentSymptom.trim())) {
@@ -48,12 +50,15 @@ const AISymptomChecker = () => {
 
     setAnalyzing(true);
     setShowInput(false);
+    setError(null);
 
     try {
       const result = await analyzeSymptoms(symptoms, additionalInfo);
       setAnalysisResult(result);
     } catch (error) {
       console.error("Analysis error:", error);
+      setError("There was an error analyzing your symptoms. Please try again later.");
+      
       toast({
         title: "Analysis failed",
         description: "There was an error analyzing your symptoms. Please try again.",
@@ -67,6 +72,7 @@ const AISymptomChecker = () => {
   const resetAnalysis = () => {
     setAnalysisResult(null);
     setShowInput(true);
+    setError(null);
   };
 
   const getSeverityColor = (severity: string) => {
@@ -110,6 +116,14 @@ const AISymptomChecker = () => {
             </span>
           </p>
         </motion.div>
+
+        {error && (
+          <Alert variant="destructive" className="mb-4 border-red-700 bg-red-900/20">
+            <XOctagon className="h-5 w-5" />
+            <AlertTitle>Analysis failed</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
         {showInput ? (
           <motion.div

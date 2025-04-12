@@ -1,7 +1,7 @@
 
 const GEMINI_API_KEY = "AIzaSyA14PtGblA4oPXh2dqC51Mpvymc9hNHuPI";
-// Updated API URL to match the correct Google Gemini API endpoint
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-1.0-pro:generateContent";
+// Updated API URL to use gemini-pro model (Gemini 1.0) instead of gemini-1.0-pro
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent";
 
 export interface GeminiResponse {
   analysis: string;
