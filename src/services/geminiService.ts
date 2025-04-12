@@ -1,6 +1,7 @@
 
 const GEMINI_API_KEY = "AIzaSyA14PtGblA4oPXh2dqC51Mpvymc9hNHuPI";
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+// Updated API URL to match the correct Google Gemini API endpoint
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-1.0-pro:generateContent";
 
 export interface GeminiResponse {
   analysis: string;
@@ -41,7 +42,9 @@ export const analyzeSymptoms = async (symptoms: string[], additionalInfo: string
       Important: Always include a disclaimer that this is not professional medical advice and the user should consult a healthcare professional for proper diagnosis and treatment.
     `;
 
-    // Making the API request to Gemini
+    console.log("Sending request to Gemini API with symptoms:", symptoms);
+    
+    // Making the API request to Gemini with updated structure
     const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
@@ -52,27 +55,47 @@ export const analyzeSymptoms = async (symptoms: string[], additionalInfo: string
           parts: [{
             text: prompt
           }]
-        }]
+        }],
+        generationConfig: {
+          temperature: 0.4,
+          topK: 32,
+          topP: 0.95,
+          maxOutputTokens: 1024,
+        }
       })
     });
 
     if (!response.ok) {
-      console.error("Gemini API error:", await response.text());
+      const errorText = await response.text();
+      console.error("Gemini API error:", errorText);
       throw new Error("Failed to analyze symptoms with Gemini");
     }
 
     const data = await response.json();
+    console.log("Gemini API response:", data);
     
     // Extract the JSON from the text response
     const textResponse = data.candidates[0].content.parts[0].text;
+    
+    // Find the JSON object in the response text
     const jsonStartIndex = textResponse.indexOf('{');
     const jsonEndIndex = textResponse.lastIndexOf('}') + 1;
+    
+    if (jsonStartIndex === -1 || jsonEndIndex === -1) {
+      console.error("Could not find JSON in response:", textResponse);
+      throw new Error("Invalid response format from Gemini");
+    }
+    
     const jsonString = textResponse.substring(jsonStartIndex, jsonEndIndex);
     
-    // Parse the JSON
-    const parsedResponse = JSON.parse(jsonString) as GeminiResponse;
-    
-    return parsedResponse;
+    try {
+      // Parse the JSON
+      const parsedResponse = JSON.parse(jsonString) as GeminiResponse;
+      return parsedResponse;
+    } catch (jsonError) {
+      console.error("Error parsing JSON response:", jsonError, "Response was:", jsonString);
+      throw new Error("Failed to parse Gemini response");
+    }
   } catch (error) {
     console.error("Error analyzing symptoms:", error);
     throw error;
