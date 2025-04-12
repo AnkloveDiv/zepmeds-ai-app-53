@@ -53,16 +53,27 @@ const AISymptomChecker: React.FC = () => {
       }
     } catch (error: any) {
       console.error("Analysis error:", error);
-      setError("There was an error analyzing your symptoms. Please try again later.");
+      setError("There was an error analyzing your symptoms. The application is using a mock response for demonstration purposes.");
       
       toast({
-        title: "Analysis failed",
-        description: "There was an error analyzing your symptoms. Please try again.",
+        title: "Using mock data",
+        description: "We're using pre-defined sample data as a fallback since the AI service is currently unavailable.",
         variant: "destructive",
       });
       
-      // Show input form again on error
-      setShowInput(true);
+      // Try to get mock data even when there's an error
+      try {
+        const mockResult = await analyzeSymptoms(symptoms, additionalInfo);
+        if (mockResult) {
+          setAnalysisResult(mockResult);
+        } else {
+          // If even the mock fails, show input form again
+          setShowInput(true);
+        }
+      } catch {
+        // If even the mock fails, show input form again
+        setShowInput(true);
+      }
     } finally {
       setAnalyzing(false);
     }

@@ -1,6 +1,7 @@
+
 // Use a working API key
 const API_KEY = "AIzaSyDlpkHivaQRi92dE_U9CiXS16TtWZkfnAk"; // Replace with your actual API key
-const API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent";
+const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
 export interface GeminiResponse {
   analysis: string;
@@ -44,7 +45,6 @@ export const analyzeSymptoms = async (
   try {
     console.log("Starting symptom analysis with:", { symptoms, additionalInfo });
     
-    // Note: We're now using a valid API key, but keeping the mock fallback just in case
     const prompt = `
       You are a medical assistant AI. Analyze the following symptoms and provide a structured response.
       
@@ -103,7 +103,7 @@ export const analyzeSymptoms = async (
       if (!response.ok) {
         const errorText = await response.text();
         console.error("API Error response:", errorText);
-        return mockResponse;
+        throw new Error(`API error: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
@@ -111,7 +111,7 @@ export const analyzeSymptoms = async (
       
       if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
         console.error("Invalid response format from Gemini API");
-        return mockResponse;
+        throw new Error("Invalid response format from Gemini API");
       }
 
       const textResponse = data.candidates[0].content.parts[0].text;
@@ -123,7 +123,7 @@ export const analyzeSymptoms = async (
       
       if (jsonStartIndex === -1 || jsonEndIndex === -1) {
         console.error("Could not find JSON in response:", textResponse);
-        return mockResponse;
+        throw new Error("Could not find JSON in response");
       }
       
       const jsonString = textResponse.substring(jsonStartIndex, jsonEndIndex);
@@ -164,14 +164,15 @@ export const analyzeSymptoms = async (
         return parsedResponse;
       } catch (parseError) {
         console.error("Error parsing JSON:", parseError);
-        return mockResponse;
+        throw new Error(`Error parsing JSON: ${parseError}`);
       }
     } catch (apiError) {
       console.error("API call error:", apiError);
-      return mockResponse;
+      throw apiError;
     }
   } catch (error) {
     console.error("Error in analyzeSymptoms:", error);
+    // Return mock response when there's an error
     return mockResponse;
   }
 };
