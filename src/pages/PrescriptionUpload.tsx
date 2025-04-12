@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { Camera, Image, Upload, Check, AlertCircle, FileText, AlertTriangle, Pill } from "lucide-react";
@@ -114,7 +113,7 @@ const PrescriptionUpload = () => {
           toast({
             title: "Not a formal prescription",
             description: "Found medicine names, but this doesn't appear to be a formal prescription.",
-            variant: "warning"
+            variant: "default"
           });
         } else {
           // No medicines found at all
