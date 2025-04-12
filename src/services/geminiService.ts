@@ -1,6 +1,4 @@
 
-import { useToast } from "@/components/ui/use-toast";
-
 const GEMINI_API_KEY = "AIzaSyA14PtGblA4oPXh2dqC51Mpvymc9hNHuPI";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
 
@@ -15,6 +13,7 @@ export interface GeminiResponse {
 
 export const analyzeSymptoms = async (symptoms: string[], additionalInfo: string = ""): Promise<GeminiResponse> => {
   try {
+    // Creating a detailed prompt for Gemini to analyze symptoms
     const prompt = `
       Act as a medical assistant providing information about symptoms. Analyze the following symptoms:
       ${symptoms.join(", ")}
@@ -42,6 +41,7 @@ export const analyzeSymptoms = async (symptoms: string[], additionalInfo: string
       Important: Always include a disclaimer that this is not professional medical advice and the user should consult a healthcare professional for proper diagnosis and treatment.
     `;
 
+    // Making the API request to Gemini
     const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
