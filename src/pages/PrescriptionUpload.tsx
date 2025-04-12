@@ -1,13 +1,14 @@
 
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { Camera, Image, Upload, Check, AlertCircle, FileText, AlertTriangle } from "lucide-react";
+import { Camera, Image, Upload, Check, AlertCircle, FileText, AlertTriangle, Pill } from "lucide-react";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
-import { detectTextFromImage, TextDetectionResult } from "@/services/visionService";
+import { detectTextFromImage, TextDetectionResult, generateMockResultForTesting } from "@/services/visionService";
+import ActionButtons from "@/components/medicine/ActionButtons";
 
 const PrescriptionUpload = () => {
   const navigate = useNavigate();
@@ -90,31 +91,42 @@ const PrescriptionUpload = () => {
       }
       
       // For demo with placeholder, use mock data
+      let result: TextDetectionResult;
       if (image === "/placeholder.svg") {
         // Wait to simulate processing
         await new Promise(resolve => setTimeout(resolve, 2000));
-        const mockResult = await detectTextFromImage("");
-        setAnalysisResult(mockResult);
+        result = generateMockResultForTesting();
       } else {
         // Actually process the image
-        const result = await detectTextFromImage(base64Image);
-        setAnalysisResult(result);
+        result = await detectTextFromImage(base64Image);
       }
       
+      console.log("Analysis result:", result);
+      setAnalysisResult(result);
       setShowAnalysis(true);
       
-      // Based on confidence level, show different messages
-      if (!analysisResult?.isPrescription || (analysisResult?.confidence && analysisResult.confidence < 0.5)) {
-        const hasMedicines = analysisResult?.medicineNames && analysisResult.medicineNames.length > 0;
-        toast({
-          title: "Not a valid prescription",
-          description: hasMedicines 
-            ? "Found medicine names, but this doesn't appear to be a formal prescription."
-            : "The image doesn't appear to contain a valid prescription. Please try another image.",
-          variant: "destructive"
-        });
-        setDetectionError(true);
+      const hasMedicines = result.medicineNames && result.medicineNames.length > 0;
+      
+      // Based on results, show appropriate messages
+      if (!result.isPrescription) {
+        if (hasMedicines) {
+          // Found medicines but not a valid prescription
+          toast({
+            title: "Not a formal prescription",
+            description: "Found medicine names, but this doesn't appear to be a formal prescription.",
+            variant: "warning"
+          });
+        } else {
+          // No medicines found at all
+          toast({
+            title: "No medicines detected",
+            description: "The image doesn't appear to contain any medicine names. Please try another image.",
+            variant: "destructive"
+          });
+          setDetectionError(true);
+        }
       } else {
+        // Valid prescription detected
         setUploadSuccess(true);
         toast({
           title: "Prescription detected",
@@ -144,8 +156,8 @@ const PrescriptionUpload = () => {
       return;
     }
     
-    // Check if it's a valid prescription OR if it has medicines (for informal prescriptions)
-    if (!analysisResult.isPrescription && (!analysisResult.medicineNames || analysisResult.medicineNames.length === 0)) {
+    // Check if it has medicines (for both formal and informal prescriptions)
+    if (!analysisResult.medicineNames || analysisResult.medicineNames.length === 0) {
       toast({
         title: "No medicines found",
         description: "No medicine names were detected in this image. Please try a different image.",
@@ -162,7 +174,7 @@ const PrescriptionUpload = () => {
       setUploadSuccess(true);
       
       toast({
-        title: "Prescription processed",
+        title: "Medicines processed",
         description: analysisResult.isPrescription 
           ? "Your prescription has been processed successfully" 
           : "Medicine names extracted successfully",
@@ -190,6 +202,8 @@ const PrescriptionUpload = () => {
     if (analysisResult.confidence < 0.7) return "text-yellow-400";
     return "text-green-400";
   };
+  
+  const hasMedicineNames = analysisResult?.medicineNames && analysisResult.medicineNames.length > 0;
   
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -267,7 +281,7 @@ const PrescriptionUpload = () => {
                 <>
                   <p className="text-green-400 text-sm mb-3">Valid prescription detected</p>
                   
-                  {analysisResult.medicineNames.length > 0 && (
+                  {hasMedicineNames && (
                     <>
                       <p className="text-white text-sm mb-2">Prescribed medications:</p>
                       <ul className="list-disc pl-5 text-gray-300 text-sm space-y-1 mb-3">
@@ -278,7 +292,7 @@ const PrescriptionUpload = () => {
                     </>
                   )}
                 </>
-              ) : analysisResult.medicineNames && analysisResult.medicineNames.length > 0 ? (
+              ) : hasMedicineNames ? (
                 <>
                   <div className="flex items-start mb-3">
                     <AlertTriangle className="h-5 w-5 text-yellow-400 mr-2 mt-0.5 flex-shrink-0" />
@@ -351,7 +365,7 @@ const PrescriptionUpload = () => {
                   <span>Processing...</span>
                 </div>
               ) : (
-                <span>Analyze Prescription</span>
+                <span>Analyze Image</span>
               )}
             </Button>
           )}
@@ -363,7 +377,7 @@ const PrescriptionUpload = () => {
               disabled={
                 processing || 
                 uploadSuccess ||
-                (!analysisResult?.isPrescription && (!analysisResult?.medicineNames || analysisResult.medicineNames.length === 0))
+                (!hasMedicineNames)
               }
             >
               {processing ? (
@@ -377,7 +391,16 @@ const PrescriptionUpload = () => {
                   <span>Processed Successfully</span>
                 </div>
               ) : (
-                <span>Upload {analysisResult?.isPrescription ? "Prescription" : "Medicines"}</span>
+                <div className="flex items-center">
+                  <Pill className="h-4 w-4 mr-2" />
+                  <span>
+                    {analysisResult?.isPrescription 
+                      ? "Upload Prescription" 
+                      : hasMedicineNames 
+                        ? "Use Detected Medicines" 
+                        : "No Medicines Found"}
+                  </span>
+                </div>
               )}
             </Button>
           )}

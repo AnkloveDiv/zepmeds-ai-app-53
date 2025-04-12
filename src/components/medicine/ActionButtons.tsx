@@ -1,14 +1,15 @@
 
 import { motion } from "framer-motion";
-import { FileUp, Filter, AlertTriangle } from "lucide-react";
+import { FileUp, Filter, AlertTriangle, Pill } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 interface ActionButtonsProps {
   onUploadPrescription: () => void;
   hasError?: boolean;
+  hasMedicines?: boolean;
 }
 
-const ActionButtons = ({ onUploadPrescription, hasError }: ActionButtonsProps) => {
+const ActionButtons = ({ onUploadPrescription, hasError, hasMedicines }: ActionButtonsProps) => {
   const { toast } = useToast();
   
   const handleUpload = () => {
@@ -24,13 +25,18 @@ const ActionButtons = ({ onUploadPrescription, hasError }: ActionButtonsProps) =
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className={`px-4 py-2 ${hasError ? 'bg-amber-600' : 'bg-zepmeds-purple'} text-white rounded-lg flex items-center`}
+        className={`px-4 py-2 ${hasError ? 'bg-amber-600' : hasMedicines ? 'bg-green-600' : 'bg-zepmeds-purple'} text-white rounded-lg flex items-center`}
         onClick={handleUpload}
       >
         {hasError ? (
           <>
             <AlertTriangle className="h-4 w-4 mr-2" />
             Try Again
+          </>
+        ) : hasMedicines ? (
+          <>
+            <Pill className="h-4 w-4 mr-2" />
+            Use Detected Medicines
           </>
         ) : (
           <>
