@@ -105,9 +105,12 @@ const PrescriptionUpload = () => {
       
       // Based on confidence level, show different messages
       if (!analysisResult?.isPrescription || (analysisResult?.confidence && analysisResult.confidence < 0.5)) {
+        const hasMedicines = analysisResult?.medicineNames && analysisResult.medicineNames.length > 0;
         toast({
           title: "Not a valid prescription",
-          description: "The image doesn't appear to contain a valid prescription. Please try another image.",
+          description: hasMedicines 
+            ? "Found medicine names, but this doesn't appear to be a formal prescription."
+            : "The image doesn't appear to contain a valid prescription. Please try another image.",
           variant: "destructive"
         });
         setDetectionError(true);
@@ -132,10 +135,20 @@ const PrescriptionUpload = () => {
   };
   
   const handleUploadPrescription = () => {
-    if (!analysisResult || !analysisResult.isPrescription || (analysisResult.confidence && analysisResult.confidence < 0.5)) {
+    if (!analysisResult) {
       toast({
-        title: "Invalid prescription",
-        description: "The image doesn't appear to be a valid prescription. Please try a different image.",
+        title: "No analysis result",
+        description: "Please analyze the image first",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Check if it's a valid prescription OR if it has medicines (for informal prescriptions)
+    if (!analysisResult.isPrescription && (!analysisResult.medicineNames || analysisResult.medicineNames.length === 0)) {
+      toast({
+        title: "No medicines found",
+        description: "No medicine names were detected in this image. Please try a different image.",
         variant: "destructive"
       });
       return;
@@ -149,8 +162,10 @@ const PrescriptionUpload = () => {
       setUploadSuccess(true);
       
       toast({
-        title: "Prescription uploaded",
-        description: "Your prescription has been processed successfully",
+        title: "Prescription processed",
+        description: analysisResult.isPrescription 
+          ? "Your prescription has been processed successfully" 
+          : "Medicine names extracted successfully",
       });
       
       // Simulate navigating to medicine list after another delay
@@ -237,7 +252,9 @@ const PrescriptionUpload = () => {
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center">
                   <FileText className="h-5 w-5 text-zepmeds-purple mr-2" />
-                  <h4 className="font-medium text-white">Prescription Analysis</h4>
+                  <h4 className="font-medium text-white">
+                    {analysisResult.isPrescription ? "Prescription Analysis" : "Text Analysis"}
+                  </h4>
                 </div>
                 {analysisResult.confidence !== undefined && (
                   <span className={`text-xs px-2 py-1 rounded-full bg-black/30 ${getConfidenceColor()}`}>
@@ -246,13 +263,13 @@ const PrescriptionUpload = () => {
                 )}
               </div>
               
-              {analysisResult.isPrescription && (!analysisResult.confidence || analysisResult.confidence >= 0.5) ? (
+              {analysisResult.isPrescription ? (
                 <>
                   <p className="text-green-400 text-sm mb-3">Valid prescription detected</p>
                   
                   {analysisResult.medicineNames.length > 0 && (
                     <>
-                      <p className="text-white text-sm mb-2">Detected medications:</p>
+                      <p className="text-white text-sm mb-2">Prescribed medications:</p>
                       <ul className="list-disc pl-5 text-gray-300 text-sm space-y-1 mb-3">
                         {analysisResult.medicineNames.map((medicine, index) => (
                           <li key={index}>{medicine}</li>
@@ -261,11 +278,27 @@ const PrescriptionUpload = () => {
                     </>
                   )}
                 </>
+              ) : analysisResult.medicineNames && analysisResult.medicineNames.length > 0 ? (
+                <>
+                  <div className="flex items-start mb-3">
+                    <AlertTriangle className="h-5 w-5 text-yellow-400 mr-2 mt-0.5 flex-shrink-0" />
+                    <p className="text-yellow-400 text-sm">
+                      This does not appear to be a valid prescription, but medicine names were detected.
+                    </p>
+                  </div>
+                  
+                  <p className="text-white text-sm mb-2">Detected medicine names:</p>
+                  <ul className="list-disc pl-5 text-gray-300 text-sm space-y-1 mb-3">
+                    {analysisResult.medicineNames.map((medicine, index) => (
+                      <li key={index}>{medicine}</li>
+                    ))}
+                  </ul>
+                </>
               ) : (
                 <div className="flex items-start">
-                  <AlertTriangle className="h-5 w-5 text-yellow-400 mr-2 mt-0.5 flex-shrink-0" />
-                  <p className="text-yellow-400 text-sm">
-                    This does not appear to be a valid prescription. Please upload a clear image of a prescription that includes doctor information, patient details, and medication names with dosages.
+                  <AlertTriangle className="h-5 w-5 text-red-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <p className="text-red-400 text-sm">
+                    No valid prescription or medicine names were detected. Please upload a clear image of a prescription or a note with medicine names.
                   </p>
                 </div>
               )}
@@ -327,10 +360,11 @@ const PrescriptionUpload = () => {
             <Button
               className="w-full bg-zepmeds-purple hover:bg-zepmeds-purple-light py-3"
               onClick={handleUploadPrescription}
-              disabled={!analysisResult?.isPrescription || 
-                      (analysisResult.confidence !== undefined && analysisResult.confidence < 0.5) || 
-                      processing || 
-                      uploadSuccess}
+              disabled={
+                processing || 
+                uploadSuccess ||
+                (!analysisResult?.isPrescription && (!analysisResult?.medicineNames || analysisResult.medicineNames.length === 0))
+              }
             >
               {processing ? (
                 <div className="flex items-center">
@@ -343,7 +377,7 @@ const PrescriptionUpload = () => {
                   <span>Processed Successfully</span>
                 </div>
               ) : (
-                <span>Upload Prescription</span>
+                <span>Upload {analysisResult?.isPrescription ? "Prescription" : "Medicines"}</span>
               )}
             </Button>
           )}

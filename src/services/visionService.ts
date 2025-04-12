@@ -77,6 +77,18 @@ export const detectTextFromImage = async (imageBase64: string): Promise<TextDete
 
     // Use Gemini API to analyze the text and identify if it's a prescription
     const analysisResult = await analyzePrescriptionText(extractedText);
+    
+    // If not a formal prescription, still try to extract medicine names
+    if (!analysisResult.isPrescription && extractedText.trim().length > 0) {
+      const medicineNames = await extractMedicineNames(extractedText);
+      
+      // Update analysis result with extracted medicine names
+      return {
+        ...analysisResult,
+        medicineNames: medicineNames.length > 0 ? medicineNames : []
+      };
+    }
+    
     return analysisResult;
   } catch (error) {
     console.error("Error in text detection:", error);
@@ -185,6 +197,84 @@ const analyzePrescriptionText = async (text: string): Promise<TextDetectionResul
       medicineNames: [], // Important: Empty array when invalid
       confidence: 0.1
     };
+  }
+};
+
+/**
+ * Extract medicine names from text even if it's not a formal prescription
+ * @param text - Extracted text from the image
+ */
+const extractMedicineNames = async (text: string): Promise<string[]> => {
+  try {
+    const API_KEY = "AIzaSyDlpkHivaQRi92dE_U9CiXS16TtWZkfnAk";
+    const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+    
+    const prompt = `
+      You are a medical assistant AI that specializes in identifying medication names.
+      
+      Extract ALL possible medication names from the following text, even if it doesn't look like a formal prescription.
+      Look for any words that could represent medications, including generic and brand names.
+      Include dosage information if available.
+      
+      Text: ${text}
+      
+      Format your response STRICTLY as a valid JSON array of strings, each containing a medicine name with dosage when available:
+      ["Medicine1 dosage", "Medicine2 dosage", "Medicine3"]
+      
+      If you can't identify any medication names with high confidence, return an empty array: []
+    `;
+
+    const response = await fetch(`${API_URL}?key=${API_KEY}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              {
+                text: prompt,
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.1,
+          topP: 0.8,
+          maxOutputTokens: 1024,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Gemini API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const textResponse = data.candidates[0].content.parts[0].text;
+    
+    // Extract JSON from the response
+    const jsonStartIndex = textResponse.indexOf('[');
+    const jsonEndIndex = textResponse.lastIndexOf(']') + 1;
+    
+    if (jsonStartIndex === -1 || jsonEndIndex === -1) {
+      console.error("Could not find JSON in medicine extraction response");
+      return [];
+    }
+    
+    const jsonString = textResponse.substring(jsonStartIndex, jsonEndIndex);
+    console.log("Medicine extraction JSON:", jsonString);
+    
+    try {
+      return JSON.parse(jsonString);
+    } catch (parseError) {
+      console.error("Error parsing medicine JSON:", parseError);
+      return [];
+    }
+  } catch (error) {
+    console.error("Error extracting medicine names:", error);
+    return [];
   }
 };
 
