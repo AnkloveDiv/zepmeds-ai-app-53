@@ -80,19 +80,14 @@ export const detectTextFromImage = async (imageBase64: string): Promise<TextDete
     return analysisResult;
   } catch (error) {
     console.error("Error in text detection:", error);
-    // Use simplified detection as fallback
-    const mockResult = generateMockResultWithRandomData();
-    return mockResult;
+    // Return invalid result instead of using mockResult
+    return {
+      text: "",
+      isPrescription: false,
+      medicineNames: [], // Important: Empty array when invalid
+      confidence: 0
+    };
   }
-};
-
-// Generate a mock result but with randomized confidence to simulate real detection
-const generateMockResultWithRandomData = (): TextDetectionResult => {
-  // For demo purposes, we'll show that we're using mock data
-  return {
-    ...mockTextResult,
-    confidence: Math.random() // Random confidence level to make it more realistic
-  };
 };
 
 /**
@@ -173,59 +168,30 @@ const analyzePrescriptionText = async (text: string): Promise<TextDetectionResul
     const jsonString = textResponse.substring(jsonStartIndex, jsonEndIndex);
     const analysisResult = JSON.parse(jsonString);
     
+    // Ensure medicine names is empty when isPrescription is false
     return {
       text,
       isPrescription: analysisResult.isPrescription,
-      medicineNames: analysisResult.medicineNames || [],
+      medicineNames: analysisResult.isPrescription ? (analysisResult.medicineNames || []) : [],
       confidence: analysisResult.confidence || 0
     };
   } catch (error) {
     console.error("Error analyzing prescription text:", error);
     
-    // More robust fallback analysis that applies stricter rules
-    const isPrescriptionKeywords = [
-      "prescription", "rx", "prescribed", "refill", "pharmacy", 
-      "doctor", "dr.", "physician", "patient", "take daily", "sig:", "dispense:"
-    ];
-    
-    const medicineKeywords = [
-      "tablet", "capsule", "mg", "ml", "injection", "syrup", 
-      "amoxicillin", "ibuprofen", "paracetamol", "acetaminophen"
-    ];
-    
-    // Count prescription-related keywords in the text
-    const prescriptionKeywordCount = isPrescriptionKeywords.filter(keyword => 
-      text.toLowerCase().includes(keyword.toLowerCase())).length;
-    
-    // Count medicine-related keywords in the text
-    const medicineKeywordCount = medicineKeywords.filter(keyword => 
-      text.toLowerCase().includes(keyword.toLowerCase())).length;
-    
-    // More sophisticated medicine name extraction
-    const lines = text.split('\n');
-    const possibleMedicines = lines.filter(line => {
-      // Check each line for medicine patterns
-      const containsMedicineKeyword = medicineKeywords.some(keyword => 
-        line.toLowerCase().includes(keyword.toLowerCase()));
-      const containsDosage = /\d+\s*(mg|ml|mcg|g)/i.test(line);
-      return containsMedicineKeyword || containsDosage;
-    });
-    
-    // Calculate confidence based on keyword matches
-    // Require at least 3 prescription keywords and 2 medicine keywords for moderate confidence
-    const confidence = Math.min(
-      0.7, 
-      (prescriptionKeywordCount / 5) * 0.5 + (medicineKeywordCount / 3) * 0.5
-    );
-    
-    // Require good confidence and medicine names to confirm it's a prescription
-    const isPrescription = confidence > 0.4 && possibleMedicines.length > 0;
-    
+    // Return invalid result with empty medicine names
     return {
       text,
-      isPrescription,
-      medicineNames: isPrescription ? possibleMedicines : [],
-      confidence
+      isPrescription: false,
+      medicineNames: [], // Important: Empty array when invalid
+      confidence: 0.1
     };
   }
+};
+
+// Optional function if we need to generate mock data in special cases
+const generateMockResultWithRandomData = (): TextDetectionResult => {
+  return {
+    ...mockTextResult,
+    confidence: Math.random() // Random confidence level to make it more realistic
+  };
 };
