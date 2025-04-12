@@ -1,12 +1,13 @@
 
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { Camera, Image, Upload, Check, AlertCircle } from "lucide-react";
+import { Camera, Image, Upload, Check, AlertCircle, FileText } from "lucide-react";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
+import { detectTextFromImage, TextDetectionResult } from "@/services/visionService";
 
 const PrescriptionUpload = () => {
   const navigate = useNavigate();
@@ -15,6 +16,8 @@ const PrescriptionUpload = () => {
   const [image, setImage] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<TextDetectionResult | null>(null);
+  const [showAnalysis, setShowAnalysis] = useState(false);
   
   const handleCameraCapture = async () => {
     try {
@@ -45,8 +48,15 @@ const PrescriptionUpload = () => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = () => {
-        setImage(reader.result as string);
+      reader.onload = (event) => {
+        const base64Image = event.target?.result as string;
+        // Remove the prefix from base64 string (e.g., "data:image/jpeg;base64,")
+        setImage(base64Image);
+        
+        // Reset states when new image is uploaded
+        setAnalysisResult(null);
+        setUploadSuccess(false);
+        setShowAnalysis(false);
       };
       reader.readAsDataURL(file);
     }
@@ -54,11 +64,71 @@ const PrescriptionUpload = () => {
   
   const simulateCapture = () => {
     // For demo purposes, use a placeholder image
-    setImage("/placeholder.svg");
+    const placeholderImage = "/placeholder.svg";
+    setImage(placeholderImage);
+    
+    // Reset states when new image is captured
+    setAnalysisResult(null);
+    setUploadSuccess(false);
+    setShowAnalysis(false);
+  };
+  
+  const handleProcessPrescription = async () => {
+    if (!image) return;
+    
+    setProcessing(true);
+    
+    try {
+      // If using a data URL, extract the base64 part
+      let base64Image = image;
+      if (image.startsWith('data:image')) {
+        base64Image = image.split(',')[1];
+      }
+      
+      // For demo with placeholder, use mock data
+      if (image === "/placeholder.svg") {
+        // Wait to simulate processing
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        const mockResult = await detectTextFromImage("");
+        setAnalysisResult(mockResult);
+      } else {
+        // Actually process the image
+        const result = await detectTextFromImage(base64Image);
+        setAnalysisResult(result);
+      }
+      
+      setUploadSuccess(true);
+      setShowAnalysis(true);
+      
+      const resultMessage = analysisResult?.isPrescription 
+        ? "Prescription detected and analyzed successfully"
+        : "The image does not appear to contain a valid prescription";
+      
+      toast({
+        title: "Image processed",
+        description: resultMessage,
+      });
+    } catch (error) {
+      console.error("Error processing image:", error);
+      toast({
+        title: "Processing failed",
+        description: "There was an error analyzing the image. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setProcessing(false);
+    }
   };
   
   const handleUploadPrescription = () => {
-    if (!image) return;
+    if (!analysisResult || !analysisResult.isPrescription) {
+      toast({
+        title: "Invalid prescription",
+        description: "The image doesn't appear to be a valid prescription. Please try a different image.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     setProcessing(true);
     
@@ -76,7 +146,7 @@ const PrescriptionUpload = () => {
       setTimeout(() => {
         navigate("/medicine-delivery");
       }, 2000);
-    }, 2000);
+    }, 1500);
   };
   
   return (
@@ -127,6 +197,36 @@ const PrescriptionUpload = () => {
             )}
           </div>
           
+          {showAnalysis && analysisResult && (
+            <div className="mb-6 p-4 rounded-lg bg-slate-800/50 border border-white/10">
+              <div className="flex items-center mb-3">
+                <FileText className="h-5 w-5 text-zepmeds-purple mr-2" />
+                <h4 className="font-medium text-white">Prescription Analysis</h4>
+              </div>
+              
+              {analysisResult.isPrescription ? (
+                <>
+                  <p className="text-green-400 text-sm mb-3">Valid prescription detected</p>
+                  
+                  {analysisResult.medicineNames.length > 0 && (
+                    <>
+                      <p className="text-white text-sm mb-2">Detected medications:</p>
+                      <ul className="list-disc pl-5 text-gray-300 text-sm space-y-1 mb-3">
+                        {analysisResult.medicineNames.map((medicine, index) => (
+                          <li key={index}>{medicine}</li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                </>
+              ) : (
+                <p className="text-yellow-400 text-sm">
+                  This does not appear to be a valid prescription. Please upload a different image.
+                </p>
+              )}
+            </div>
+          )}
+          
           <div className="grid grid-cols-2 gap-4 mb-6">
             <Button
               variant="outline"
@@ -161,25 +261,44 @@ const PrescriptionUpload = () => {
             />
           </div>
           
-          <Button
-            className="w-full bg-zepmeds-purple hover:bg-zepmeds-purple-light py-3"
-            onClick={handleUploadPrescription}
-            disabled={!image || processing || uploadSuccess}
-          >
-            {processing ? (
-              <div className="flex items-center">
-                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
-                <span>Processing...</span>
-              </div>
-            ) : uploadSuccess ? (
-              <div className="flex items-center">
-                <Check className="h-4 w-4 mr-2" />
-                <span>Processed Successfully</span>
-              </div>
-            ) : (
-              <span>Upload Prescription</span>
-            )}
-          </Button>
+          {image && !showAnalysis && (
+            <Button
+              className="w-full bg-zepmeds-purple hover:bg-zepmeds-purple-light py-3 mb-4"
+              onClick={handleProcessPrescription}
+              disabled={processing}
+            >
+              {processing ? (
+                <div className="flex items-center">
+                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                  <span>Processing...</span>
+                </div>
+              ) : (
+                <span>Analyze Prescription</span>
+              )}
+            </Button>
+          )}
+          
+          {showAnalysis && (
+            <Button
+              className="w-full bg-zepmeds-purple hover:bg-zepmeds-purple-light py-3"
+              onClick={handleUploadPrescription}
+              disabled={!analysisResult?.isPrescription || processing || uploadSuccess}
+            >
+              {processing ? (
+                <div className="flex items-center">
+                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                  <span>Processing...</span>
+                </div>
+              ) : uploadSuccess ? (
+                <div className="flex items-center">
+                  <Check className="h-4 w-4 mr-2" />
+                  <span>Processed Successfully</span>
+                </div>
+              ) : (
+                <span>Upload Prescription</span>
+              )}
+            </Button>
+          )}
         </div>
         
         <div className="glass-morphism rounded-xl p-5">
