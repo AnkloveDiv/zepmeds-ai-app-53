@@ -1,6 +1,5 @@
-
-// Use a working API key - this is a sample key that needs to be replaced with a valid one
-const API_KEY = "YOUR_GEMINI_API_KEY"; // Replace with your actual API key
+// Use a working API key
+const API_KEY = "AIzaSyDlpkHivaQRi92dE_U9CiXS16TtWZkfnAk"; // Replace with your actual API key
 const API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent";
 
 export interface GeminiResponse {
@@ -45,12 +44,7 @@ export const analyzeSymptoms = async (
   try {
     console.log("Starting symptom analysis with:", { symptoms, additionalInfo });
     
-    // Check if API key is set to the placeholder
-    if (API_KEY === "YOUR_GEMINI_API_KEY") {
-      console.log("Using mock data because API key is not configured");
-      return mockResponse;
-    }
-    
+    // Note: We're now using a valid API key, but keeping the mock fallback just in case
     const prompt = `
       You are a medical assistant AI. Analyze the following symptoms and provide a structured response.
       
@@ -80,97 +74,100 @@ export const analyzeSymptoms = async (
 
     console.log("Sending request to Gemini API...");
     
-    const response = await fetch(`${API_URL}?key=${API_KEY}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: prompt,
-              },
-            ],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.4,
-          topP: 0.95,
-          maxOutputTokens: 1024,
-        },
-      }),
-    });
-
-    console.log("Response status:", response.status);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("API Error response:", errorText);
-      // Use the mock data instead of throwing an error
-      console.log("Using mock data due to API error");
-      return mockResponse;
-    }
-
-    const data = await response.json();
-    console.log("API response:", data);
-    
-    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-      console.error("Invalid response format from Gemini API");
-      return mockResponse;
-    }
-
-    const textResponse = data.candidates[0].content.parts[0].text;
-    console.log("Text response:", textResponse);
-    
-    // Extract JSON from the response
-    const jsonStartIndex = textResponse.indexOf('{');
-    const jsonEndIndex = textResponse.lastIndexOf('}') + 1;
-    
-    if (jsonStartIndex === -1 || jsonEndIndex === -1) {
-      console.error("Could not find JSON in response:", textResponse);
-      return mockResponse;
-    }
-    
-    const jsonString = textResponse.substring(jsonStartIndex, jsonEndIndex);
-    console.log("Extracted JSON:", jsonString);
-    
     try {
-      // Fix common JSON issues from AI responses
-      const cleanedJson = jsonString
-        .replace(/"exerciseRecommissions":/g, '"exerciseRecommendations":')
-        .replace(/\n/g, ' ')
-        .replace(/\\/g, '\\\\')
-        .replace(/\\"/g, '\\"')
-        .replace(/"/g, '"')
-        .replace(/"/g, '"')
-        .replace(/'/g, "'")
-        .replace(/'/g, "'");
+      const response = await fetch(`${API_URL}?key=${API_KEY}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: prompt,
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.4,
+            topP: 0.95,
+            maxOutputTokens: 1024,
+          },
+        }),
+      });
+
+      console.log("Response status:", response.status);
       
-      console.log("Cleaned JSON:", cleanedJson);
-      const parsedResponse = JSON.parse(cleanedJson) as GeminiResponse;
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("API Error response:", errorText);
+        return mockResponse;
+      }
+
+      const data = await response.json();
+      console.log("API response:", data);
       
-      // Ensure the response has all required properties
-      if (!parsedResponse.recommendedMedicines) {
-        parsedResponse.recommendedMedicines = [];
+      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+        console.error("Invalid response format from Gemini API");
+        return mockResponse;
+      }
+
+      const textResponse = data.candidates[0].content.parts[0].text;
+      console.log("Text response:", textResponse);
+      
+      // Extract JSON from the response
+      const jsonStartIndex = textResponse.indexOf('{');
+      const jsonEndIndex = textResponse.lastIndexOf('}') + 1;
+      
+      if (jsonStartIndex === -1 || jsonEndIndex === -1) {
+        console.error("Could not find JSON in response:", textResponse);
+        return mockResponse;
       }
       
-      if (!parsedResponse.exerciseRecommendations && parsedResponse['exerciseRecommissions']) {
-        // Fix for potential typo in the API response
-        parsedResponse.exerciseRecommendations = parsedResponse['exerciseRecommissions'] as string[];
-      } else if (!parsedResponse.exerciseRecommendations) {
-        parsedResponse.exerciseRecommendations = [];
-      }
+      const jsonString = textResponse.substring(jsonStartIndex, jsonEndIndex);
+      console.log("Extracted JSON:", jsonString);
       
-      if (!parsedResponse.cureOptions) {
-        parsedResponse.cureOptions = [];
+      try {
+        // Fix common JSON issues from AI responses
+        const cleanedJson = jsonString
+          .replace(/"exerciseRecommissions":/g, '"exerciseRecommendations":')
+          .replace(/\n/g, ' ')
+          .replace(/\\/g, '\\\\')
+          .replace(/\\"/g, '\\"')
+          .replace(/"/g, '"')
+          .replace(/"/g, '"')
+          .replace(/'/g, "'")
+          .replace(/'/g, "'");
+        
+        console.log("Cleaned JSON:", cleanedJson);
+        const parsedResponse = JSON.parse(cleanedJson) as GeminiResponse;
+        
+        // Ensure the response has all required properties
+        if (!parsedResponse.recommendedMedicines) {
+          parsedResponse.recommendedMedicines = [];
+        }
+        
+        if (!parsedResponse.exerciseRecommendations && parsedResponse['exerciseRecommissions']) {
+          // Fix for potential typo in the API response
+          parsedResponse.exerciseRecommendations = parsedResponse['exerciseRecommissions'] as string[];
+        } else if (!parsedResponse.exerciseRecommendations) {
+          parsedResponse.exerciseRecommendations = [];
+        }
+        
+        if (!parsedResponse.cureOptions) {
+          parsedResponse.cureOptions = [];
+        }
+        
+        console.log("Final parsed response:", parsedResponse);
+        return parsedResponse;
+      } catch (parseError) {
+        console.error("Error parsing JSON:", parseError);
+        return mockResponse;
       }
-      
-      console.log("Final parsed response:", parsedResponse);
-      return parsedResponse;
-    } catch (parseError) {
-      console.error("Error parsing JSON:", parseError);
+    } catch (apiError) {
+      console.error("API call error:", apiError);
       return mockResponse;
     }
   } catch (error) {
