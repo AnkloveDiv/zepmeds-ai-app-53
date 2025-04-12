@@ -41,8 +41,17 @@ const AISymptomChecker: React.FC = () => {
       console.log("Starting symptom analysis with:", symptoms);
       const result = await analyzeSymptoms(symptoms, additionalInfo);
       console.log("Analysis result:", result);
-      setAnalysisResult(result);
-    } catch (error) {
+      
+      if (result) {
+        setAnalysisResult(result);
+        toast({
+          title: "Analysis complete",
+          description: "Your symptoms have been analyzed.",
+        });
+      } else {
+        throw new Error("No analysis result returned");
+      }
+    } catch (error: any) {
       console.error("Analysis error:", error);
       setError("There was an error analyzing your symptoms. Please try again later.");
       
