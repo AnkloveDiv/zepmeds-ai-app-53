@@ -12,7 +12,7 @@ interface ProductCardProps {
   rating: number;
   description?: string;
   onClick?: () => void;
-  onAddToCart?: () => void;
+  onAddToCart?: (quantity: number) => void;
 }
 
 // Style added for cart animation
@@ -99,7 +99,7 @@ const ProductCard = ({
     }, 500);
     
     if (onAddToCart) {
-      onAddToCart();
+      onAddToCart(quantity);
     }
     
     toast({
