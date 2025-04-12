@@ -1,6 +1,6 @@
 
-// Use a working API key
-export const API_KEY = "AIzaSyDlpkHivaQRi92dE_U9CiXS16TtWZkfnAk"; // Replace with your actual API key
+// Use updated API key
+export const API_KEY = "AIzaSyDlpkHivaQRi92dE_U9CiXS16TtWZkfnAk";
 export const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
 export interface GeminiResponse {
@@ -91,7 +91,7 @@ export const analyzeSymptoms = async (
             },
           ],
           generationConfig: {
-            temperature: 0.4,
+            temperature: 0.2,
             topP: 0.95,
             maxOutputTokens: 1024,
           },

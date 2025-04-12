@@ -1,7 +1,7 @@
 
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { Camera, Image, Upload, Check, AlertCircle, FileText } from "lucide-react";
+import { Camera, Image, Upload, Check, AlertCircle, FileText, AlertTriangle } from "lucide-react";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ const PrescriptionUpload = () => {
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<TextDetectionResult | null>(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
+  const [detectionError, setDetectionError] = useState(false);
   
   const handleCameraCapture = async () => {
     try {
@@ -57,6 +58,7 @@ const PrescriptionUpload = () => {
         setAnalysisResult(null);
         setUploadSuccess(false);
         setShowAnalysis(false);
+        setDetectionError(false);
       };
       reader.readAsDataURL(file);
     }
@@ -71,12 +73,14 @@ const PrescriptionUpload = () => {
     setAnalysisResult(null);
     setUploadSuccess(false);
     setShowAnalysis(false);
+    setDetectionError(false);
   };
   
   const handleProcessPrescription = async () => {
     if (!image) return;
     
     setProcessing(true);
+    setDetectionError(false);
     
     try {
       // If using a data URL, extract the base64 part
@@ -97,17 +101,23 @@ const PrescriptionUpload = () => {
         setAnalysisResult(result);
       }
       
-      setUploadSuccess(true);
       setShowAnalysis(true);
       
-      const resultMessage = analysisResult?.isPrescription 
-        ? "Prescription detected and analyzed successfully"
-        : "The image does not appear to contain a valid prescription";
-      
-      toast({
-        title: "Image processed",
-        description: resultMessage,
-      });
+      // Based on confidence level, show different messages
+      if (!analysisResult?.isPrescription || (analysisResult?.confidence && analysisResult.confidence < 0.5)) {
+        toast({
+          title: "Not a valid prescription",
+          description: "The image doesn't appear to contain a valid prescription. Please try another image.",
+          variant: "destructive"
+        });
+        setDetectionError(true);
+      } else {
+        setUploadSuccess(true);
+        toast({
+          title: "Prescription detected",
+          description: "Prescription analyzed successfully",
+        });
+      }
     } catch (error) {
       console.error("Error processing image:", error);
       toast({
@@ -115,13 +125,14 @@ const PrescriptionUpload = () => {
         description: "There was an error analyzing the image. Please try again.",
         variant: "destructive"
       });
+      setDetectionError(true);
     } finally {
       setProcessing(false);
     }
   };
   
   const handleUploadPrescription = () => {
-    if (!analysisResult || !analysisResult.isPrescription) {
+    if (!analysisResult || !analysisResult.isPrescription || (analysisResult.confidence && analysisResult.confidence < 0.5)) {
       toast({
         title: "Invalid prescription",
         description: "The image doesn't appear to be a valid prescription. Please try a different image.",
@@ -147,6 +158,22 @@ const PrescriptionUpload = () => {
         navigate("/medicine-delivery");
       }, 2000);
     }, 1500);
+  };
+  
+  const getConfidenceLabel = () => {
+    if (!analysisResult || !analysisResult.confidence) return "";
+    
+    if (analysisResult.confidence < 0.3) return "Low confidence";
+    if (analysisResult.confidence < 0.7) return "Medium confidence";
+    return "High confidence";
+  };
+  
+  const getConfidenceColor = () => {
+    if (!analysisResult || !analysisResult.confidence) return "text-gray-400";
+    
+    if (analysisResult.confidence < 0.3) return "text-red-400";
+    if (analysisResult.confidence < 0.7) return "text-yellow-400";
+    return "text-green-400";
   };
   
   return (
@@ -179,7 +206,15 @@ const PrescriptionUpload = () => {
                   </div>
                 )}
                 
-                {!uploadSuccess && (
+                {detectionError && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
+                    <div className="bg-red-500/20 p-3 rounded-full">
+                      <AlertTriangle className="h-10 w-10 text-red-500" />
+                    </div>
+                  </div>
+                )}
+                
+                {!uploadSuccess && !detectionError && (
                   <Button
                     className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 p-2 h-auto"
                     onClick={() => setImage(null)}
@@ -199,12 +234,19 @@ const PrescriptionUpload = () => {
           
           {showAnalysis && analysisResult && (
             <div className="mb-6 p-4 rounded-lg bg-slate-800/50 border border-white/10">
-              <div className="flex items-center mb-3">
-                <FileText className="h-5 w-5 text-zepmeds-purple mr-2" />
-                <h4 className="font-medium text-white">Prescription Analysis</h4>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center">
+                  <FileText className="h-5 w-5 text-zepmeds-purple mr-2" />
+                  <h4 className="font-medium text-white">Prescription Analysis</h4>
+                </div>
+                {analysisResult.confidence !== undefined && (
+                  <span className={`text-xs px-2 py-1 rounded-full bg-black/30 ${getConfidenceColor()}`}>
+                    {getConfidenceLabel()} ({Math.round(analysisResult.confidence * 100)}%)
+                  </span>
+                )}
               </div>
               
-              {analysisResult.isPrescription ? (
+              {analysisResult.isPrescription && (!analysisResult.confidence || analysisResult.confidence >= 0.5) ? (
                 <>
                   <p className="text-green-400 text-sm mb-3">Valid prescription detected</p>
                   
@@ -220,9 +262,12 @@ const PrescriptionUpload = () => {
                   )}
                 </>
               ) : (
-                <p className="text-yellow-400 text-sm">
-                  This does not appear to be a valid prescription. Please upload a different image.
-                </p>
+                <div className="flex items-start">
+                  <AlertTriangle className="h-5 w-5 text-yellow-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <p className="text-yellow-400 text-sm">
+                    This does not appear to be a valid prescription. Please upload a clear image of a prescription that includes doctor information, patient details, and medication names with dosages.
+                  </p>
+                </div>
               )}
             </div>
           )}
@@ -282,7 +327,10 @@ const PrescriptionUpload = () => {
             <Button
               className="w-full bg-zepmeds-purple hover:bg-zepmeds-purple-light py-3"
               onClick={handleUploadPrescription}
-              disabled={!analysisResult?.isPrescription || processing || uploadSuccess}
+              disabled={!analysisResult?.isPrescription || 
+                      (analysisResult.confidence !== undefined && analysisResult.confidence < 0.5) || 
+                      processing || 
+                      uploadSuccess}
             >
               {processing ? (
                 <div className="flex items-center">

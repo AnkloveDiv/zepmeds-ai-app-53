@@ -1,19 +1,20 @@
 
 import { motion } from "framer-motion";
-import { FileUp, Filter } from "lucide-react";
+import { FileUp, Filter, AlertTriangle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 interface ActionButtonsProps {
   onUploadPrescription: () => void;
+  hasError?: boolean;
 }
 
-const ActionButtons = ({ onUploadPrescription }: ActionButtonsProps) => {
+const ActionButtons = ({ onUploadPrescription, hasError }: ActionButtonsProps) => {
   const { toast } = useToast();
   
   const handleUpload = () => {
     toast({
       title: "Smart Prescription Analysis",
-      description: "Our AI can now extract and analyze medicines from your prescription image",
+      description: "Our AI can extract and analyze medicines from your prescription image",
     });
     onUploadPrescription();
   };
@@ -23,11 +24,20 @@ const ActionButtons = ({ onUploadPrescription }: ActionButtonsProps) => {
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="px-4 py-2 bg-zepmeds-purple text-white rounded-lg flex items-center"
+        className={`px-4 py-2 ${hasError ? 'bg-amber-600' : 'bg-zepmeds-purple'} text-white rounded-lg flex items-center`}
         onClick={handleUpload}
       >
-        <FileUp className="h-4 w-4 mr-2" />
-        Upload Prescription
+        {hasError ? (
+          <>
+            <AlertTriangle className="h-4 w-4 mr-2" />
+            Try Again
+          </>
+        ) : (
+          <>
+            <FileUp className="h-4 w-4 mr-2" />
+            Upload Prescription
+          </>
+        )}
       </motion.button>
 
       <button className="p-2 rounded-lg bg-black/20 border border-white/10">
