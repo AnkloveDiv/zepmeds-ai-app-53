@@ -1,6 +1,5 @@
-
-export const vitaminCImg = "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
-export const thermometerImg = "https://images.unsplash.com/photo-1588613254750-bc14209ae7ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
+export const vitaminCImg = "public/lovable-uploads/dc2b9862-8412-4aab-a048-3f4f99be1b92.png";
+export const thermometerImg = "public/lovable-uploads/e5ea8812-e4a9-417f-a5ea-550ee2118033.png";
 export const painReliefImg = "https://images.unsplash.com/photo-1558956546-130eb5b8ba93?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
 export const multivitaminImg = "https://images.unsplash.com/photo-1579165466741-7f35e4755183?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
 export const bpMonitorImg = "https://images.unsplash.com/photo-1631815588090-d4bfec5b9a1e?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
@@ -22,8 +21,8 @@ export const allProducts = [
     rating: 4.5, 
     description: "Immunity Booster", 
     category: "Popular",
-    fullDescription: "Vitamin C supplements containing 1000mg of ascorbic acid to boost your immunity. Take one tablet daily for optimal results.",
-    manufacturer: "HealthPlus Inc.",
+    fullDescription: "Vitamin C complex with 1000mg of ascorbic acid to boost your immunity. Contains added Zinc for enhanced cold & flu protection.",
+    manufacturer: "Sclikort",
     expiryDate: "Jan 2026",
     dosage: "1 tablet daily after breakfast",
     sideEffects: ["Nausea", "Stomach cramps", "Diarrhea in high doses"],
@@ -38,10 +37,10 @@ export const allProducts = [
     rating: 4.2, 
     description: "Accurate Reading", 
     category: "Summer",
-    fullDescription: "Digital infrared thermometer for accurate temperature readings within seconds. Easy to use and clean.",
-    manufacturer: "MediTech",
+    fullDescription: "Digital infrared thermometer by Fidelis Healthcare for accurate temperature readings. Features LCD screen and quick reading technology.",
+    manufacturer: "Fidelis Healthcare",
     expiryDate: "N/A",
-    dosage: "Place 1cm away from forehead for reading"
+    dosage: "Place temperature probe for accurate reading"
   },
   { 
     id: "3", 

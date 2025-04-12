@@ -56,6 +56,7 @@ const ProductCard = ({
   const [quantity, setQuantity] = useState(1);
   const [isAnimating, setIsAnimating] = useState(false);
   const [floatingElements, setFloatingElements] = useState<number[]>([]);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   const getDiscountPercentage = () => {
     if (!discountPrice) return 0;
@@ -66,6 +67,10 @@ const ProductCard = ({
     if (newQuantity >= 1) {
       setQuantity(newQuantity);
     }
+  };
+
+  const handleImageLoad = () => {
+    setImageLoaded(true);
   };
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -107,7 +112,17 @@ const ProductCard = ({
         onClick={onClick}
       >
         <div className="relative">
-          <img src={image} alt={name} className="w-full h-32 object-cover" />
+          <div className="w-full h-32 bg-gray-800/40 flex items-center justify-center overflow-hidden">
+            {!imageLoaded && (
+              <div className="animate-pulse w-12 h-12 rounded-full bg-gray-700"></div>
+            )}
+            <img 
+              src={image} 
+              alt={name} 
+              className={`w-full h-full object-contain ${!imageLoaded ? 'opacity-0' : 'opacity-100 transition-opacity duration-300'}`} 
+              onLoad={handleImageLoad}
+            />
+          </div>
           
           {discountPrice && (
             <div className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
