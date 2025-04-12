@@ -6,11 +6,13 @@ import BottomNavigation from "@/components/BottomNavigation";
 import { analyzeSymptoms, GeminiResponse } from "@/services/geminiService";
 
 // Import refactored components
-import SymptomCheckerHeader from "@/components/symptom-checker/Header";
-import SymptomInput from "@/components/symptom-checker/SymptomInput";
-import AnalysisResult from "@/components/symptom-checker/AnalysisResult";
-import LoadingState from "@/components/symptom-checker/LoadingState";
-import ErrorDisplay from "@/components/symptom-checker/ErrorDisplay";
+import {
+  SymptomCheckerHeader,
+  SymptomInput,
+  AnalysisResult,
+  LoadingState,
+  ErrorDisplay
+} from "@/components/symptom-checker";
 
 const AISymptomChecker: React.FC = () => {
   const { toast } = useToast();
@@ -36,7 +38,9 @@ const AISymptomChecker: React.FC = () => {
     setError(null);
 
     try {
+      console.log("Starting symptom analysis with:", symptoms);
       const result = await analyzeSymptoms(symptoms, additionalInfo);
+      console.log("Analysis result:", result);
       setAnalysisResult(result);
     } catch (error) {
       console.error("Analysis error:", error);
