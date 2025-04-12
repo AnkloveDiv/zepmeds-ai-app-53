@@ -59,31 +59,36 @@ const BottomNavigation = () => {
       <div className="flex justify-around items-center">
         {navItems.map((item) => {
           const color = accentColors[item.path] || 'blue';
+          const isActiveItem = isActive(item.path);
+          
           return (
             <Link
               key={item.label}
               to={item.path}
               className="flex flex-col items-center px-3 py-1 relative"
             >
-              {isActive(item.path) && (
+              {isActiveItem && (
                 <motion.div
                   layoutId="bottomNavIndicator"
                   className={`absolute inset-0 rounded-lg bg-accent-${color}`}
+                  style={{
+                    boxShadow: `0 0 15px 2px var(--color-accent-${color})`,
+                  }}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ duration: 0.2 }}
+                  transition={{ duration: 0.3 }}
                 />
               )}
               <item.icon
-                className={`h-6 w-6 ${
-                  isActive(item.path) 
+                className={`h-6 w-6 z-10 ${
+                  isActiveItem 
                     ? `text-accent-${color}` 
                     : "text-gray-400"
                 }`}
               />
               <span
-                className={`text-xs mt-1 ${
-                  isActive(item.path) 
+                className={`text-xs mt-1 z-10 ${
+                  isActiveItem 
                     ? `font-medium text-accent-${color}` 
                     : "text-gray-400"
                 }`}
