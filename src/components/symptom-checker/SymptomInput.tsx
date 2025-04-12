@@ -1,10 +1,9 @@
 
 import React, { useState } from "react";
-import { Plus, X, ArrowRight } from "lucide-react";
+import { Plus, ArrowRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { motion } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
 
 interface SymptomInputProps {
@@ -49,22 +48,24 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
       exit={{ opacity: 0 }}
     >
       <div className="glass-morphism rounded-xl p-4 mb-6">
-        <h2 className="text-lg font-semibold mb-3">Add your symptoms</h2>
+        <h2 className="text-lg font-semibold mb-3">Enter your symptoms</h2>
         <div className="flex gap-2 mb-4">
           <Input
-            placeholder="Enter a symptom (e.g. headache)"
             value={currentSymptom}
             onChange={(e) => setCurrentSymptom(e.target.value)}
-            className="flex-1 bg-black/20 border-white/10"
+            placeholder="Enter a symptom"
+            className="flex-1"
             onKeyDown={(e) => {
               if (e.key === "Enter") {
+                e.preventDefault();
                 addSymptom();
               }
             }}
           />
           <Button
             onClick={addSymptom}
-            className="bg-zepmeds-purple hover:bg-zepmeds-purple/80"
+            size="icon"
+            className="bg-zepmeds-purple hover:bg-purple-700"
           >
             <Plus className="h-4 w-4" />
           </Button>
@@ -77,12 +78,13 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
               {symptoms.map((symptom, index) => (
                 <div
                   key={index}
-                  className="bg-black/30 text-white px-3 py-1 rounded-full flex items-center"
+                  className="bg-slate-800 px-3 py-1 rounded-full flex items-center"
                 >
-                  <span className="mr-2">{symptom}</span>
+                  <span className="mr-2 text-sm">{symptom}</span>
                   <button
                     onClick={() => removeSymptom(symptom)}
-                    className="hover:text-red-400"
+                    className="text-gray-400 hover:text-white"
+                    aria-label="Remove symptom"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -92,23 +94,23 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
           </div>
         )}
 
-        <h3 className="text-sm text-gray-300 mb-2">
-          Additional information (optional):
-        </h3>
-        <Textarea
-          placeholder="Add any additional details like duration, severity, or context..."
-          value={additionalInfo}
-          onChange={(e) => setAdditionalInfo(e.target.value)}
-          className="bg-black/20 border-white/10 min-h-[100px]"
-        />
+        <div className="mb-4">
+          <h3 className="text-sm text-gray-300 mb-2">Additional information (optional):</h3>
+          <Textarea
+            value={additionalInfo}
+            onChange={(e) => setAdditionalInfo(e.target.value)}
+            placeholder="Age, gender, existing conditions, when symptoms started, etc."
+            className="bg-slate-800/50 border-slate-700 resize-none h-24"
+          />
+        </div>
       </div>
 
       <Button
         onClick={onAnalyze}
-        className="w-full bg-zepmeds-purple hover:bg-zepmeds-purple/80 py-6 text-lg"
         disabled={symptoms.length === 0}
+        className="w-full bg-zepmeds-purple hover:bg-purple-700/90 flex items-center justify-center gap-2"
       >
-        Analyze Symptoms <ArrowRight className="ml-2 h-5 w-5" />
+        Analyze Symptoms <ArrowRight className="h-4 w-4" />
       </Button>
     </motion.div>
   );

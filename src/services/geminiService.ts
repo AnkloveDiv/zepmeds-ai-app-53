@@ -1,7 +1,6 @@
 
-const GEMINI_API_KEY = "AIzaSyCUtHkOxTdEXPRnVUhZtz9qERyUaw_RDXI";
-// Updated API URL to use gemini-pro model (Gemini 1.0) instead of gemini-1.0-pro
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent";
+const API_KEY = "AIzaSyCBFoZB-8xBlMlHE1DNlPh2G3ZnPPSRp14"; // Using the API key from the code
+const API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent";
 
 export interface GeminiResponse {
   analysis: string;
@@ -12,92 +11,134 @@ export interface GeminiResponse {
   seekMedicalAttention: boolean;
 }
 
-export const analyzeSymptoms = async (symptoms: string[], additionalInfo: string = ""): Promise<GeminiResponse> => {
+export const analyzeSymptoms = async (
+  symptoms: string[],
+  additionalInfo: string = ""
+): Promise<GeminiResponse> => {
   try {
-    // Creating a detailed prompt for Gemini to analyze symptoms
+    console.log("Starting symptom analysis with:", { symptoms, additionalInfo });
+    
     const prompt = `
-      Act as a medical assistant providing information about symptoms. Analyze the following symptoms:
-      ${symptoms.join(", ")}
+      You are a medical assistant AI. Analyze the following symptoms and provide a structured response.
       
-      Additional information: ${additionalInfo}
+      Symptoms: ${symptoms.join(", ")}
+      Additional Information: ${additionalInfo}
       
       Provide a detailed analysis including:
-      1. What these symptoms might indicate
-      2. A list of potential recommended over-the-counter medicines that might help
-      3. Exercise recommendations that could alleviate these symptoms
-      4. Ways to cure or manage these symptoms at home
-      5. Rate the severity as "low", "medium", or "high"
-      6. Indicate if the person should seek immediate medical attention (true/false)
+      1. What these symptoms could indicate
+      2. Recommended over-the-counter medicines
+      3. Exercise recommendations that might help
+      4. Home remedies or self-care options
+      5. Rate the severity as either "low", "medium", or "high"
+      6. Whether immediate medical attention is recommended (true or false)
       
-      Format your response strictly as JSON with the following structure:
+      Format your response STRICTLY as a valid JSON object with the following structure:
       {
         "analysis": "detailed analysis of symptoms",
         "recommendedMedicines": ["medicine1", "medicine2", "medicine3"],
-        "exerciseRecommendations": ["exercise1", "exercise2", "exercise3"],
-        "cureOptions": ["cure1", "cure2", "cure3"],
-        "severity": "low|medium|high",
-        "seekMedicalAttention": true|false
+        "exerciseRecommissions": ["exercise1", "exercise2", "exercise3"],
+        "cureOptions": ["option1", "option2", "option3"],
+        "severity": "low/medium/high",
+        "seekMedicalAttention": true/false
       }
       
-      Important: Always include a disclaimer that this is not professional medical advice and the user should consult a healthcare professional for proper diagnosis and treatment.
+      IMPORTANT: Provide only the JSON object with no other text.
     `;
 
-    console.log("Sending request to Gemini API with symptoms:", symptoms);
+    console.log("Sending request to Gemini API...");
     
-    // Making the API request to Gemini with updated structure
-    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
+    const response = await fetch(`${API_URL}?key=${API_KEY}`, {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
+        contents: [
+          {
+            parts: [
+              {
+                text: prompt,
+              },
+            ],
+          },
+        ],
         generationConfig: {
           temperature: 0.4,
-          topK: 32,
           topP: 0.95,
           maxOutputTokens: 1024,
-        }
-      })
+        },
+      }),
     });
 
+    console.log("Response status:", response.status);
+    
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Gemini API error:", errorText);
-      throw new Error("Failed to analyze symptoms with Gemini");
+      console.error("API Error response:", errorText);
+      throw new Error(`Failed to analyze symptoms: ${errorText}`);
     }
 
     const data = await response.json();
-    console.log("Gemini API response:", data);
+    console.log("API response:", data);
     
-    // Extract the JSON from the text response
+    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+      throw new Error("Invalid response format from Gemini API");
+    }
+
     const textResponse = data.candidates[0].content.parts[0].text;
+    console.log("Text response:", textResponse);
     
-    // Find the JSON object in the response text
+    // Extract JSON from the response
     const jsonStartIndex = textResponse.indexOf('{');
     const jsonEndIndex = textResponse.lastIndexOf('}') + 1;
     
     if (jsonStartIndex === -1 || jsonEndIndex === -1) {
       console.error("Could not find JSON in response:", textResponse);
-      throw new Error("Invalid response format from Gemini");
+      throw new Error("Invalid response format: Could not extract JSON");
     }
     
     const jsonString = textResponse.substring(jsonStartIndex, jsonEndIndex);
+    console.log("Extracted JSON:", jsonString);
     
     try {
-      // Parse the JSON
-      const parsedResponse = JSON.parse(jsonString) as GeminiResponse;
+      // Fix common JSON issues from AI responses
+      const cleanedJson = jsonString
+        .replace(/"exerciseRecommissions":/g, '"exerciseRecommendations":')
+        .replace(/\n/g, ' ')
+        .replace(/\\/g, '\\\\')
+        .replace(/\\"/g, '\\"')
+        .replace(/"/g, '"')
+        .replace(/"/g, '"')
+        .replace(/'/g, "'")
+        .replace(/'/g, "'");
+      
+      console.log("Cleaned JSON:", cleanedJson);
+      const parsedResponse = JSON.parse(cleanedJson) as GeminiResponse;
+      
+      // Ensure the response has all required properties
+      if (!parsedResponse.recommendedMedicines) {
+        parsedResponse.recommendedMedicines = [];
+      }
+      
+      if (!parsedResponse.exerciseRecommendations && parsedResponse['exerciseRecommissions']) {
+        // Fix for potential typo in the API response
+        parsedResponse.exerciseRecommendations = parsedResponse['exerciseRecommissions'] as string[];
+      } else if (!parsedResponse.exerciseRecommendations) {
+        parsedResponse.exerciseRecommendations = [];
+      }
+      
+      if (!parsedResponse.cureOptions) {
+        parsedResponse.cureOptions = [];
+      }
+      
+      console.log("Final parsed response:", parsedResponse);
       return parsedResponse;
-    } catch (jsonError) {
-      console.error("Error parsing JSON response:", jsonError, "Response was:", jsonString);
-      throw new Error("Failed to parse Gemini response");
+    } catch (parseError) {
+      console.error("Error parsing JSON:", parseError);
+      throw new Error(`Failed to parse response: ${parseError}`);
     }
   } catch (error) {
-    console.error("Error analyzing symptoms:", error);
+    console.error("Error in analyzeSymptoms:", error);
     throw error;
   }
 };

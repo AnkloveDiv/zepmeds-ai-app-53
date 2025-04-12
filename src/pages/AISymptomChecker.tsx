@@ -5,7 +5,7 @@ import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
 import { analyzeSymptoms, GeminiResponse } from "@/services/geminiService";
 
-// Import refactored components
+// Import components from the barrel file
 import {
   SymptomCheckerHeader,
   SymptomInput,
@@ -51,6 +51,9 @@ const AISymptomChecker: React.FC = () => {
         description: "There was an error analyzing your symptoms. Please try again.",
         variant: "destructive",
       });
+      
+      // Show input form again on error
+      setShowInput(true);
     } finally {
       setAnalyzing(false);
     }
@@ -65,13 +68,13 @@ const AISymptomChecker: React.FC = () => {
   return (
     <div className="pb-20 min-h-screen bg-background text-white">
       <Header showBackButton title="AI Symptom Checker" />
-
+      
       <div className="p-4">
         <SymptomCheckerHeader />
         <ErrorDisplay error={error} />
 
         {showInput ? (
-          <SymptomInput 
+          <SymptomInput
             symptoms={symptoms}
             setSymptoms={setSymptoms}
             additionalInfo={additionalInfo}
@@ -82,13 +85,14 @@ const AISymptomChecker: React.FC = () => {
           <LoadingState />
         ) : (
           analysisResult && (
-            <AnalysisResult 
-              analysisResult={analysisResult} 
-              onResetAnalysis={resetAnalysis} 
+            <AnalysisResult
+              analysisResult={analysisResult}
+              onResetAnalysis={resetAnalysis}
             />
           )
         )}
       </div>
+
       <BottomNavigation />
     </div>
   );

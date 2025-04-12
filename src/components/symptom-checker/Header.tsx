@@ -13,16 +13,16 @@ const SymptomCheckerHeader: React.FC = () => {
       </div>
 
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
         className="mb-6 text-center"
       >
         <h1 className="text-2xl font-bold text-white mb-2">
           AI Symptom Checker
         </h1>
-        <p className="text-gray-400 text-sm">
-          Enter your symptoms for AI-powered analysis and medicine recommendations.
+        <p className="text-gray-300 text-sm">
+          Enter your symptoms to receive an AI-powered assessment.
           <br />
           <span className="text-red-400 text-xs">
             Not a substitute for professional medical advice.
