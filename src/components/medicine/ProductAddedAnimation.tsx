@@ -22,7 +22,7 @@ const ProductAddedAnimation: React.FC<ProductAddedAnimationProps> = ({
       const timer = setTimeout(() => {
         setIsAnimating(false);
         onAnimationComplete();
-      }, 1500); // Animation duration
+      }, 1500); // Animation duration - reduced from previous value
       return () => clearTimeout(timer);
     }
   }, [isVisible, onAnimationComplete]);
