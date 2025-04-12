@@ -37,7 +37,27 @@ export const useBackNavigation = (homeRoute: string = "/dashboard") => {
     "/past-medicines"
   ];
   
+  // Checkout flow routes - for step-by-step navigation
+  const checkoutFlowRoutes = [
+    "/medicine-delivery",
+    "/cart",
+    "/checkout",
+    "/track-order"
+  ];
+  
   const isProfileSection = profileSectionRoutes.includes(location.pathname);
+  const isCheckoutFlow = checkoutFlowRoutes.some(route => location.pathname.includes(route));
+  
+  // Get the previous page in checkout flow
+  const getPreviousCheckoutPage = () => {
+    const currentPathBase = location.pathname.split('/')[1]; // Get base path without ID
+    const currentIndex = checkoutFlowRoutes.findIndex(route => route.includes(`/${currentPathBase}`));
+    
+    if (currentIndex > 0) {
+      return checkoutFlowRoutes[currentIndex - 1];
+    }
+    return homeRoute;
+  };
   
   // Update navigation history when location changes
   useEffect(() => {
@@ -59,6 +79,13 @@ export const useBackNavigation = (homeRoute: string = "/dashboard") => {
     // Handle standard back navigation
     const handleBackNavigation = (e: PopStateEvent) => {
       e.preventDefault();
+      
+      // Special handling for checkout flow
+      if (isCheckoutFlow) {
+        const previousPage = getPreviousCheckoutPage();
+        navigate(previousPage);
+        return;
+      }
       
       // Get previous page from history
       const updatedHistory = [...navigationHistory];
@@ -93,6 +120,13 @@ export const useBackNavigation = (homeRoute: string = "/dashboard") => {
     const setupHardwareBackPress = () => {
       if (isNative && (window as any).Capacitor?.Plugins?.App) {
         (window as any).Capacitor.Plugins.App.addListener('backButton', () => {
+          // Special handling for checkout flow
+          if (isCheckoutFlow) {
+            const previousPage = getPreviousCheckoutPage();
+            navigate(previousPage);
+            return;
+          }
+          
           const updatedHistory = [...navigationHistory];
           
           if (updatedHistory.length > 1) {
@@ -141,7 +175,7 @@ export const useBackNavigation = (homeRoute: string = "/dashboard") => {
         (window as any).Capacitor.Plugins.App.removeAllListeners();
       }
     };
-  }, [navigate, homeRoute, toast, location.pathname, navigationHistory, doubleBackToExitPressedOnce]);
+  }, [navigate, homeRoute, toast, location.pathname, navigationHistory, doubleBackToExitPressedOnce, isCheckoutFlow]);
 
   // The dialog component that will be shown when user is on home page and presses back
   const ExitConfirmDialog = () => {

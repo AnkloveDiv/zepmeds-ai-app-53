@@ -22,19 +22,24 @@ const ProductAddedAnimation: React.FC<ProductAddedAnimationProps> = ({
       const timer = setTimeout(() => {
         setIsAnimating(false);
         onAnimationComplete();
-      }, 1500); // Animation duration - reduced from previous value
-      return () => clearTimeout(timer);
+      }, 1500); // Animation duration - keep this short
+      
+      // Make sure to clear the timeout to prevent memory leaks
+      return () => {
+        clearTimeout(timer);
+      };
     }
   }, [isVisible, onAnimationComplete]);
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       {isAnimating && (
         <motion.div 
           className="fixed inset-0 pointer-events-none flex items-center justify-center z-50"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
         >
           <motion.div 
             className="bg-zepmeds-purple text-white py-3 px-5 rounded-full flex items-center gap-3 shadow-lg"

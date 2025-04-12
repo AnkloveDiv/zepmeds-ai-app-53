@@ -185,10 +185,11 @@ export const useTrendingProducts = (setCartCount: (count: number) => void) => {
     localStorage.setItem("cart", JSON.stringify(existingCart));
     setCartCount(existingCart.length);
     
-    // Show animation
+    // Show animation - use a short timeout
     setAnimatedProduct(product.name);
     setShowAnimation(true);
     
+    // Ensure animation is hidden after completion
     setTimeout(() => {
       setShowAnimation(false);
     }, 1500);

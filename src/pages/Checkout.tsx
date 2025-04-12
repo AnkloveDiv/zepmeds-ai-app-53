@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import useBackNavigation from "@/hooks/useBackNavigation";
 import OrderForSomeoneElse from "@/components/checkout/OrderForSomeoneElse";
+import DateTimePicker from "@/components/checkout/DateTimePicker";
 
 const UPI_PROVIDERS = [
   { id: "googlepay", name: "Google Pay", iconBg: "bg-blue-500" },
@@ -32,6 +33,14 @@ const BNPL_PROVIDERS = [
   { id: "lazypay", name: "LazyPay", iconBg: "bg-green-600" },
   { id: "zestmoney", name: "ZestMoney", iconBg: "bg-teal-500" },
   { id: "kredpay", name: "KredPay", iconBg: "bg-red-600" },
+];
+
+// Valid coupon codes with their discount logic
+const VALID_COUPONS = [
+  { code: "WELCOME10", discount: 10, type: "percent", maxDiscount: 100 },
+  { code: "FLAT50", discount: 50, type: "flat" },
+  { code: "ZEPMEDS20", discount: 20, type: "percent", maxDiscount: 200 },
+  { code: "TESTING", discount: 0, type: "flat" } // For testing purposes
 ];
 
 const Checkout = () => {
@@ -77,6 +86,10 @@ const Checkout = () => {
   const [showBnplDetails, setShowBnplDetails] = useState(false);
   const [showUpiDetails, setShowUpiDetails] = useState(false);
   
+  // State for scheduled delivery
+  const [scheduledDate, setScheduledDate] = useState<Date | undefined>(undefined);
+  const [scheduledTime, setScheduledTime] = useState("");
+  
   const [cardNumber, setCardNumber] = useState("");
   const [cardName, setCardName] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
@@ -92,7 +105,7 @@ const Checkout = () => {
       
       const total = parsedCart.reduce((acc: number, item: any) => {
         const itemPrice = item.discountPrice || item.price;
-        return acc + (itemPrice * item.quantity);
+        return acc + (itemPrice * (item.quantity || 1));
       }, 0);
       
       setSubTotal(total);
@@ -120,20 +133,31 @@ const Checkout = () => {
     }
   }, [paymentMethod]);
   
+  // Reset scheduled delivery details when changing delivery time
+  useEffect(() => {
+    if (deliveryTime !== "scheduled") {
+      setScheduledDate(undefined);
+      setScheduledTime("");
+    }
+  }, [deliveryTime]);
+  
   const handleApplyCoupon = () => {
-    const validCoupons = [
-      { code: "WELCOME10", discount: 10, type: "percent", maxDiscount: 100 },
-      { code: "FLAT50", discount: 50, type: "flat" },
-      { code: "ZEPMEDS20", discount: 20, type: "percent", maxDiscount: 200 }
-    ];
+    if (!couponCode.trim()) {
+      toast({
+        title: "Enter coupon code",
+        description: "Please enter a coupon code to apply.",
+        variant: "destructive"
+      });
+      return;
+    }
     
-    const coupon = validCoupons.find(c => c.code === couponCode.toUpperCase());
+    const coupon = VALID_COUPONS.find(c => c.code === couponCode.toUpperCase());
     
     if (coupon) {
       let discountAmount = 0;
       
       if (coupon.type === "percent") {
-        discountAmount = (subTotal * coupon.discount) / 100;
+        discountAmount = Math.floor((subTotal * coupon.discount) / 100);
         if (coupon.maxDiscount && discountAmount > coupon.maxDiscount) {
           discountAmount = coupon.maxDiscount;
         }
@@ -211,6 +235,15 @@ const Checkout = () => {
       return;
     }
     
+    if (deliveryTime === "scheduled" && (!scheduledDate || !scheduledTime)) {
+      toast({
+        title: "Delivery time required",
+        description: "Please select a date and time for scheduled delivery.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     if (paymentMethod === "card") {
       if (cardNumber.replace(/\s/g, '').length !== 16) {
         toast({
@@ -278,6 +311,44 @@ const Checkout = () => {
       return;
     }
     
+    // Calculate delivery details based on delivery time choice
+    let estimatedDelivery;
+    let deliveryDetails;
+    
+    if (deliveryTime === "express") {
+      estimatedDelivery = new Date(Date.now() + 15 * 60000).toISOString();
+      deliveryDetails = { type: "express", eta: "15 minutes" };
+    } else if (deliveryTime === "standard") {
+      estimatedDelivery = new Date(Date.now() + 120 * 60000).toISOString();
+      deliveryDetails = { type: "standard", eta: "2 hours" };
+    } else if (deliveryTime === "scheduled") {
+      // Combine the scheduled date and time
+      if (scheduledDate && scheduledTime) {
+        // Parse time from format like "10:00 AM"
+        const [hourMinute, period] = scheduledTime.split(' ');
+        const [hour, minute] = hourMinute.split(':').map(Number);
+        
+        // Convert to 24-hour format
+        let hour24 = hour;
+        if (period.toUpperCase() === 'PM' && hour !== 12) {
+          hour24 += 12;
+        } else if (period.toUpperCase() === 'AM' && hour === 12) {
+          hour24 = 0;
+        }
+        
+        // Create a new date object with scheduled date and time
+        const scheduledDateTime = new Date(scheduledDate);
+        scheduledDateTime.setHours(hour24, minute, 0, 0);
+        
+        estimatedDelivery = scheduledDateTime.toISOString();
+        deliveryDetails = { 
+          type: "scheduled", 
+          scheduledDate: scheduledDate.toISOString(),
+          scheduledTime: scheduledTime
+        };
+      }
+    }
+    
     const order = {
       id: `ZM${Math.floor(Math.random() * 10000)}`,
       items: cartItems,
@@ -285,7 +356,7 @@ const Checkout = () => {
       deliveryFee,
       discount,
       couponDiscount,
-      walletAmountUsed: useWallet ? walletBalance : 0,
+      walletAmountUsed: useWallet ? Math.min(walletBalance, Math.max(0, total)) : 0,
       total: Math.max(0, total),
       paymentMethod,
       paymentDetails: paymentMethod === "card" ? {
@@ -296,14 +367,15 @@ const Checkout = () => {
            paymentMethod === "upi" ? { provider: upiProvider } : null),
       address: addresses.find(addr => addr.id === selectedAddress),
       deliveryTime,
+      deliveryDetails,
       status: "confirmed",
       placedAt: new Date().toISOString(),
-      estimatedDelivery: new Date(Date.now() + (deliveryTime === "express" ? 15 : 120) * 60000).toISOString(),
+      estimatedDelivery,
       deliveryRider: {
         name: "Rahul Singh",
         rating: 4.8,
         phone: "+91 98765 43210",
-        eta: "15 minutes"
+        eta: deliveryTime === "express" ? "15 minutes" : (deliveryTime === "standard" ? "2 hours" : "As scheduled")
       },
     };
     
@@ -318,8 +390,15 @@ const Checkout = () => {
     navigate(`/track-order/${order.id}`);
   };
   
-  const totalAmount = subTotal + deliveryFee - discount - couponDiscount;
-  const finalAmount = Math.max(0, totalAmount - (useWallet ? walletBalance : 0));
+  // Calculate totals - ensure we're using proper number values
+  const subTotalAmount = parseFloat(subTotal.toString()) || 0;
+  const deliveryFeeAmount = parseFloat(deliveryFee.toString()) || 0;
+  const discountAmount = parseFloat(discount.toString()) || 0;
+  const couponDiscountAmount = parseFloat(couponDiscount.toString()) || 0;
+  
+  const totalAmount = subTotalAmount + deliveryFeeAmount - discountAmount - couponDiscountAmount;
+  const walletAmountToUse = useWallet ? Math.min(walletBalance, totalAmount) : 0;
+  const finalAmount = Math.max(0, totalAmount - walletAmountToUse);
   
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -460,10 +539,21 @@ const Checkout = () => {
                   </div>
                   <div className="flex items-center mt-1 text-sm text-gray-400">
                     <Calendar className="h-4 w-4 mr-1 text-purple-400" />
-                    <span>Select time slot</span>
+                    <span>Choose your preferred delivery slot</span>
                   </div>
                 </div>
               </div>
+              
+              {deliveryTime === "scheduled" && (
+                <div className="mt-4 ml-8">
+                  <DateTimePicker
+                    selectedDate={scheduledDate}
+                    onDateChange={setScheduledDate}
+                    selectedTime={scheduledTime}
+                    onTimeChange={setScheduledTime}
+                  />
+                </div>
+              )}
             </div>
           </RadioGroup>
         </div>
@@ -481,7 +571,7 @@ const Checkout = () => {
                   <Tag className="h-5 w-5 text-pink-400 mr-2" />
                   <div>
                     <h3 className="text-white font-medium">{appliedCoupon}</h3>
-                    <p className="text-green-400 text-sm">₹{couponDiscount} saved</p>
+                    <p className="text-green-400 text-sm">₹{couponDiscount.toFixed(2)} saved</p>
                   </div>
                 </div>
                 <Button 
@@ -511,6 +601,10 @@ const Checkout = () => {
               </Button>
             </div>
           )}
+          
+          <div className="mt-2 text-xs text-gray-400">
+            <p>Try coupon codes: WELCOME10, FLAT50, ZEPMEDS20</p>
+          </div>
         </div>
         
         <div>
@@ -524,7 +618,7 @@ const Checkout = () => {
                 <Wallet className="h-5 w-5 text-green-400 mr-2" />
                 <div>
                   <h3 className="text-white font-medium">Available Balance</h3>
-                  <p className="text-green-400 font-bold">₹{walletBalance}</p>
+                  <p className="text-green-400 font-bold">₹{walletBalance.toFixed(2)}</p>
                 </div>
               </div>
               <div className="flex items-center">
@@ -784,25 +878,25 @@ const Checkout = () => {
             <div className="space-y-2">
               <div className="flex justify-between text-gray-400">
                 <span>Subtotal</span>
-                <span>₹{subTotal.toFixed(2)}</span>
+                <span>₹{subTotalAmount.toFixed(2)}</span>
               </div>
               
               <div className="flex justify-between text-gray-400">
                 <span>Delivery Fee</span>
-                <span>{deliveryFee > 0 ? `₹${deliveryFee.toFixed(2)}` : "FREE"}</span>
+                <span>{deliveryFeeAmount > 0 ? `₹${deliveryFeeAmount.toFixed(2)}` : "FREE"}</span>
               </div>
               
-              {discount > 0 && (
+              {discountAmount > 0 && (
                 <div className="flex justify-between text-green-400">
                   <span>Discount</span>
-                  <span>-₹{discount.toFixed(2)}</span>
+                  <span>-₹{discountAmount.toFixed(2)}</span>
                 </div>
               )}
               
-              {couponDiscount > 0 && (
+              {couponDiscountAmount > 0 && (
                 <div className="flex justify-between text-green-400">
                   <span>Coupon Discount</span>
-                  <span>-₹{couponDiscount.toFixed(2)}</span>
+                  <span>-₹{couponDiscountAmount.toFixed(2)}</span>
                 </div>
               )}
               
@@ -817,7 +911,7 @@ const Checkout = () => {
                 <>
                   <div className="flex justify-between text-green-400">
                     <span>Wallet Amount</span>
-                    <span>-₹{Math.min(walletBalance, totalAmount).toFixed(2)}</span>
+                    <span>-₹{walletAmountToUse.toFixed(2)}</span>
                   </div>
                   
                   <Separator className="bg-gray-700 my-2" />
