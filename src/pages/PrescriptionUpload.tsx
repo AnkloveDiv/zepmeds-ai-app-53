@@ -1,3 +1,4 @@
+
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { Camera, Image, Upload, Check, AlertCircle, FileText, AlertTriangle, Pill } from "lucide-react";
@@ -280,7 +281,7 @@ const PrescriptionUpload = () => {
                 <>
                   <p className="text-green-400 text-sm mb-3">Valid prescription detected</p>
                   
-                  {hasMedicineNames && (
+                  {hasMedicineNames ? (
                     <>
                       <p className="text-white text-sm mb-2">Prescribed medications:</p>
                       <ul className="list-disc pl-5 text-gray-300 text-sm space-y-1 mb-3">
@@ -289,6 +290,8 @@ const PrescriptionUpload = () => {
                         ))}
                       </ul>
                     </>
+                  ) : (
+                    <p className="text-yellow-400 text-sm mb-3">No specific medicine names were detected in this prescription.</p>
                   )}
                 </>
               ) : hasMedicineNames ? (
@@ -311,7 +314,7 @@ const PrescriptionUpload = () => {
                 <div className="flex items-start">
                   <AlertTriangle className="h-5 w-5 text-red-400 mr-2 mt-0.5 flex-shrink-0" />
                   <p className="text-red-400 text-sm">
-                    No valid prescription or medicine names were detected. Please upload a clear image of a prescription or a note with medicine names.
+                    No medicine names were detected. Please upload a clear image of a prescription or a note with medicine names.
                   </p>
                 </div>
               )}

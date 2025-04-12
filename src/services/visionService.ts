@@ -113,11 +113,6 @@ export const detectTextFromImage = async (imageBase64: string): Promise<TextDete
   } catch (error) {
     console.error("Error in text detection:", error);
     
-    // If it's a placeholder for demo, use the mock result
-    if (imageBase64 === "/placeholder.svg") {
-      return mockTextResult;
-    }
-    
     // For actual errors with real images, try to still extract medicines
     if (imageBase64 && imageBase64.length > 100) {
       try {
@@ -125,19 +120,19 @@ export const detectTextFromImage = async (imageBase64: string): Promise<TextDete
         return await processImageWithGemini(imageBase64);
       } catch (geminiError) {
         console.error("Final Gemini attempt failed:", geminiError);
-        // Return user-mentioned medicines as fallback
+        // Return empty result instead of hardcoded medicines
         return {
-          text: "Failed to process image, but identified potential medication references.",
+          text: "Failed to process image. No medicine names could be detected.",
           isPrescription: false,
-          medicineNames: ["Amoxicillin", "Voglibet GM 2"], // User-mentioned medicines
-          confidence: 0.7
+          medicineNames: [], // Empty list when detection fails
+          confidence: 0
         };
       }
     }
     
     // Return invalid result
     return {
-      text: "",
+      text: "Could not process image. Please try uploading a clearer image.",
       isPrescription: false,
       medicineNames: [], // Empty array when invalid
       confidence: 0
@@ -153,7 +148,8 @@ const processImageWithGemini = async (imageBase64: string): Promise<TextDetectio
   try {
     // Updated to correct model name for Gemini API
     const API_KEY = "AIzaSyDlpkHivaQRi92dE_U9CiXS16TtWZkfnAk";
-    const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-vision:generateContent";
+    // Use gemini-pro-vision instead of gemini-1.5-pro-vision (as this model is available)
+    const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent";
     
     console.log("Attempting direct image processing with Gemini Vision API");
     
@@ -168,7 +164,7 @@ const processImageWithGemini = async (imageBase64: string): Promise<TextDetectio
       
       After extracting the text, determine:
       1. Is this definitely a prescription?
-      2. What medicines are mentioned? Be extremely accurate with medicine names, especially "Amoxicillin" and "Voglibet GM 2" if they appear.
+      2. What medicines are mentioned? Be extremely accurate with medicine names.
       
       Format your response STRICTLY as a JSON object with this structure:
       {
@@ -215,13 +211,25 @@ const processImageWithGemini = async (imageBase64: string): Promise<TextDetectio
         return mockTextResult;
       }
       
-      // If Gemini API fails with specific medicine names
-      return {
-        text: "Failed to process image, but identified potential medications.",
-        isPrescription: false,
-        medicineNames: ["Amoxicillin", "Voglibet GM 2"], // User-mentioned medicines
-        confidence: 0.8
-      };
+      // Try to use the text-only model as fallback
+      try {
+        // If we have image data but can't process with vision model,
+        // return a clear error message with no hardcoded medicines
+        return {
+          text: "Unable to analyze the image. Please try a clearer image of your prescription or notes.",
+          isPrescription: false,
+          medicineNames: [],
+          confidence: 0
+        };
+      } catch (err) {
+        console.error("Text-only fallback failed:", err);
+        return {
+          text: "Image processing failed. Please try again with a clearer image.",
+          isPrescription: false,
+          medicineNames: [],
+          confidence: 0
+        };
+      }
     }
 
     const data = await response.json();
@@ -243,6 +251,16 @@ const processImageWithGemini = async (imageBase64: string): Promise<TextDetectio
     const jsonString = textResponse.substring(jsonStartIndex, jsonEndIndex);
     const parsedResult = JSON.parse(jsonString);
     
+    // Check if any medicines were found
+    if (!parsedResult.medicineNames || parsedResult.medicineNames.length === 0) {
+      return {
+        text: parsedResult.extractedText || "No text could be extracted from the image.",
+        isPrescription: parsedResult.isPrescription || false,
+        medicineNames: [],
+        confidence: parsedResult.confidence || 0.5
+      };
+    }
+    
     return {
       text: parsedResult.extractedText || "",
       isPrescription: parsedResult.isPrescription || false,
@@ -252,12 +270,12 @@ const processImageWithGemini = async (imageBase64: string): Promise<TextDetectio
   } catch (error) {
     console.error("Error in Gemini Vision processing:", error);
     
-    // Specific fallback with user-mentioned medicines
+    // No hardcoded fallback, return accurate error
     return {
-      text: "Failed to process image with Gemini Vision.",
+      text: "Failed to process image with AI vision technology.",
       isPrescription: false,
-      medicineNames: ["Amoxicillin", "Voglibet GM 2"], // User-mentioned medicines
-      confidence: 0.7
+      medicineNames: [],
+      confidence: 0
     };
   }
 };
@@ -269,7 +287,7 @@ const processImageWithGemini = async (imageBase64: string): Promise<TextDetectio
 const analyzePrescriptionText = async (text: string): Promise<TextDetectionResult> => {
   try {
     const API_KEY = "AIzaSyDlpkHivaQRi92dE_U9CiXS16TtWZkfnAk";
-    const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+    const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
     
     // Enhanced prescription detection prompt with accuracy focus
     const prompt = `
@@ -285,8 +303,7 @@ const analyzePrescriptionText = async (text: string): Promise<TextDetectionResul
          - Instructions for taking medication
       
       2. Extract all medicine names with their dosage with extreme accuracy.
-      3. Pay special attention to medicines like "Amoxicillin" and "Voglibet GM 2" if they appear.
-      4. Provide a confidence score (0.0 to 1.0) indicating how certain you are that this is a prescription.
+      3. Provide a confidence score (0.0 to 1.0) indicating how certain you are that this is a prescription.
       
       Text from image: ${text}
       
@@ -298,6 +315,7 @@ const analyzePrescriptionText = async (text: string): Promise<TextDetectionResul
       }
       
       If this is clearly NOT a prescription but contains medicine names, set isPrescription to false, but still extract medicine names accurately.
+      If NO medicines are found at all, return an empty array for medicineNames.
     `;
 
     const response = await fetch(`${API_URL}?key=${API_KEY}`, {
@@ -339,57 +357,50 @@ const analyzePrescriptionText = async (text: string): Promise<TextDetectionResul
     const jsonEndIndex = textResponse.lastIndexOf('}') + 1;
     
     if (jsonStartIndex === -1 || jsonEndIndex === -1) {
-      // If JSON extraction fails but text contains references to specific medicines
-      if (text.includes("Amoxicillin") || text.includes("Voglibet")) {
-        const medicineNames = [];
-        if (text.includes("Amoxicillin")) medicineNames.push("Amoxicillin");
-        if (text.includes("Voglibet")) medicineNames.push("Voglibet GM 2");
-        
-        return {
-          text,
-          isPrescription: false,
-          medicineNames,
-          confidence: 0.7
-        };
-      }
+      // If JSON extraction fails, try to extract medicine names directly from text
+      const medicineNames = await extractMedicineNames(text);
       
-      throw new Error("Could not find JSON in response");
+      return {
+        text,
+        isPrescription: false,
+        medicineNames,
+        confidence: 0.5
+      };
     }
     
     const jsonString = textResponse.substring(jsonStartIndex, jsonEndIndex);
     const analysisResult = JSON.parse(jsonString);
     
-    // Ensure medicine names includes user-mentioned medicines if they're in the text
-    let medicineNames = analysisResult.medicineNames || [];
-    if (text.includes("Amoxicillin") && !medicineNames.some(m => m.includes("Amoxicillin"))) {
-      medicineNames.push("Amoxicillin");
-    }
-    if (text.includes("Voglibet") && !medicineNames.some(m => m.includes("Voglibet"))) {
-      medicineNames.push("Voglibet GM 2");
-    }
-    
     // Return the result with possibly enhanced medicine names
     return {
       text,
       isPrescription: analysisResult.isPrescription,
-      medicineNames: medicineNames,
+      medicineNames: analysisResult.medicineNames || [],
       confidence: analysisResult.confidence || 0
     };
   } catch (error) {
     console.error("Error analyzing prescription text:", error);
     
-    // Look for medicine names in the text as a last resort
-    const medicineNames = [];
-    if (text.includes("Amoxicillin")) medicineNames.push("Amoxicillin");
-    if (text.includes("Voglibet")) medicineNames.push("Voglibet GM 2");
-    
-    // Return result with extracted medicine names
-    return {
-      text,
-      isPrescription: false,
-      medicineNames, 
-      confidence: 0.6
-    };
+    // Try to extract medicine names as last resort
+    try {
+      const medicineNames = await extractMedicineNames(text);
+      
+      // Return result with extracted medicine names
+      return {
+        text,
+        isPrescription: false,
+        medicineNames, 
+        confidence: 0.6
+      };
+    } catch (extractError) {
+      console.error("Failed to extract medicine names:", extractError);
+      return {
+        text,
+        isPrescription: false,
+        medicineNames: [],
+        confidence: 0
+      };
+    }
   }
 };
 
@@ -400,7 +411,7 @@ const analyzePrescriptionText = async (text: string): Promise<TextDetectionResul
 const extractMedicineNames = async (text: string): Promise<string[]> => {
   try {
     const API_KEY = "AIzaSyDlpkHivaQRi92dE_U9CiXS16TtWZkfnAk";
-    const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+    const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
     
     const prompt = `
       You are a medical assistant AI that specializes in identifying medication names with 99% accuracy.
@@ -409,12 +420,12 @@ const extractMedicineNames = async (text: string): Promise<string[]> => {
       Look for any words that could represent medications, including generic and brand names.
       Include dosage information if available.
       
-      Pay special attention to medicines like "Amoxicillin" and "Voglibet GM 2" if they appear - make sure to extract them correctly.
-      
       Text: ${text}
       
       Format your response STRICTLY as a valid JSON array of strings, each containing a medicine name with dosage when available:
       ["Medicine1 dosage", "Medicine2 dosage", "Medicine3"]
+      
+      If absolutely NO medicine names can be found in the text, return an empty array: []
     `;
 
     const response = await fetch(`${API_URL}?key=${API_KEY}`, {
@@ -457,13 +468,7 @@ const extractMedicineNames = async (text: string): Promise<string[]> => {
     
     if (jsonStartIndex === -1 || jsonEndIndex === -1) {
       console.error("Could not find JSON in medicine extraction response");
-      
-      // Manual extraction for specific medicines
-      const medicineNames = [];
-      if (text.includes("Amoxicillin")) medicineNames.push("Amoxicillin");
-      if (text.includes("Voglibet")) medicineNames.push("Voglibet GM 2");
-      
-      return medicineNames.length > 0 ? medicineNames : [];
+      return [];
     }
     
     const jsonString = textResponse.substring(jsonStartIndex, jsonEndIndex);
@@ -471,44 +476,14 @@ const extractMedicineNames = async (text: string): Promise<string[]> => {
     
     try {
       const medicines = JSON.parse(jsonString);
-      
-      // Ensure user-mentioned medicines are included
-      let hasAmoxicillin = false;
-      let hasVoglibet = false;
-      
-      for (const medicine of medicines) {
-        if (medicine.toLowerCase().includes("amoxicillin")) hasAmoxicillin = true;
-        if (medicine.toLowerCase().includes("voglibet")) hasVoglibet = true;
-      }
-      
-      // Add missing specific medicines if they're in the text
-      if (!hasAmoxicillin && text.toLowerCase().includes("amoxicillin")) {
-        medicines.push("Amoxicillin");
-      }
-      if (!hasVoglibet && text.toLowerCase().includes("voglibet")) {
-        medicines.push("Voglibet GM 2");
-      }
-      
-      return medicines;
+      return Array.isArray(medicines) ? medicines : [];
     } catch (parseError) {
       console.error("Error parsing medicine JSON:", parseError);
-      
-      // Manual extraction as fallback
-      const medicineNames = [];
-      if (text.includes("Amoxicillin")) medicineNames.push("Amoxicillin");
-      if (text.includes("Voglibet")) medicineNames.push("Voglibet GM 2");
-      
-      return medicineNames.length > 0 ? medicineNames : [];
+      return [];
     }
   } catch (error) {
     console.error("Error extracting medicine names:", error);
-    
-    // Manual extraction as final fallback
-    const medicineNames = [];
-    if (text.includes("Amoxicillin")) medicineNames.push("Amoxicillin");
-    if (text.includes("Voglibet")) medicineNames.push("Voglibet GM 2");
-    
-    return medicineNames.length > 0 ? medicineNames : [];
+    return [];
   }
 };
 
@@ -519,4 +494,3 @@ export const generateMockResultForTesting = (): TextDetectionResult => {
     confidence: 0.95
   };
 };
-
