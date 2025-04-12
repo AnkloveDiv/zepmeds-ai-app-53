@@ -5,20 +5,16 @@
 const VISION_API_KEY = "AIzaSyBJsesE28RBuRvgiTauJqgc93osbuowxWk";
 const VISION_API_URL = "https://vision.googleapis.com/v1/images:annotate";
 
+// Updated Gemini API key and URL
+const GEMINI_API_KEY = "AIzaSyDlpkHivaQRi92dE_U9CiXS16TtWZkfnAk";
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+
 export interface TextDetectionResult {
   text: string;
   isPrescription: boolean;
   medicineNames: string[];
   confidence: number;
 }
-
-// Mock data for testing - with accuracy improvements
-const mockTextResult: TextDetectionResult = {
-  text: "Dr. Jane Smith\nPatient: John Doe\nDate: 12/04/2025\n\nRx:\n1. Amoxicillin 500mg - Take 1 capsule three times daily for 7 days\n2. Voglibet GM 2 - Take 1 tablet before meals\n3. Cetirizine 10mg - Take 1 tablet daily for allergies\n\nRefill: 0\nDr. Smith",
-  isPrescription: true,
-  medicineNames: ["Amoxicillin 500mg", "Voglibet GM 2", "Cetirizine 10mg"],
-  confidence: 0.95
-};
 
 /**
  * Detect text from an image using Google Cloud Vision API
@@ -28,22 +24,16 @@ export const detectTextFromImage = async (imageBase64: string): Promise<TextDete
   try {
     console.log("Starting text detection from image");
     
-    // For empty images or placeholder, return mock data for testing
-    if (!imageBase64 || imageBase64.length < 10) {
-      console.log("Using mock data - empty image");
-      return mockTextResult;
-    }
-    
     // For placeholder image in demo, use mock data with high accuracy
     if (imageBase64 === "/placeholder.svg") {
-      console.log("Using mock data for placeholder image");
+      console.log("Using placeholder image for testing");
       // Wait to simulate processing
       await new Promise(resolve => setTimeout(resolve, 1500));
-      return mockTextResult;
+      return await generateMockResultForTesting();
     }
     
+    // First try Vision API, then fall back to Gemini
     try {
-      // First attempt with Vision API
       const response = await fetch(`${VISION_API_URL}?key=${VISION_API_KEY}`, {
         method: "POST",
         headers: {
@@ -93,17 +83,6 @@ export const detectTextFromImage = async (imageBase64: string): Promise<TextDete
       // Use Gemini API to analyze the text and identify if it's a prescription
       const analysisResult = await analyzePrescriptionText(extractedText);
       
-      // If not a formal prescription, still try to extract medicine names
-      if (!analysisResult.isPrescription && extractedText.trim().length > 0) {
-        const medicineNames = await extractMedicineNames(extractedText);
-        
-        // Update analysis result with extracted medicine names
-        return {
-          ...analysisResult,
-          medicineNames: medicineNames.length > 0 ? medicineNames : []
-        };
-      }
-      
       return analysisResult;
     } catch (apiError) {
       console.error("Error with Vision API:", apiError);
@@ -113,28 +92,11 @@ export const detectTextFromImage = async (imageBase64: string): Promise<TextDete
   } catch (error) {
     console.error("Error in text detection:", error);
     
-    // For actual errors with real images, try to still extract medicines
-    if (imageBase64 && imageBase64.length > 100) {
-      try {
-        // One final attempt with Gemini
-        return await processImageWithGemini(imageBase64);
-      } catch (geminiError) {
-        console.error("Final Gemini attempt failed:", geminiError);
-        // Return empty result instead of hardcoded medicines
-        return {
-          text: "Failed to process image. No medicine names could be detected.",
-          isPrescription: false,
-          medicineNames: [], // Empty list when detection fails
-          confidence: 0
-        };
-      }
-    }
-    
-    // Return invalid result
+    // Return empty result with error message
     return {
-      text: "Could not process image. Please try uploading a clearer image.",
+      text: "Failed to process image. No medicine names could be detected.",
       isPrescription: false,
-      medicineNames: [], // Empty array when invalid
+      medicineNames: [], // Empty list when detection fails
       confidence: 0
     };
   }
@@ -146,12 +108,7 @@ export const detectTextFromImage = async (imageBase64: string): Promise<TextDete
  */
 const processImageWithGemini = async (imageBase64: string): Promise<TextDetectionResult> => {
   try {
-    // Updated to correct model name for Gemini API
-    const API_KEY = "AIzaSyDlpkHivaQRi92dE_U9CiXS16TtWZkfnAk";
-    // Use gemini-pro-vision instead of gemini-1.5-pro-vision (as this model is available)
-    const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent";
-    
-    console.log("Attempting direct image processing with Gemini Vision API");
+    console.log("Attempting direct image processing with Gemini 2.0 Flash API");
     
     const prompt = `
       You are a medical assistant AI specifically trained to extract text from images of medical prescriptions with 99% accuracy.
@@ -175,7 +132,7 @@ const processImageWithGemini = async (imageBase64: string): Promise<TextDetectio
       }
     `;
 
-    const response = await fetch(`${API_URL}?key=${API_KEY}`, {
+    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -204,40 +161,28 @@ const processImageWithGemini = async (imageBase64: string): Promise<TextDetectio
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Gemini Vision API Error:", errorText);
+      console.error("Gemini API Error:", errorText);
       
       // If using the placeholder image for demo
       if (imageBase64 === "/placeholder.svg") {
-        return mockTextResult;
+        return generateMockResultForTesting();
       }
       
-      // Try to use the text-only model as fallback
-      try {
-        // If we have image data but can't process with vision model,
-        // return a clear error message with no hardcoded medicines
-        return {
-          text: "Unable to analyze the image. Please try a clearer image of your prescription or notes.",
-          isPrescription: false,
-          medicineNames: [],
-          confidence: 0
-        };
-      } catch (err) {
-        console.error("Text-only fallback failed:", err);
-        return {
-          text: "Image processing failed. Please try again with a clearer image.",
-          isPrescription: false,
-          medicineNames: [],
-          confidence: 0
-        };
-      }
+      // Return a clear error message if the API fails
+      return {
+        text: "Unable to analyze the image. Our AI services are currently unavailable. Please try again later.",
+        isPrescription: false,
+        medicineNames: [],
+        confidence: 0
+      };
     }
 
     const data = await response.json();
-    console.log("Gemini Vision API response received");
+    console.log("Gemini API response received");
     
     const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!textResponse) {
-      throw new Error("Empty response from Gemini Vision API");
+      throw new Error("Empty response from Gemini API");
     }
     
     // Extract JSON from response
@@ -245,20 +190,33 @@ const processImageWithGemini = async (imageBase64: string): Promise<TextDetectio
     const jsonEndIndex = textResponse.lastIndexOf('}') + 1;
     
     if (jsonStartIndex === -1 || jsonEndIndex === -1) {
-      throw new Error("Could not find JSON in Gemini Vision response");
+      throw new Error("Could not find JSON in Gemini response");
     }
     
     const jsonString = textResponse.substring(jsonStartIndex, jsonEndIndex);
-    const parsedResult = JSON.parse(jsonString);
+    let parsedResult;
     
-    // Check if any medicines were found
-    if (!parsedResult.medicineNames || parsedResult.medicineNames.length === 0) {
-      return {
-        text: parsedResult.extractedText || "No text could be extracted from the image.",
-        isPrescription: parsedResult.isPrescription || false,
-        medicineNames: [],
-        confidence: parsedResult.confidence || 0.5
-      };
+    try {
+      parsedResult = JSON.parse(jsonString);
+    } catch (parseError) {
+      console.error("Error parsing JSON from Gemini response:", parseError);
+      console.log("Trying to fix malformed JSON");
+      
+      // Try to clean up and fix common JSON issues
+      const cleanedJson = jsonString
+        .replace(/\n/g, ' ')
+        .replace(/\\"/g, '"')
+        .replace(/"/g, '"')
+        .replace(/"/g, '"')
+        .replace(/'/g, "'")
+        .replace(/'/g, "'");
+      
+      try {
+        parsedResult = JSON.parse(cleanedJson);
+      } catch (secondError) {
+        console.error("Still could not parse JSON:", secondError);
+        throw new Error("Could not parse JSON from Gemini response");
+      }
     }
     
     return {
@@ -268,9 +226,9 @@ const processImageWithGemini = async (imageBase64: string): Promise<TextDetectio
       confidence: parsedResult.confidence || 0.5
     };
   } catch (error) {
-    console.error("Error in Gemini Vision processing:", error);
+    console.error("Error in Gemini processing:", error);
     
-    // No hardcoded fallback, return accurate error
+    // Return proper error result
     return {
       text: "Failed to process image with AI vision technology.",
       isPrescription: false,
@@ -286,9 +244,6 @@ const processImageWithGemini = async (imageBase64: string): Promise<TextDetectio
  */
 const analyzePrescriptionText = async (text: string): Promise<TextDetectionResult> => {
   try {
-    const API_KEY = "AIzaSyDlpkHivaQRi92dE_U9CiXS16TtWZkfnAk";
-    const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
-    
     // Enhanced prescription detection prompt with accuracy focus
     const prompt = `
       You are a medical assistant AI specifically trained to identify medical prescriptions and extract medication information with 99% accuracy.
@@ -318,7 +273,7 @@ const analyzePrescriptionText = async (text: string): Promise<TextDetectionResul
       If NO medicines are found at all, return an empty array for medicineNames.
     `;
 
-    const response = await fetch(`${API_URL}?key=${API_KEY}`, {
+    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -410,9 +365,6 @@ const analyzePrescriptionText = async (text: string): Promise<TextDetectionResul
  */
 const extractMedicineNames = async (text: string): Promise<string[]> => {
   try {
-    const API_KEY = "AIzaSyDlpkHivaQRi92dE_U9CiXS16TtWZkfnAk";
-    const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
-    
     const prompt = `
       You are a medical assistant AI that specializes in identifying medication names with 99% accuracy.
       
@@ -428,7 +380,7 @@ const extractMedicineNames = async (text: string): Promise<string[]> => {
       If absolutely NO medicine names can be found in the text, return an empty array: []
     `;
 
-    const response = await fetch(`${API_URL}?key=${API_KEY}`, {
+    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -487,10 +439,12 @@ const extractMedicineNames = async (text: string): Promise<string[]> => {
   }
 };
 
-// Function to generate mock data for testing purposes
+// Function to generate realistic testing data
 export const generateMockResultForTesting = (): TextDetectionResult => {
   return {
-    ...mockTextResult,
+    text: "Dr. Jane Smith\nPatient: John Doe\nDate: 12/04/2025\n\nRx:\n1. Amoxicillin 500mg - Take 1 capsule three times daily for 7 days\n2. Voglibet GM 2 - Take 1 tablet before meals\n3. Cetirizine 10mg - Take 1 tablet daily for allergies\n\nRefill: 0\nDr. Smith",
+    isPrescription: true,
+    medicineNames: ["Amoxicillin 500mg", "Voglibet GM 2", "Cetirizine 10mg"],
     confidence: 0.95
   };
 };

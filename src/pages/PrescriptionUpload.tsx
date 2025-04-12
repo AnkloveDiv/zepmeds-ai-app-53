@@ -52,7 +52,6 @@ const PrescriptionUpload = () => {
       const reader = new FileReader();
       reader.onload = (event) => {
         const base64Image = event.target?.result as string;
-        // Remove the prefix from base64 string (e.g., "data:image/jpeg;base64,")
         setImage(base64Image);
         
         // Reset states when new image is uploaded
