@@ -1,334 +1,285 @@
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
+import { Stethoscope, Plus, Minus, AlertTriangle, Check, ArrowRight, X, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/use-toast";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { MessageSquare, Send, Pill, ShoppingCart } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
-
-interface Message {
-  id: string;
-  type: 'user' | 'ai';
-  content: string;
-  timestamp: Date;
-}
-
-interface Recommendation {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  image: string;
-}
+import { analyzeSymptoms, GeminiResponse } from "@/services/geminiService";
 
 const AISymptomChecker = () => {
   const { toast } = useToast();
-  const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "welcome",
-      type: "ai",
-      content: "Hello! I'm your health assistant. Please describe your symptoms, and I'll suggest potential causes and recommend suitable medicines.",
-      timestamp: new Date()
-    }
-  ]);
-  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [symptoms, setSymptoms] = useState<string[]>([]);
+  const [currentSymptom, setCurrentSymptom] = useState("");
+  const [additionalInfo, setAdditionalInfo] = useState("");
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<GeminiResponse | null>(null);
+  const [showInput, setShowInput] = useState(true);
 
-  const handleSendMessage = () => {
-    if (!input.trim()) return;
-    
-    // Add user message
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      type: "user",
-      content: input,
-      timestamp: new Date()
-    };
-    
-    setMessages(prev => [...prev, userMessage]);
-    setInput("");
-    setLoading(true);
-    
-    // Simulate AI response after a delay
-    setTimeout(() => {
-      // This would be replaced with actual AI backend integration
-      const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        type: "ai",
-        content: generateAIResponse(input),
-        timestamp: new Date()
-      };
-      
-      setMessages(prev => [...prev, aiResponse]);
-      
-      // Generate medicine recommendations based on symptoms
-      const newRecommendations = generateRecommendations(input);
-      setRecommendations(newRecommendations);
-      
-      setLoading(false);
-    }, 1500);
-  };
-
-  const generateAIResponse = (userInput: string): string => {
-    // In a real app, this would be an API call to a backend AI service
-    const lowerInput = userInput.toLowerCase();
-    
-    if (lowerInput.includes("headache") || lowerInput.includes("head pain")) {
-      return "Based on your description, you may be experiencing a tension headache. This is common and often caused by stress, dehydration, or eye strain. I recommend rest, proper hydration, and the medicines listed below. If your headache is severe or persistent, please consult a doctor.";
-    } else if (lowerInput.includes("fever") || lowerInput.includes("temperature")) {
-      return "You appear to be experiencing a fever, which is often a sign that your body is fighting an infection. I recommend rest, staying hydrated, and the medications listed below to help manage your symptoms. If your fever is high (above 102°F/39°C) or lasts more than 3 days, please consult a doctor.";
-    } else if (lowerInput.includes("cough") || lowerInput.includes("cold")) {
-      return "Your symptoms suggest an upper respiratory tract infection like the common cold. These are usually viral infections that resolve on their own. I recommend rest, staying hydrated, and the medications listed below to help manage your symptoms. If you have difficulty breathing or symptoms worsen, please consult a doctor.";
-    } else {
-      return "Thank you for sharing your symptoms. Without more specific information, I can offer some general recommendations for comfort. Please consider consulting with a healthcare professional for a proper diagnosis. Meanwhile, you might find the following medicines helpful.";
-    }
-  };
-
-  const generateRecommendations = (userInput: string): Recommendation[] => {
-    // In a real app, this would use AI to generate personalized recommendations
-    const lowerInput = userInput.toLowerCase();
-    const placeholderImg = "/placeholder.svg";
-    
-    if (lowerInput.includes("headache") || lowerInput.includes("head pain")) {
-      return [
-        {
-          id: "med1",
-          name: "Paracetamol Tablets",
-          description: "Relieves pain and reduces fever",
-          price: 25,
-          image: placeholderImg
-        },
-        {
-          id: "med2",
-          name: "Ibuprofen Tablets",
-          description: "Anti-inflammatory pain reliever",
-          price: 35,
-          image: placeholderImg
-        },
-        {
-          id: "med3",
-          name: "Aspirin Tablets",
-          description: "Pain reliever and blood thinner",
-          price: 20,
-          image: placeholderImg
-        }
-      ];
-    } else if (lowerInput.includes("fever") || lowerInput.includes("temperature")) {
-      return [
-        {
-          id: "med4",
-          name: "Paracetamol Tablets",
-          description: "Reduces fever and relieves pain",
-          price: 25,
-          image: placeholderImg
-        },
-        {
-          id: "med5",
-          name: "Fever Patch",
-          description: "Cooling gel patch for forehead",
-          price: 120,
-          image: placeholderImg
-        },
-        {
-          id: "med6",
-          name: "Electrolyte Solution",
-          description: "Replenishes essential minerals",
-          price: 40,
-          image: placeholderImg
-        }
-      ];
-    } else if (lowerInput.includes("cough") || lowerInput.includes("cold")) {
-      return [
-        {
-          id: "med7",
-          name: "Cough Syrup",
-          description: "Soothes throat and suppresses cough",
-          price: 65,
-          image: placeholderImg
-        },
-        {
-          id: "med8",
-          name: "Cold & Flu Tablets",
-          description: "Relieves multiple cold symptoms",
-          price: 45,
-          image: placeholderImg
-        },
-        {
-          id: "med9",
-          name: "Nasal Decongestant",
-          description: "Clears nasal passages",
-          price: 30,
-          image: placeholderImg
-        }
-      ];
-    } else {
-      return [
-        {
-          id: "med10",
-          name: "Multivitamin Tablets",
-          description: "Supports overall health",
-          price: 120,
-          image: placeholderImg
-        },
-        {
-          id: "med11",
-          name: "Immune Support Supplement",
-          description: "Boosts immune system",
-          price: 150,
-          image: placeholderImg
-        },
-        {
-          id: "med12",
-          name: "Paracetamol Tablets",
-          description: "General pain reliever",
-          price: 25,
-          image: placeholderImg
-        }
-      ];
-    }
-  };
-
-  const addToCart = (recommendation: Recommendation) => {
-    // Get existing cart
-    const existingCart = JSON.parse(localStorage.getItem("cart") || "[]");
-    
-    // Check if item already exists
-    const existingItemIndex = existingCart.findIndex((item: any) => item.id === recommendation.id);
-    
-    if (existingItemIndex >= 0) {
-      // Increase quantity if already in cart
-      existingCart[existingItemIndex].quantity += 1;
-    } else {
-      // Add new item to cart
-      existingCart.push({
-        ...recommendation,
-        quantity: 1,
-        stripQuantity: 1
+  const addSymptom = () => {
+    if (currentSymptom.trim() !== "" && !symptoms.includes(currentSymptom.trim())) {
+      setSymptoms([...symptoms, currentSymptom.trim()]);
+      setCurrentSymptom("");
+    } else if (symptoms.includes(currentSymptom.trim())) {
+      toast({
+        title: "Duplicate symptom",
+        description: "This symptom has already been added.",
+        variant: "destructive",
       });
     }
-    
-    // Save updated cart
-    localStorage.setItem("cart", JSON.stringify(existingCart));
-    
-    toast({
-      title: "Added to cart",
-      description: `${recommendation.name} has been added to your cart`,
-    });
+  };
+
+  const removeSymptom = (symptomToRemove: string) => {
+    setSymptoms(symptoms.filter((symptom) => symptom !== symptomToRemove));
+  };
+
+  const handleAnalyze = async () => {
+    if (symptoms.length === 0) {
+      toast({
+        title: "No symptoms added",
+        description: "Please add at least one symptom to analyze.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setAnalyzing(true);
+    setShowInput(false);
+
+    try {
+      const result = await analyzeSymptoms(symptoms, additionalInfo);
+      setAnalysisResult(result);
+    } catch (error) {
+      console.error("Analysis error:", error);
+      toast({
+        title: "Analysis failed",
+        description: "There was an error analyzing your symptoms. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const resetAnalysis = () => {
+    setAnalysisResult(null);
+    setShowInput(true);
+  };
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case "low":
+        return "bg-green-500";
+      case "medium":
+        return "bg-yellow-500";
+      case "high":
+        return "bg-red-500";
+      default:
+        return "bg-gray-500";
+    }
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="pb-20 min-h-screen bg-background text-white">
       <Header showBackButton title="AI Symptom Checker" />
-      
-      <main className="px-4 py-4">
-        <div className="mb-4">
-          <div className="glass-morphism rounded-xl p-4">
-            <div className="flex items-center mb-4">
-              <MessageSquare className="h-5 w-5 text-zepmeds-purple mr-2" />
-              <h3 className="text-white font-medium">Health Assistant</h3>
-            </div>
-            
-            <div className="space-y-4 mb-4 max-h-96 overflow-y-auto">
-              {messages.map((message) => (
-                <motion.div
-                  key={message.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+
+      <div className="p-4">
+        <div className="flex items-center justify-center mb-6">
+          <div className="w-16 h-16 rounded-full bg-zepmeds-purple flex items-center justify-center">
+            <Stethoscope className="h-8 w-8 text-white" />
+          </div>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mb-6 text-center"
+        >
+          <h1 className="text-2xl font-bold text-white mb-2">
+            AI Symptom Checker
+          </h1>
+          <p className="text-gray-400 text-sm">
+            Enter your symptoms for AI-powered analysis and medicine recommendations.
+            <br />
+            <span className="text-red-400 text-xs">
+              Not a substitute for professional medical advice.
+            </span>
+          </p>
+        </motion.div>
+
+        {showInput ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div className="glass-morphism rounded-xl p-4 mb-6">
+              <h2 className="text-lg font-semibold mb-3">Add your symptoms</h2>
+              <div className="flex gap-2 mb-4">
+                <Input
+                  placeholder="Enter a symptom (e.g. headache)"
+                  value={currentSymptom}
+                  onChange={(e) => setCurrentSymptom(e.target.value)}
+                  className="flex-1 bg-black/20 border-white/10"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      addSymptom();
+                    }
+                  }}
+                />
+                <Button
+                  onClick={addSymptom}
+                  className="bg-zepmeds-purple hover:bg-zepmeds-purple/80"
                 >
-                  <div 
-                    className={`max-w-[80%] rounded-lg p-3 ${
-                      message.type === 'user' 
-                        ? 'bg-zepmeds-purple text-white' 
-                        : 'bg-black/20 text-white'
-                    }`}
-                  >
-                    {message.content}
-                  </div>
-                </motion.div>
-              ))}
-              
-              {loading && (
-                <div className="flex justify-start">
-                  <div className="bg-black/20 rounded-lg p-3 text-white">
-                    <div className="flex space-x-2">
-                      <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"></div>
-                      <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                      <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-                    </div>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {symptoms.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="text-sm text-gray-300 mb-2">Your symptoms:</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {symptoms.map((symptom, index) => (
+                      <div
+                        key={index}
+                        className="bg-black/30 text-white px-3 py-1 rounded-full flex items-center"
+                      >
+                        <span className="mr-2">{symptom}</span>
+                        <button
+                          onClick={() => removeSymptom(symptom)}
+                          className="hover:text-red-400"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
-            </div>
-            
-            <div className="flex">
+
+              <h3 className="text-sm text-gray-300 mb-2">
+                Additional information (optional):
+              </h3>
               <Textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Describe your symptoms here..."
-                className="bg-black/20 border-white/10 mr-2"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage();
-                  }
-                }}
+                placeholder="Add any additional details like duration, severity, or context..."
+                value={additionalInfo}
+                onChange={(e) => setAdditionalInfo(e.target.value)}
+                className="bg-black/20 border-white/10 min-h-[100px]"
               />
-              <Button 
-                className="bg-zepmeds-purple hover:bg-zepmeds-purple-light"
-                onClick={handleSendMessage}
-                disabled={loading || !input.trim()}
-              >
-                <Send size={18} />
-              </Button>
             </div>
-          </div>
-        </div>
-        
-        {recommendations.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-6"
-          >
-            <h3 className="text-xl font-bold text-white mb-4">Recommended Medicines</h3>
-            
-            <div className="space-y-3">
-              {recommendations.map((rec) => (
-                <motion.div
-                  key={rec.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="glass-morphism rounded-xl p-3 flex items-center"
-                >
-                  <div className="h-16 w-16 rounded-lg overflow-hidden mr-3">
-                    <img src={rec.image} alt={rec.name} className="h-full w-full object-cover" />
-                  </div>
-                  
-                  <div className="flex-1">
-                    <h4 className="text-white font-medium">{rec.name}</h4>
-                    <p className="text-gray-400 text-sm">{rec.description}</p>
-                    <div className="flex justify-between items-center mt-1">
-                      <span className="text-zepmeds-purple font-bold">₹{rec.price}</span>
-                      <Button 
-                        size="sm" 
-                        className="bg-zepmeds-purple hover:bg-zepmeds-purple-light"
-                        onClick={() => addToCart(rec)}
-                      >
-                        <ShoppingCart size={14} className="mr-1" /> Add
-                      </Button>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+
+            <Button
+              onClick={handleAnalyze}
+              className="w-full bg-zepmeds-purple hover:bg-zepmeds-purple/80 py-6 text-lg"
+              disabled={symptoms.length === 0}
+            >
+              Analyze Symptoms <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
           </motion.div>
+        ) : analyzing ? (
+          <div className="flex flex-col items-center justify-center p-8">
+            <Loader2 className="h-12 w-12 text-zepmeds-purple animate-spin mb-4" />
+            <h2 className="text-xl font-semibold text-white mb-2">
+              Analyzing your symptoms...
+            </h2>
+            <p className="text-gray-400 text-center">
+              Our AI is processing your information to provide personalized guidance.
+            </p>
+          </div>
+        ) : (
+          analysisResult && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-6"
+            >
+              {/* Severity Indicator */}
+              <div className="glass-morphism rounded-xl p-4 mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-lg font-semibold">Severity Assessment</h2>
+                  <div className={`px-3 py-1 rounded-full text-sm font-medium ${getSeverityColor(analysisResult.severity)}`}>
+                    {analysisResult.severity.charAt(0).toUpperCase() + analysisResult.severity.slice(1)}
+                  </div>
+                </div>
+                
+                {analysisResult.seekMedicalAttention && (
+                  <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-3 flex items-start">
+                    <AlertTriangle className="h-5 w-5 text-red-400 mr-2 flex-shrink-0 mt-0.5" />
+                    <p className="text-white text-sm">
+                      Based on your symptoms, it is recommended that you seek immediate medical attention.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Analysis */}
+              <div className="glass-morphism rounded-xl p-4">
+                <h2 className="text-lg font-semibold mb-3">Analysis</h2>
+                <p className="text-gray-300 text-sm">{analysisResult.analysis}</p>
+              </div>
+
+              {/* Recommended Medicines */}
+              <div className="glass-morphism rounded-xl p-4">
+                <h2 className="text-lg font-semibold mb-3">Recommended Medicines</h2>
+                <ul className="space-y-2">
+                  {analysisResult.recommendedMedicines.map((medicine, index) => (
+                    <li key={index} className="flex items-start">
+                      <Check className="h-5 w-5 text-green-400 mr-2 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-300 text-sm">{medicine}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Exercise Recommendations */}
+              <div className="glass-morphism rounded-xl p-4">
+                <h2 className="text-lg font-semibold mb-3">Exercise Recommendations</h2>
+                <ul className="space-y-2">
+                  {analysisResult.exerciseRecommendations.map((exercise, index) => (
+                    <li key={index} className="flex items-start">
+                      <Check className="h-5 w-5 text-green-400 mr-2 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-300 text-sm">{exercise}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Ways to Cure */}
+              <div className="glass-morphism rounded-xl p-4">
+                <h2 className="text-lg font-semibold mb-3">Ways to Manage Symptoms</h2>
+                <ul className="space-y-2">
+                  {analysisResult.cureOptions.map((cure, index) => (
+                    <li key={index} className="flex items-start">
+                      <Check className="h-5 w-5 text-green-400 mr-2 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-300 text-sm">{cure}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Disclaimer */}
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+                <p className="text-amber-200 text-xs text-center">
+                  This analysis is not a substitute for professional medical advice, diagnosis, or treatment. 
+                  Always seek the advice of your physician or other qualified health provider with any questions 
+                  you may have regarding a medical condition.
+                </p>
+              </div>
+
+              <Button
+                onClick={resetAnalysis}
+                className="w-full bg-zepmeds-purple hover:bg-zepmeds-purple/80"
+              >
+                Check Different Symptoms
+              </Button>
+            </motion.div>
+          )
         )}
-      </main>
-      
+      </div>
       <BottomNavigation />
     </div>
   );
