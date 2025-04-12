@@ -1,5 +1,5 @@
 
-const GEMINI_API_KEY = "AIzaSyA14PtGblA4oPXh2dqC51Mpvymc9hNHuPI";
+const GEMINI_API_KEY = "AIzaSyCUtHkOxTdEXPRnVUhZtz9qERyUaw_RDXI";
 // Updated API URL to use gemini-pro model (Gemini 1.0) instead of gemini-1.0-pro
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent";
 
