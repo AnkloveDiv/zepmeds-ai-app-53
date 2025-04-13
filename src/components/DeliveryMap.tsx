@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { initializeMap } from "@/utils/googleMapsLoader";
@@ -12,10 +13,11 @@ const DeliveryMap = ({ showRider = true, orderId }: DeliveryMapProps) => {
   const [distance, setDistance] = useState(2.4);
   const [eta, setEta] = useState(15);
   const [animating, setAnimating] = useState(false);
-  const [map, setMap] = useState<any | null>(null);
-  const [riderMarker, setRiderMarker] = useState<any | null>(null);
-  const [destinationMarker, setDestinationMarker] = useState<any | null>(null);
-  const [storeMarker, setStoreMarker] = useState<any | null>(null);
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [riderMarker, setRiderMarker] = useState<google.maps.Marker | null>(null);
+  const [destinationMarker, setDestinationMarker] = useState<google.maps.Marker | null>(null);
+  const [storeMarker, setStoreMarker] = useState<google.maps.Marker | null>(null);
+  const [routePath, setRoutePath] = useState<google.maps.Polyline | null>(null);
   const { toast } = useToast();
 
   // Simulated coordinates for demonstration
@@ -28,103 +30,128 @@ const DeliveryMap = ({ showRider = true, orderId }: DeliveryMapProps) => {
     const setupMap = async () => {
       await initializeMap();
       
-      if (mapRef.current && window.L) {
+      if (mapRef.current && window.google && window.google.maps) {
         try {
-          // Create Leaflet map with attribution control disabled
-          const leafletMap = window.L.map(mapRef.current, {
-            attributionControl: false // Disable attribution control (removes watermark)
-          }).setView([initialRiderCoords.lat, initialRiderCoords.lng], 14);
-          
-          // Add OpenStreetMap tile layer with empty attribution
-          window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '', // Empty string removes watermark
-            maxZoom: 19
-          }).addTo(leafletMap);
-          
-          setMap(leafletMap);
-          
-          // Store marker (origin)
-          const storeIcon = window.L.divIcon({
-            html: `<div class="flex items-center justify-center w-8 h-8 bg-purple-500 rounded-full border-2 border-white">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"></path><path d="M3 9V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4"></path></svg>
-                  </div>`,
-            className: '',
-            iconSize: [32, 32],
-            iconAnchor: [16, 16]
+          // Create Google Map
+          const googleMap = new google.maps.Map(mapRef.current, {
+            center: initialRiderCoords,
+            zoom: 14,
+            mapTypeControl: false,
+            fullscreenControl: false,
+            streetViewControl: false,
+            zoomControl: false
           });
           
-          const store = window.L.marker([storeCoords.lat, storeCoords.lng], { icon: storeIcon }).addTo(leafletMap);
-          store.bindTooltip("Store", { permanent: false, direction: 'top' });
+          setMap(googleMap);
+          
+          // Store marker (origin)
+          const storeIcon = {
+            path: google.maps.SymbolPath.CIRCLE,
+            fillColor: '#9b87f5',
+            fillOpacity: 1,
+            strokeWeight: 2,
+            strokeColor: '#FFFFFF',
+            scale: 8
+          };
+          
+          const store = new google.maps.Marker({
+            position: storeCoords,
+            map: googleMap,
+            icon: storeIcon,
+            title: 'Store'
+          });
+          
           setStoreMarker(store);
           
           // Destination marker
-          const destinationIcon = window.L.divIcon({
-            html: `<div class="flex items-center justify-center w-8 h-8 bg-red-500 rounded-full border-2 border-white">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                  </div>`,
-            className: '',
-            iconSize: [32, 32],
-            iconAnchor: [16, 16]
+          const destinationIcon = {
+            path: google.maps.SymbolPath.CIRCLE,
+            fillColor: '#FF4500',
+            fillOpacity: 1,
+            strokeWeight: 2,
+            strokeColor: '#FFFFFF',
+            scale: 8
+          };
+          
+          const destination = new google.maps.Marker({
+            position: destinationCoords,
+            map: googleMap,
+            icon: destinationIcon,
+            title: 'Your Location'
           });
           
-          const destination = window.L.marker([destinationCoords.lat, destinationCoords.lng], { icon: destinationIcon }).addTo(leafletMap);
-          destination.bindTooltip("Your Location", { permanent: false, direction: 'top' });
           setDestinationMarker(destination);
           
           // Draw route between store and destination
           const routeCoordinates = [
-            [storeCoords.lat, storeCoords.lng],
-            [initialRiderCoords.lat, initialRiderCoords.lng],
-            [destinationCoords.lat, destinationCoords.lng]
+            storeCoords,
+            initialRiderCoords,
+            destinationCoords
           ];
           
-          const routePath = window.L.polyline(routeCoordinates, {
-            color: '#9b87f5',
-            weight: 4,
-            opacity: 0.7,
-            dashArray: '10, 10',
-            lineCap: 'round'
-          }).addTo(leafletMap);
+          const path = new google.maps.Polyline({
+            path: routeCoordinates,
+            geodesic: true,
+            strokeColor: '#9b87f5',
+            strokeOpacity: 0.7,
+            strokeWeight: 4,
+            icons: [{
+              icon: {
+                path: 'M 0,-1 0,1',
+                strokeOpacity: 1,
+                strokeWeight: 4,
+                scale: 3
+              },
+              offset: '0',
+              repeat: '20px'
+            }]
+          });
+          
+          path.setMap(googleMap);
+          setRoutePath(path);
           
           // Add a moving marker for the rider if showRider is true
           if (showRider) {
-            const riderIcon = window.L.divIcon({
-              html: `<div class="flex items-center justify-center w-8 h-8 bg-orange-500 rounded-full border-2 border-white">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
-                    </div>`,
-              className: '',
-              iconSize: [32, 32],
-              iconAnchor: [16, 16]
+            const riderIcon = {
+              path: google.maps.SymbolPath.CIRCLE,
+              fillColor: '#FF9500',
+              fillOpacity: 1,
+              strokeWeight: 2,
+              strokeColor: '#FFFFFF',
+              scale: 8
+            };
+            
+            const rider = new google.maps.Marker({
+              position: initialRiderCoords,
+              map: googleMap,
+              icon: riderIcon,
+              title: `${eta} min`
             });
             
-            const rider = window.L.marker([initialRiderCoords.lat, initialRiderCoords.lng], { icon: riderIcon }).addTo(leafletMap);
-            rider.bindTooltip(`${eta} min`, { permanent: false, direction: 'top' });
             setRiderMarker(rider);
             
             // Fit map to show all markers
-            const bounds = window.L.latLngBounds([
-              [storeCoords.lat, storeCoords.lng],
-              [destinationCoords.lat, destinationCoords.lng],
-              [initialRiderCoords.lat, initialRiderCoords.lng]
-            ]);
-            leafletMap.fitBounds(bounds, { padding: [30, 30] });
+            const bounds = new google.maps.LatLngBounds();
+            bounds.extend(storeCoords);
+            bounds.extend(destinationCoords);
+            bounds.extend(initialRiderCoords);
+            googleMap.fitBounds(bounds, 30);
             
             // Start animation
             startRiderAnimation();
           } else {
             // Just fit the map to store and destination
-            const bounds = window.L.latLngBounds([
-              [storeCoords.lat, storeCoords.lng],
-              [destinationCoords.lat, destinationCoords.lng]
-            ]);
-            leafletMap.fitBounds(bounds, { padding: [30, 30] });
+            const bounds = new google.maps.LatLngBounds();
+            bounds.extend(storeCoords);
+            bounds.extend(destinationCoords);
+            googleMap.fitBounds(bounds, 30);
           }
         } catch (error) {
           console.error("Error initializing map:", error);
           renderFallbackMap();
         }
       } else {
-        console.error("Leaflet not available or map container not found");
+        console.error("Google Maps not available or map container not found");
         renderFallbackMap();
       }
     };
@@ -132,10 +159,11 @@ const DeliveryMap = ({ showRider = true, orderId }: DeliveryMapProps) => {
     setupMap();
     
     return () => {
-      // Clean up map on component unmount
-      if (map) {
-        map.remove();
-      }
+      // Clean up map markers
+      if (riderMarker) riderMarker.setMap(null);
+      if (storeMarker) storeMarker.setMap(null);
+      if (destinationMarker) destinationMarker.setMap(null);
+      if (routePath) routePath.setMap(null);
     };
   }, []);
 
@@ -243,18 +271,18 @@ const DeliveryMap = ({ showRider = true, orderId }: DeliveryMapProps) => {
   };
 
   const startRiderAnimation = () => {
-    if (!riderMarker || animating) return;
+    if (!riderMarker || animating || !map) return;
     
     setAnimating(true);
     
     // Define waypoints for the rider to travel (from store to destination)
     const waypoints = [
-      [initialRiderCoords.lat, initialRiderCoords.lng],
-      [initialRiderCoords.lat + 0.001, initialRiderCoords.lng + 0.002],
-      [initialRiderCoords.lat + 0.003, initialRiderCoords.lng + 0.003],
-      [initialRiderCoords.lat + 0.005, initialRiderCoords.lng + 0.0025],
-      [destinationCoords.lat - 0.002, destinationCoords.lng - 0.001],
-      [destinationCoords.lat, destinationCoords.lng]
+      initialRiderCoords,
+      {lat: initialRiderCoords.lat + 0.001, lng: initialRiderCoords.lng + 0.002},
+      {lat: initialRiderCoords.lat + 0.003, lng: initialRiderCoords.lng + 0.003},
+      {lat: initialRiderCoords.lat + 0.005, lng: initialRiderCoords.lng + 0.0025},
+      {lat: destinationCoords.lat - 0.002, lng: destinationCoords.lng - 0.001},
+      destinationCoords
     ];
     
     let currentWaypoint = 0;
@@ -284,7 +312,7 @@ const DeliveryMap = ({ showRider = true, orderId }: DeliveryMapProps) => {
       if (currentSegment >= waypoints.length - 1) {
         // Animation complete
         clearInterval(animationInterval);
-        riderMarker.setLatLng(waypoints[waypoints.length - 1]);
+        riderMarker.setPosition(waypoints[waypoints.length - 1]);
         return;
       }
       
@@ -295,15 +323,13 @@ const DeliveryMap = ({ showRider = true, orderId }: DeliveryMapProps) => {
       const startPoint = waypoints[currentSegment];
       const endPoint = waypoints[currentSegment + 1];
       
-      const lat = startPoint[0] + (endPoint[0] - startPoint[0]) * segmentProgress;
-      const lng = startPoint[1] + (endPoint[1] - startPoint[1]) * segmentProgress;
+      const lat = startPoint.lat + (endPoint.lat - startPoint.lat) * segmentProgress;
+      const lng = startPoint.lng + (endPoint.lng - startPoint.lng) * segmentProgress;
       
-      riderMarker.setLatLng([lat, lng]);
+      riderMarker.setPosition({ lat, lng });
       
-      // Update ETA tooltip
-      if (riderMarker.getTooltip()) {
-        riderMarker.setTooltipContent(`${eta} min`);
-      }
+      // Update marker title with ETA
+      riderMarker.setTitle(`${eta} min`);
     }, 5000); // Update every 5 seconds
     
     return () => clearInterval(animationInterval);

@@ -7,9 +7,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { 
   initializeMap, 
   getAddressFromCoordinates,
-  searchAddressWithGeoapify,
-  getCurrentPosition,
-  GEOAPIFY_API_KEY
+  searchAddressWithGoogle,
+  getCurrentPosition
 } from "@/utils/googleMapsLoader";
 
 interface MapAddressSelectorProps {
@@ -28,8 +27,8 @@ interface AddressDetails {
 
 const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const [map, setMap] = useState<any | null>(null);
-  const [marker, setMarker] = useState<any | null>(null);
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [marker, setMarker] = useState<google.maps.Marker | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadingAddress, setLoadingAddress] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<AddressDetails | null>(null);
@@ -47,14 +46,14 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     
     const loadMap = async () => {
       try {
-        // Initialize Leaflet and Geoapify
+        // Initialize Google Maps API
         const mapsInitialized = await initializeMap();
         
         if (!isMounted) return;
         
-        // Check if Leaflet is available
-        if (!window.L || !mapsInitialized) {
-          console.error("Leaflet is not loaded after initialization");
+        // Check if Google Maps is available
+        if (!window.google || !window.google.maps || !mapsInitialized) {
+          console.error("Google Maps is not loaded after initialization");
           toast({
             title: "Maps API not available",
             description: "Using fallback map view. Full functionality may be limited.",
@@ -154,8 +153,8 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         setFallbackLatitude(latitude);
         setFallbackLongitude(longitude);
         
-        if (!usingMockData && window.L) {
-          initializeLeafletMap(latitude, longitude, accuracy);
+        if (!usingMockData && window.google && window.google.maps) {
+          initializeGoogleMap(latitude, longitude, accuracy);
         } else {
           // For fallback map
           setIsLoading(false);
@@ -175,9 +174,9 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
           variant: "destructive",
         });
         
-        if (!usingMockData && window.L) {
+        if (!usingMockData && window.google && window.google.maps) {
           // Use Delhi as fallback - but we'll make it clear in the UI that it's not their actual location
-          initializeLeafletMap(28.6139, 77.2090, 1000);
+          initializeGoogleMap(28.6139, 77.2090, 1000);
         } else {
           setIsLoading(false);
           const addressResult = await getAddressFromCoordinates(28.6139, 77.2090);
@@ -194,18 +193,14 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     return () => {
       isMounted = false;
       // Clean up map instance if it exists
-      if (map) {
-        try {
-          map.remove();
-        } catch (e) {
-          console.error("Error cleaning up map:", e);
-        }
+      if (marker) {
+        marker.setMap(null);
       }
     };
   }, [toast, usingMockData, locationRetries]);
   
-  const initializeLeafletMap = async (lat: number, lng: number, accuracyInMeters: number = 100) => {
-    if (!mapRef.current || !window.L) {
+  const initializeGoogleMap = async (lat: number, lng: number, accuracyInMeters: number = 100) => {
+    if (!mapRef.current || !window.google || !window.google.maps) {
       setIsLoading(false);
       setUsingMockData(true);
       const addressResult = await getAddressFromCoordinates(lat, lng);
@@ -215,120 +210,97 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     }
     
     try {
-      console.log("Initializing Leaflet map with coordinates:", lat, lng);
+      console.log("Initializing Google Map with coordinates:", lat, lng);
       
-      // Initialize Leaflet map with no attribution control
-      const leafletMap = window.L.map(mapRef.current, {
-        attributionControl: false,  // Remove attribution control completely
-        zoomControl: true
-      }).setView([lat, lng], 17); // Higher zoom level for better street-level view
+      // Create Google Map instance
+      const mapOptions: google.maps.MapOptions = {
+        center: { lat, lng },
+        zoom: 17,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
+        zoomControl: true,
+        gestureHandling: 'greedy'
+      };
       
-      // Add OpenStreetMap tile layer with empty attribution to remove watermarks
-      window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: ''  // Empty string removes the attribution/watermark
-      }).addTo(leafletMap);
+      const googleMap = new google.maps.Map(mapRef.current, mapOptions);
+      setMap(googleMap);
       
-      setMap(leafletMap);
+      // Add a marker for the location
+      const markerIcon = {
+        path: google.maps.SymbolPath.CIRCLE,
+        fillColor: '#FF4500',
+        fillOpacity: 1,
+        strokeColor: '#FFFFFF',
+        strokeWeight: 2,
+        scale: 10
+      };
       
-      // Wait for the map to load
-      leafletMap.whenReady(() => {
-        console.log("Leaflet map loaded successfully");
-        setIsLoading(false);
-        
-        // Create custom icon with better visibility
-        const customIcon = window.L.divIcon({
-          html: `<div class="flex items-center justify-center w-8 h-8 bg-orange-500 rounded-full border-2 border-white shadow-lg">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
-                    <circle cx="12" cy="10" r="3"></circle>
-                  </svg>
-                 </div>`,
-          className: '',
-          iconSize: [32, 32],
-          iconAnchor: [16, 32],
-          popupAnchor: [0, -32]
-        });
-        
-        // Add marker for current location
-        const mapMarker = window.L.marker([lat, lng], {
-          draggable: true,
-          autoPan: true,
-          icon: customIcon
-        }).addTo(leafletMap);
-        
-        setMarker(mapMarker);
-        
-        // Get address for initial location
-        getAddressFromCoordinates(lat, lng).then(result => {
-          handleGeocodeResult(result, lat, lng);
-          setLoadingAddress(false);
-        });
-        
-        // Add event listener for marker drag end
-        mapMarker.on("dragend", () => {
-          const position = mapMarker.getLatLng();
-          console.log("Marker dragged to:", position.lat, position.lng);
-          if (position) {
-            setLoadingAddress(true);
-            getAddressFromCoordinates(position.lat, position.lng).then(result => {
-              handleGeocodeResult(result, position.lat, position.lng);
-              setLoadingAddress(false);
-            });
-          }
-        });
-        
-        // Add event listener for map click
-        leafletMap.on("click", (e: any) => {
-          console.log("Map clicked at:", e.latlng.lat, e.latlng.lng);
-          mapMarker.setLatLng([e.latlng.lat, e.latlng.lng]);
+      const googleMarker = new google.maps.Marker({
+        position: { lat, lng },
+        map: googleMap,
+        draggable: true,
+        icon: markerIcon,
+        animation: google.maps.Animation.DROP
+      });
+      
+      setMarker(googleMarker);
+      setIsLoading(false);
+      
+      // Add circle to show accuracy
+      const accuracyCircle = new google.maps.Circle({
+        map: googleMap,
+        center: { lat, lng },
+        radius: Math.min(accuracyInMeters, 200),
+        fillColor: '#4285F4',
+        fillOpacity: 0.15,
+        strokeColor: '#4285F4',
+        strokeOpacity: 0.5,
+        strokeWeight: 1
+      });
+      
+      // Listen for marker drag end event
+      googleMarker.addListener('dragend', () => {
+        const position = googleMarker.getPosition();
+        if (position) {
+          const newLat = position.lat();
+          const newLng = position.lng();
+          
+          console.log("Marker dragged to:", newLat, newLng);
+          accuracyCircle.setCenter(position);
+          
           setLoadingAddress(true);
-          getAddressFromCoordinates(e.latlng.lat, e.latlng.lng).then(result => {
-            handleGeocodeResult(result, e.latlng.lat, e.latlng.lng);
+          getAddressFromCoordinates(newLat, newLng).then(result => {
+            handleGeocodeResult(result, newLat, newLng);
             setLoadingAddress(false);
           });
-        });
-        
-        // Add accuracy circle for location - capped at 200m for visual clarity
-        const radius = Math.min(accuracyInMeters, 200);
-        const accuracyCircle = window.L.circle([lat, lng], {
-          radius: radius,
-          color: 'blue',
-          fillColor: '#3388ff',
-          fillOpacity: 0.1,
-          weight: 1
-        }).addTo(leafletMap);
-        
-        // Store the accuracy circle for future reference
-        leafletMap._accuracyCircle = accuracyCircle;
-        
-        // Set appropriate zoom level based on accuracy
-        if (accuracyInMeters > 500) {
-          leafletMap.setZoom(14); // Lower zoom for less accurate locations
-        } else if (accuracyInMeters > 200) {
-          leafletMap.setZoom(15);
-        } else if (accuracyInMeters > 50) {
-          leafletMap.setZoom(16);
-        } else {
-          leafletMap.setZoom(17); // Higher zoom for more accurate locations
         }
       });
       
-      // Handle map errors
-      leafletMap.on('error', (e: any) => {
-        console.error("Map error:", e);
-        if (!usingMockData) {
-          setUsingMockData(true);
-          toast({
-            title: "Map error occurred",
-            description: "Switched to fallback view. Some features may be limited.",
-            variant: "destructive",
-          });
-        }
+      // Listen for map click event
+      googleMap.addListener('click', (e: google.maps.MouseEvent) => {
+        const newLat = e.latLng.lat();
+        const newLng = e.latLng.lng();
+        
+        console.log("Map clicked at:", newLat, newLng);
+        googleMarker.setPosition(e.latLng);
+        accuracyCircle.setCenter(e.latLng);
+        
+        setLoadingAddress(true);
+        getAddressFromCoordinates(newLat, newLng).then(result => {
+          handleGeocodeResult(result, newLat, newLng);
+          setLoadingAddress(false);
+        });
       });
+      
+      // Get initial address
+      setLoadingAddress(true);
+      const addressResult = await getAddressFromCoordinates(lat, lng);
+      handleGeocodeResult(addressResult, lat, lng);
+      setLoadingAddress(false);
       
     } catch (error) {
-      console.error("Error creating map:", error);
+      console.error("Error creating Google map:", error);
       setIsLoading(false);
       setUsingMockData(true);
       toast({
@@ -345,15 +317,29 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
   const handleGeocodeResult = (result: any, lat: number, lng: number) => {
     console.log("Processing geocode result:", result);
     
-    const addressComponents = result.address_components;
-    
     // Extract address components
-    const city = addressComponents.find((c: any) => 
-      c.types.includes("locality"))?.long_name || "Unknown City";
-    const state = addressComponents.find((c: any) => 
-      c.types.includes("administrative_area_level_1"))?.short_name || "Unknown State";
-    const zipCode = addressComponents.find((c: any) => 
-      c.types.includes("postal_code"))?.long_name || "000000";
+    let city = "Unknown City";
+    let state = "Unknown State";
+    let zipCode = "000000";
+    
+    if (result.address_components) {
+      for (const component of result.address_components) {
+        // Extract city
+        if (component.types.includes("locality")) {
+          city = component.long_name;
+        }
+        
+        // Extract state
+        if (component.types.includes("administrative_area_level_1")) {
+          state = component.short_name;
+        }
+        
+        // Extract postal code
+        if (component.types.includes("postal_code")) {
+          zipCode = component.long_name;
+        }
+      }
+    }
     
     const addressDetails: AddressDetails = {
       fullAddress: result.formatted_address || `Location at ${lat.toFixed(6)}, ${lng.toFixed(6)}`,
@@ -376,8 +362,8 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     console.log("Searching for address:", searchQuery);
     
     try {
-      // Use Geoapify API for geocoding
-      const searchResult = await searchAddressWithGeoapify(searchQuery);
+      // Use Google Maps API for geocoding
+      const searchResult = await searchAddressWithGoogle(searchQuery);
       const { lat, lng, address } = searchResult;
       
       // Update fallback coordinates in case we switch to fallback view
@@ -387,13 +373,15 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       // Update marker and map if available
       if (map && marker && !usingMockData) {
         console.log("Updating map and marker to:", lat, lng);
-        marker.setLatLng([lat, lng]);
-        map.setView([lat, lng], 17); // Higher zoom level for better precision
+        marker.setPosition({ lat, lng });
+        map.panTo({ lat, lng });
+        map.setZoom(17);
         
-        // Update accuracy circle
-        if (map._accuracyCircle) {
-          map._accuracyCircle.setLatLng([lat, lng]);
-          map._accuracyCircle.setRadius(50); // Default 50m for searched locations
+        // Update accuracy circle if it exists
+        const circles = map.data?.getFeatureById('accuracyCircle');
+        if (circles) {
+          // Update circle center
+          circles.setProperty('center', { lat, lng });
         }
       }
       
@@ -454,22 +442,8 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       
       if (map && marker && !usingMockData) {
         console.log("Updating map and marker to current location:", latitude, longitude);
-        marker.setLatLng([latitude, longitude]);
-        map.setView([latitude, longitude], 17); // Higher zoom for better precision
-        
-        // Add or update accuracy circle - visual indicator of GPS accuracy
-        if (map._accuracyCircle) {
-          map._accuracyCircle.setLatLng([latitude, longitude]);
-          map._accuracyCircle.setRadius(Math.min(accuracy, 200)); // Cap at 200m for visibility
-        } else {
-          map._accuracyCircle = window.L.circle([latitude, longitude], {
-            radius: Math.min(accuracy, 200),
-            color: 'blue',
-            fillColor: '#3388ff',
-            fillOpacity: 0.1,
-            weight: 1
-          }).addTo(map);
-        }
+        marker.setPosition({ lat: latitude, lng: longitude });
+        map.panTo({ lat: latitude, lng: longitude });
         
         // Set appropriate zoom level based on accuracy
         if (accuracy > 500) {
