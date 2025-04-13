@@ -129,7 +129,9 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
                 }
               });
             }
-          }
+          },
+          // Adding high accuracy option to improve location precision
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
       } else {
         if (!isMounted) return;
@@ -214,7 +216,9 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         // Add event listener for marker drag end
         mapMarker.on("dragend", () => {
           const position = mapMarker.getLatLng();
+          console.log("Marker dragged to:", position.lat, position.lng);
           if (position) {
+            setLoadingAddress(true);
             getAddressFromCoordinates(position.lat, position.lng).then(result => {
               handleGeocodeResult(result, position.lat, position.lng);
             });
@@ -223,15 +227,14 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         
         // Add event listener for map click
         leafletMap.on("click", (e: any) => {
+          console.log("Map clicked at:", e.latlng.lat, e.latlng.lng);
           const { lat, lng } = e.latlng;
           mapMarker.setLatLng([lat, lng]);
+          setLoadingAddress(true);
           getAddressFromCoordinates(lat, lng).then(result => {
             handleGeocodeResult(result, lat, lng);
           });
         });
-        
-        // We're removing the GeoapifyAddressSearch control since it's causing errors
-        // and implementing a simpler search box instead
       });
       
       // Handle map errors
@@ -269,11 +272,11 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     
     // Extract address components
     const city = addressComponents.find((c: any) => 
-      c.types.includes("locality"))?.long_name || "Gurugram";
+      c.types.includes("locality"))?.long_name || "Unknown City";
     const state = addressComponents.find((c: any) => 
-      c.types.includes("administrative_area_level_1"))?.short_name || "HR";
+      c.types.includes("administrative_area_level_1"))?.short_name || "Unknown State";
     const zipCode = addressComponents.find((c: any) => 
-      c.types.includes("postal_code"))?.long_name || "122001";
+      c.types.includes("postal_code"))?.long_name || "000000";
     
     const addressDetails: AddressDetails = {
       fullAddress: result.formatted_address || `Location at ${lat.toFixed(6)}, ${lng.toFixed(6)}`,
@@ -306,6 +309,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       
       // Update marker and map if available
       if (map && marker && !usingMockData) {
+        console.log("Updating map and marker to:", lat, lng);
         marker.setLatLng([lat, lng]);
         map.setView([lat, lng], 15);
       }
@@ -340,6 +344,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
           setFallbackLongitude(longitude);
           
           if (map && marker && !usingMockData) {
+            console.log("Updating map and marker to current location:", latitude, longitude);
             marker.setLatLng([latitude, longitude]);
             map.setView([latitude, longitude], 15);
           }
@@ -356,7 +361,8 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
             variant: "destructive",
           });
           setLoadingAddress(false);
-        }
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     } else {
       toast({

@@ -86,7 +86,8 @@ const AddressSelection = () => {
         (error) => {
           console.error("Error getting current location:", error);
           setUserCurrentLocation("Location access denied");
-        }
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     } else {
       setUserCurrentLocation("Geolocation not supported by this browser");
@@ -126,9 +127,11 @@ const AddressSelection = () => {
     }
     
     if (navigator.geolocation) {
+      setProcessingAddress(true);
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           const { latitude, longitude } = position.coords;
+          console.log("Using current location:", latitude, longitude);
           
           try {
             const result = await getAddressFromCoordinates(latitude, longitude);
@@ -138,6 +141,7 @@ const AddressSelection = () => {
             const mockResult = mockGeocodeResponse(latitude, longitude);
             processAddressResults(mockResult, latitude, longitude);
           }
+          setProcessingAddress(false);
         },
         (error) => {
           console.error("Error getting current location:", error);
@@ -146,20 +150,23 @@ const AddressSelection = () => {
             description: "Could not access your location. Please enable location services and try again.",
             variant: "destructive",
           });
-        }
+          setProcessingAddress(false);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     }
   };
   
   const processAddressResults = (result: any, latitude: number, longitude: number) => {
+    console.log("Processing address results:", result);
     const addressComponents = result.address_components;
     
     const city = addressComponents.find((c: any) => 
-      c.types.includes("locality"))?.long_name || "Gurugram";
+      c.types.includes("locality"))?.long_name || "Unknown City";
     const state = addressComponents.find((c: any) => 
-      c.types.includes("administrative_area_level_1"))?.short_name || "HR";
+      c.types.includes("administrative_area_level_1"))?.short_name || "Unknown State";
     const zipCode = addressComponents.find((c: any) => 
-      c.types.includes("postal_code"))?.long_name || "122001";
+      c.types.includes("postal_code"))?.long_name || "000000";
     
     const newAddress: Address = {
       id: "current-location",
@@ -232,6 +239,7 @@ const AddressSelection = () => {
     state: string;
     zipCode: string;
   }) => {
+    console.log("Selected address from map:", addressDetails);
     setNewAddress({
       ...newAddress,
       address: addressDetails.fullAddress,
@@ -359,13 +367,14 @@ const AddressSelection = () => {
           variant="outline"
           className="w-full mt-4 py-6 justify-start border-gray-700 hover:bg-black/50 text-blue-400"
           onClick={handleUseCurrentLocation}
+          disabled={processingAddress}
         >
-          <div className="flex items-center">
+          <div className="flex items-center w-full">
             <div className="mr-3 bg-blue-600/20 p-2 rounded-full">
-              <Navigation className="h-5 w-5 text-blue-400" />
+              <Navigation className={`h-5 w-5 text-blue-400 ${processingAddress ? 'animate-spin' : ''}`} />
             </div>
-            <div className="text-left">
-              <p className="font-medium">Use your current location</p>
+            <div className="text-left flex-1">
+              <p className="font-medium">{processingAddress ? "Getting your location..." : "Use your current location"}</p>
               <p className="text-sm text-gray-400">
                 {userCurrentLocation || "Fetching location..."}
               </p>

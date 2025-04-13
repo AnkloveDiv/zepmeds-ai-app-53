@@ -123,6 +123,7 @@ export const mockGeocodeResponse = (latitude: number, longitude: number) => {
 // Helper function to get address from coordinates using Geoapify Reverse Geocoding API
 export const getAddressFromCoordinates = async (lat: number, lng: number) => {
   try {
+    console.log("Getting address for coordinates:", lat, lng);
     // Using Geoapify Reverse Geocoding API
     const response = await fetch(
       `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&apiKey=${GEOAPIFY_API_KEY}`
@@ -133,6 +134,7 @@ export const getAddressFromCoordinates = async (lat: number, lng: number) => {
     }
     
     const data = await response.json();
+    console.log("Geoapify reverse geocoding response:", data);
     
     if (data.features && data.features.length > 0) {
       const result = data.features[0];
@@ -213,6 +215,7 @@ export const getAddressFromCoordinates = async (lat: number, lng: number) => {
 // Helper function to search for an address using Geoapify Geocoding API
 export const searchAddressWithGeoapify = async (searchQuery: string) => {
   try {
+    console.log("Searching for location:", searchQuery);
     const response = await fetch(
       `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(searchQuery)}&apiKey=${GEOAPIFY_API_KEY}`
     );
@@ -222,6 +225,7 @@ export const searchAddressWithGeoapify = async (searchQuery: string) => {
     }
     
     const data = await response.json();
+    console.log("Geoapify geocoding response:", data);
     
     if (data.features && data.features.length > 0) {
       const result = data.features[0];
@@ -229,14 +233,20 @@ export const searchAddressWithGeoapify = async (searchQuery: string) => {
       const lng = coordinates[0];
       const lat = coordinates[1];
       
+      console.log("Found coordinates:", lat, lng);
+      
+      // Get detailed address using reverse geocoding to ensure consistency
+      const addressDetails = await getAddressFromCoordinates(lat, lng);
+      
       return {
         lat,
         lng,
-        address: await getAddressFromCoordinates(lat, lng)
+        address: addressDetails
       };
     }
     
     // Return default location if no results
+    console.warn("No locations found, using default location");
     return {
       lat: 28.6139,
       lng: 77.2090,
