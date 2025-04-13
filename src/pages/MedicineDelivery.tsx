@@ -1,14 +1,14 @@
 
 import React from 'react';
-import { SearchBar } from '../components/SearchBar';
+import SearchBar from '../components/SearchBar';
 import { Button } from "../components/ui/button";
 import { Upload } from 'lucide-react';
-import { CategoriesNav } from '../components/medicine/CategoriesNav';
-import { ProductGrid } from '../components/medicine/ProductGrid';
-import { FloatingCartButton } from '../components/medicine/FloatingCartButton';
+import CategoriesNav from '../components/medicine/CategoriesNav';
+import ProductGrid from '../components/medicine/ProductGrid';
+import FloatingCartButton from '../components/medicine/FloatingCartButton';
 import AddressWithWeather from '../components/medicine/AddressWithWeather';
 import WeatherAnimation from '../components/medicine/WeatherAnimation';
-import { LocationWeather } from '../components/medicine/LocationWeather';
+import LocationWeather from '../components/medicine/LocationWeather';
 
 const MedicineDelivery = () => {
   // Mock weather condition - in a real app, this would come from an API
