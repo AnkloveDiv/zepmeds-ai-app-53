@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Send, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 interface ChatInputProps {
   isLoading: boolean;
@@ -26,21 +27,20 @@ const ChatInput = ({ isLoading, onSendMessage }: ChatInputProps) => {
   };
 
   return (
-    <div className="p-3 bg-black/40 border-t border-white/10 rounded-b-lg">
+    <div className="sticky bottom-0 p-3 bg-black/40 border-t border-white/10 rounded-b-lg">
       <div className="flex space-x-2">
-        <Textarea
+        <Input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Type your message..."
-          className="min-h-10 bg-black/30 border-white/10 resize-none text-white"
-          maxRows={3}
+          className="h-10 bg-black/30 border-white/10 text-white"
         />
         <Button 
           onClick={handleSendMessage}
           disabled={isLoading || !input.trim()}
           size="icon"
-          className="h-10 w-10 bg-green-600 hover:bg-green-700"
+          className="h-10 w-10 flex-shrink-0 bg-green-600 hover:bg-green-700"
         >
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />

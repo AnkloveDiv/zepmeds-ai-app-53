@@ -19,7 +19,7 @@ const ChatbotModal = ({ isOpen, onClose, orderId }: ChatbotModalProps) => {
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogPortal>
         <DialogOverlay className="bg-black/70 backdrop-blur-sm" />
-        <DialogContent className="p-0 max-w-md mx-auto h-[80vh] sm:h-[600px] bg-background/90 backdrop-blur border-white/10 border">
+        <DialogContent className="p-0 max-w-md w-[95vw] mx-auto h-[80vh] sm:h-[600px] flex flex-col bg-background/90 backdrop-blur border-white/10 border overflow-hidden">
           <SupportChatbot orderId={orderId} onClose={onClose} />
         </DialogContent>
       </DialogPortal>

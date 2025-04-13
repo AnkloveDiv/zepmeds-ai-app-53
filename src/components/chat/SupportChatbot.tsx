@@ -34,21 +34,23 @@ const SupportChatbot = ({ orderId, onClose }: SupportChatbotProps) => {
   } = useChatFeedback(messages, conversationLength);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full max-h-full overflow-hidden">
       {/* Header */}
       <ChatHeader orderId={orderId} onClose={onClose} />
       
       {/* Messages */}
-      <ChatMessages 
-        messages={messages}
-        isLoading={isLoading}
-        askForFeedback={askForFeedback}
-        showRating={showRating}
-        conversationLength={conversationLength}
-        lastAssistantMessage={lastAssistantMessage}
-        handleFeedback={handleFeedback}
-        handleRating={handleRating}
-      />
+      <div className="flex-1 overflow-hidden">
+        <ChatMessages 
+          messages={messages}
+          isLoading={isLoading}
+          askForFeedback={askForFeedback}
+          showRating={showRating}
+          conversationLength={conversationLength}
+          lastAssistantMessage={lastAssistantMessage}
+          handleFeedback={handleFeedback}
+          handleRating={handleRating}
+        />
+      </div>
 
       {/* Suggested Questions */}
       <SuggestedQuestions 
@@ -60,7 +62,7 @@ const SupportChatbot = ({ orderId, onClose }: SupportChatbotProps) => {
       {/* Rating UI */}
       <ChatRating showRating={showRating} onRating={handleRating} />
 
-      {/* Input Area */}
+      {/* Input Area - Now with better mobile visibility */}
       <ChatInput isLoading={isLoading} onSendMessage={handleSendMessage} />
     </div>
   );

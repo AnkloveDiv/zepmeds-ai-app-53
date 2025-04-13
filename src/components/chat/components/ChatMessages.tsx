@@ -48,13 +48,13 @@ const ChatMessages = ({
             className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
           >
             <div 
-              className={`max-w-[80%] rounded-lg p-3 ${
+              className={`max-w-[80%] sm:max-w-[70%] break-words rounded-lg p-3 ${
                 message.role === "user" 
                   ? "bg-zepmeds-purple/30 text-white" 
                   : "bg-black/40 text-gray-200"
               }`}
             >
-              <p className="text-sm">{message.content}</p>
+              <p className="text-sm whitespace-pre-wrap">{message.content}</p>
               {message.timestamp && (
                 <p className="text-xs text-gray-400 mt-1 text-right">
                   {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
