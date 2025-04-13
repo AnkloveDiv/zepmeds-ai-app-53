@@ -6,11 +6,13 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 interface AlertMessagesProps {
   locationPermissionDenied: boolean;
   showingAccuracyHelp: boolean;
+  disableAccuracyWarnings?: boolean;
 }
 
 const AlertMessages: React.FC<AlertMessagesProps> = ({ 
   locationPermissionDenied, 
-  showingAccuracyHelp 
+  showingAccuracyHelp,
+  disableAccuracyWarnings = true // Default to true to disable accuracy warnings
 }) => {
   return (
     <>
@@ -24,7 +26,7 @@ const AlertMessages: React.FC<AlertMessagesProps> = ({
         </Alert>
       )}
       
-      {showingAccuracyHelp && (
+      {!disableAccuracyWarnings && showingAccuracyHelp && (
         <Alert variant="warning" className="mb-4">
           <Info className="h-5 w-5" />
           <AlertTitle>Improve location accuracy</AlertTitle>

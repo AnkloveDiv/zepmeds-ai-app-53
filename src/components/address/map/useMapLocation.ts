@@ -14,7 +14,7 @@ export interface LocationState {
   fallbackLongitude: number;
 }
 
-export function useMapLocation() {
+export function useMapLocation(disableWarnings = true) {
   const [locationState, setLocationState] = useState<LocationState>({
     latitude: 0,
     longitude: 0,
@@ -88,29 +88,37 @@ export function useMapLocation() {
               ...prev,
               locationPermissionDenied: true
             }));
-            toast({
-              title: "Location access denied",
-              description: "Please enable location access in your browser settings.",
-              variant: "destructive",
-            });
+            
+            if (!disableWarnings) {
+              toast({
+                title: "Location access denied",
+                description: "Please enable location access in your browser settings.",
+                variant: "destructive",
+              });
+            }
             break;
           }
         }
       }
       
       if (!bestPosition) {
-        toast({
-          title: "Location error",
-          description: "Could not get an accurate location. Try moving to an open area or check your device settings.",
-          variant: "destructive",
-        });
+        if (!disableWarnings) {
+          toast({
+            title: "Location error",
+            description: "Could not get an accurate location. Try moving to an open area or check your device settings.",
+            variant: "destructive",
+          });
+        }
         return null;
       }
       
       const { latitude, longitude, accuracy } = bestPosition.coords;
       console.log("Current location:", latitude, longitude, "Accuracy:", accuracy);
 
+      // Only show accuracy toasts if warnings are not disabled
       const showAccuracyToast = () => {
+        if (disableWarnings) return;
+        
         if (accuracy > 1000) {
           setLocationState(prev => ({
             ...prev,
@@ -119,18 +127,20 @@ export function useMapLocation() {
           toast({
             title: "Very limited accuracy",
             description: `Location accurate to within ${Math.round(accuracy/1000)} km. Please manually adjust the pin.`,
-            variant: "warning",
+            variant: "destructive",
           });
         } else if (accuracy > 100) {
           toast({
             title: "Limited accuracy",
             description: `Location accurate to within ${Math.round(accuracy)} meters. You can drag the pin to adjust.`,
-            variant: "warning",
+            variant: "destructive",
           });
         }
       };
       
-      showAccuracyToast();
+      if (!disableWarnings) {
+        showAccuracyToast();
+      }
 
       setLocationState(prev => ({
         ...prev,
@@ -144,11 +154,13 @@ export function useMapLocation() {
       return { latitude, longitude, accuracy };
     } catch (error) {
       console.error("Error getting location:", error);
-      toast({
-        title: "Location error",
-        description: "Could not get your current location. Please check your location settings.",
-        variant: "destructive",
-      });
+      if (!disableWarnings) {
+        toast({
+          title: "Location error",
+          description: "Could not get your current location. Please check your location settings.",
+          variant: "destructive",
+        });
+      }
       return null;
     }
   };
@@ -231,10 +243,12 @@ export function useMapLocation() {
       
       if (!position && accuracyRetryAttempts < 2) {
         setAccuracyRetryAttempts(prev => prev + 1);
-        toast({
-          title: "Location accuracy poor",
-          description: "Trying again to get a more accurate position...",
-        });
+        if (!disableWarnings) {
+          toast({
+            title: "Location accuracy poor",
+            description: "Trying again to get a more accurate position...",
+          });
+        }
         await new Promise(r => setTimeout(r, 500));
         return await getUserLocation();
       }
@@ -246,22 +260,25 @@ export function useMapLocation() {
       const { latitude, longitude, accuracy } = position.coords;
       console.log(`Final position selected with accuracy: ${accuracy} meters`);
       
-      if (accuracy > 1000) {
-        setLocationState(prev => ({
-          ...prev,
-          showingAccuracyHelp: true
-        }));
-        toast({
-          title: "Very limited accuracy",
-          description: `Location accurate to within ${Math.round(accuracy/1000)} km. Please check location settings and enable GPS.`,
-          variant: "warning",
-        });
-      } else if (accuracy > 100) {
-        toast({
-          title: "Limited accuracy",
-          description: `Location accurate to within ${Math.round(accuracy)} meters. You can drag the pin to adjust.`,
-          variant: "warning",
-        });
+      // Only show accuracy warnings if not disabled
+      if (!disableWarnings) {
+        if (accuracy > 1000) {
+          setLocationState(prev => ({
+            ...prev,
+            showingAccuracyHelp: true
+          }));
+          toast({
+            title: "Very limited accuracy",
+            description: `Location accurate to within ${Math.round(accuracy/1000)} km. Please check location settings and enable GPS.`,
+            variant: "destructive",
+          });
+        } else if (accuracy > 100) {
+          toast({
+            title: "Limited accuracy",
+            description: `Location accurate to within ${Math.round(accuracy)} meters. You can drag the pin to adjust.`,
+            variant: "destructive",
+          });
+        }
       }
       
       setLocationState(prev => ({
@@ -282,12 +299,14 @@ export function useMapLocation() {
           ...prev,
           locationPermissionDenied: true
         }));
-        toast({
-          title: "Location access denied",
-          description: "You need to enable location services in your browser settings.",
-          variant: "destructive",
-        });
-      } else {
+        if (!disableWarnings) {
+          toast({
+            title: "Location access denied",
+            description: "You need to enable location services in your browser settings.",
+            variant: "destructive",
+          });
+        }
+      } else if (!disableWarnings) {
         toast({
           title: "Location error",
           description: "Could not get accurate location. You can manually set location by dragging the pin.",

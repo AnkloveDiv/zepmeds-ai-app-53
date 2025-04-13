@@ -37,9 +37,11 @@ const Login = () => {
         
         if (result.success) {
           toast.success("OTP sent to your phone number");
-          // Display OTP in development for testing
-          if (import.meta.env.DEV && result.otp) {
-            toast.info(`Development OTP: ${result.otp}`);
+          // Always display OTP for easier testing
+          if (result.otp) {
+            toast.info(`Your OTP is: ${result.otp}`, {
+              duration: 10000, // Show for 10 seconds
+            });
           }
           // Navigate to verification page with phone number as state
           navigate("/verify", { state: { phoneNumber } });

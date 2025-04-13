@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Navigation, CheckCircle2 } from "lucide-react";
@@ -24,7 +23,8 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [marker, setMarker] = useState<google.maps.Marker | null>(null);
   const [accuracyCircle, setAccuracyCircle] = useState<google.maps.Circle | null>(null);
-  
+  const [disableAccuracyWarnings, setDisableAccuracyWarnings] = useState(true);
+
   const { 
     locationState, 
     setLocationState,
@@ -42,12 +42,10 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
   
   const { toast } = useToast();
 
-  // Handle map click or marker drag
   const handleMapLocationUpdate = (lat: number, lng: number) => {
     handleCoordinateChange(lat, lng);
   };
 
-  // Update map when search is performed
   const handleAddressSearch = async (query: string) => {
     const result = await handleSearch(query);
     if (result && map && marker && !usingMockData) {
@@ -69,7 +67,6 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     }
   };
 
-  // Handle location button click
   const handleLocationButtonClick = async () => {
     const position = await handleCurrentLocation();
     if (position && map && marker && !usingMockData) {
@@ -103,7 +100,13 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     }
   };
 
-  // Initialize component
+  useEffect(() => {
+    setLocationState(prev => ({
+      ...prev,
+      showingAccuracyHelp: false
+    }));
+  }, [setLocationState]);
+
   useEffect(() => {
     const initializeComponent = async () => {
       setIsLoading(true);
@@ -143,7 +146,8 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       
       <AlertMessages 
         locationPermissionDenied={locationState.locationPermissionDenied} 
-        showingAccuracyHelp={locationState.showingAccuracyHelp} 
+        showingAccuracyHelp={locationState.showingAccuracyHelp}
+        disableAccuracyWarnings={disableAccuracyWarnings}
       />
       
       <div className="relative flex-1 mb-4 rounded-xl overflow-hidden">
@@ -176,6 +180,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
           usingMockData={usingMockData} 
           isLoading={isLoading} 
           handleCurrentLocation={handleLocationButtonClick} 
+          showAccuracyWarning={false}
         />
       </div>
       

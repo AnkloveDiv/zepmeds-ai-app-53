@@ -18,6 +18,10 @@ export const sendOTP = async (phoneNumber: string): Promise<{ success: boolean; 
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 1000));
     
+    // Always show OTP in toast notification for demo purposes
+    // In production, this would be removed and the OTP would be sent via SMS
+    console.log("Displaying OTP for demo:", otp);
+    
     // For development/demo, return the OTP so we can display it
     return { success: true, otp };
   } catch (error) {

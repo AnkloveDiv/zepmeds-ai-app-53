@@ -7,12 +7,14 @@ interface MapOverlaysProps {
   usingMockData: boolean;
   isLoading: boolean;
   handleCurrentLocation: () => void;
+  showAccuracyWarning?: boolean;
 }
 
 const MapOverlays: React.FC<MapOverlaysProps> = ({ 
   usingMockData, 
   isLoading, 
-  handleCurrentLocation 
+  handleCurrentLocation,
+  showAccuracyWarning = false // Default to false to disable warnings
 }) => {
   if (usingMockData || isLoading) {
     return null;

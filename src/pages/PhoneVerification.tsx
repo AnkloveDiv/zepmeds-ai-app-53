@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
@@ -39,18 +38,22 @@ const PhoneVerification: React.FC = () => {
   });
 
   useEffect(() => {
-    // Get phone number from location state
     if (location.state?.phoneNumber) {
       setPhoneNumber(location.state.phoneNumber);
+      
+      const storedOTP = sessionStorage.getItem(`otp_${location.state.phoneNumber}`);
+      if (storedOTP) {
+        toast.info(`Your OTP is: ${storedOTP}`, {
+          duration: 10000,
+        });
+      }
     } else {
-      // If no phone number in state, redirect back to login
       toast.error("No phone number provided");
       navigate("/login");
     }
   }, [location.state, navigate]);
 
   useEffect(() => {
-    // Countdown timer for resend button
     let timer: number | undefined;
     
     if (resendDisabled && countdown > 0) {
@@ -80,7 +83,6 @@ const PhoneVerification: React.FC = () => {
       console.log("Submitting form with OTP:", values.otp);
       console.log("Verifying OTP:", values.otp, "for phone:", phoneNumber);
       
-      // Verify OTP with the service
       const isValid = await verifyOTP(phoneNumber, values.otp);
       console.log("Verification result:", isValid);
       
@@ -88,10 +90,8 @@ const PhoneVerification: React.FC = () => {
         setIsVerified(true);
         toast.success("OTP verified successfully");
         
-        // Login user with provided phone number
         login(phoneNumber);
         
-        // Navigate to dashboard after successful verification
         setTimeout(() => {
           navigate("/dashboard");
         }, 1500);
@@ -116,15 +116,15 @@ const PhoneVerification: React.FC = () => {
     try {
       setResendDisabled(true);
       
-      // Resend OTP
       const result = await sendOTP(phoneNumber);
       
       if (result.success) {
         toast.success("OTP resent successfully");
         
-        // For development, show the OTP
-        if (import.meta.env.DEV && result.otp) {
-          toast.info(`Development OTP: ${result.otp}`);
+        if (result.otp) {
+          toast.info(`Your OTP is: ${result.otp}`, {
+            duration: 10000,
+          });
         }
       } else {
         toast.error("Failed to resend OTP");
@@ -225,11 +225,9 @@ const PhoneVerification: React.FC = () => {
               {resendDisabled ? `Resend in ${countdown}s` : "Resend OTP"}
             </Button>
           </p>
-          {import.meta.env.DEV && (
-            <p className="text-xs text-center text-gray-400">
-              Development mode: Check console and toast notifications for the OTP
-            </p>
-          )}
+          <p className="text-xs text-center text-gray-400">
+            Check the toast notifications for your OTP
+          </p>
         </CardFooter>
       </Card>
     </div>
