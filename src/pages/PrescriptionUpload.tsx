@@ -1,7 +1,6 @@
-
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { Camera, Image, Upload, Check, AlertCircle, FileText, AlertTriangle, Pill, Phone, ShoppingCart } from "lucide-react";
+import { Camera, Image, Upload, Check, AlertCircle, FileText, AlertTriangle, Pill, Phone, ShoppingCart, CheckCircle, XCircle } from "lucide-react";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
 import { Button } from "@/components/ui/button";
@@ -18,7 +17,7 @@ interface Medicine {
 
 const PrescriptionUpload = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [image, setImage] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
@@ -32,15 +31,12 @@ const PrescriptionUpload = () => {
   const handleCameraCapture = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      // In a real app, you would implement camera capture UI here
-      // For this example, we'll just simulate success
       stream.getTracks().forEach(track => track.stop());
       
-      // Simulate capturing an image
       simulateCapture();
     } catch (error) {
       console.error("Error accessing camera:", error);
-      toast({
+      uiToast({
         title: "Camera access denied",
         description: "Please allow camera access to capture your prescription",
         variant: "destructive"
@@ -62,7 +58,6 @@ const PrescriptionUpload = () => {
         const base64Image = event.target?.result as string;
         setImage(base64Image);
         
-        // Reset states when new image is uploaded
         setAnalysisResult(null);
         setUploadSuccess(false);
         setShowAnalysis(false);
@@ -74,11 +69,9 @@ const PrescriptionUpload = () => {
   };
   
   const simulateCapture = () => {
-    // For demo purposes, use a placeholder image
     const placeholderImage = "/placeholder.svg";
     setImage(placeholderImage);
     
-    // Reset states when new image is captured
     setAnalysisResult(null);
     setUploadSuccess(false);
     setShowAnalysis(false);
@@ -93,20 +86,16 @@ const PrescriptionUpload = () => {
     setDetectionError(false);
     
     try {
-      // If using a data URL, extract the base64 part
       let base64Image = image;
       if (image.startsWith('data:image')) {
         base64Image = image.split(',')[1];
       }
       
-      // For demo with placeholder, use mock data
       let result: TextDetectionResult;
       if (image === "/placeholder.svg") {
-        // Wait to simulate processing
         await new Promise(resolve => setTimeout(resolve, 2000));
         result = generateMockResultForTesting();
       } else {
-        // Actually process the image
         result = await detectTextFromImage(base64Image);
       }
       
@@ -116,18 +105,15 @@ const PrescriptionUpload = () => {
       
       const hasMedicines = result.medicineNames && result.medicineNames.length > 0;
       
-      // Based on results, show appropriate messages
       if (!result.isPrescription) {
         if (hasMedicines) {
-          // Found medicines but not a valid prescription
-          toast({
+          uiToast({
             title: "Not a formal prescription",
             description: "Found medicine names, but this doesn't appear to be a formal prescription.",
             variant: "default"
           });
         } else {
-          // No medicines found at all
-          toast({
+          uiToast({
             title: "No medicines detected",
             description: "The image doesn't appear to contain any medicine names. Please try another image.",
             variant: "destructive"
@@ -135,26 +121,24 @@ const PrescriptionUpload = () => {
           setDetectionError(true);
         }
       } else {
-        // Valid prescription detected
         setUploadSuccess(true);
-        toast({
+        uiToast({
           title: "Prescription detected",
           description: "Prescription analyzed successfully",
         });
       }
       
-      // Generate random in-stock status for each medicine
       if (hasMedicines) {
         const medicinesWithStock = result.medicineNames.map(med => ({
           name: med,
-          inStock: Math.random() > 0.3 // 70% chance of being in stock
+          inStock: Math.random() > 0.3
         }));
         setMedicinesList(medicinesWithStock);
       }
       
     } catch (error) {
       console.error("Error processing image:", error);
-      toast({
+      uiToast({
         title: "Processing failed",
         description: "There was an error analyzing the image. Please try again.",
         variant: "destructive"
@@ -167,7 +151,6 @@ const PrescriptionUpload = () => {
   
   const handleUploadPrescription = () => {
     if (analysisComplete) {
-      // Reset for new prescription
       setImage(null);
       setAnalysisResult(null);
       setShowAnalysis(false);
@@ -177,7 +160,7 @@ const PrescriptionUpload = () => {
     }
     
     if (!analysisResult) {
-      toast({
+      uiToast({
         title: "No analysis result",
         description: "Please analyze the image first",
         variant: "destructive"
@@ -185,9 +168,8 @@ const PrescriptionUpload = () => {
       return;
     }
     
-    // Check if it has medicines (for both formal and informal prescriptions)
     if (!analysisResult.medicineNames || analysisResult.medicineNames.length === 0) {
-      toast({
+      uiToast({
         title: "No medicines found",
         description: "No medicine names were detected in this image. Please try a different image.",
         variant: "destructive"
@@ -197,14 +179,12 @@ const PrescriptionUpload = () => {
     
     setProcessing(true);
     
-    // Simulate processing delay (in a real app, this would be an API call)
     setTimeout(() => {
       setProcessing(false);
       setUploadSuccess(true);
       setAnalysisComplete(true);
       
-      toast({
-        title: "Prescription Uploaded Successfully",
+      toast("Prescription Uploaded Successfully", {
         description: "You will receive a call shortly to confirm your order.",
         icon: <Phone className="h-5 w-5 text-green-500" />
       });
@@ -214,7 +194,7 @@ const PrescriptionUpload = () => {
   
   const handleBuyNow = () => {
     if (medicinesList.length === 0) {
-      toast({
+      uiToast({
         title: "No medicines to purchase",
         description: "Please upload a prescription with detected medicines",
         variant: "destructive"
@@ -225,22 +205,18 @@ const PrescriptionUpload = () => {
     const inStockItems = medicinesList.filter(med => med.inStock);
     
     if (inStockItems.length === 0) {
-      toast({
-        title: "No medicines in stock",
+      toast("No medicines in stock", {
         description: "Sorry, none of the medicines in your prescription are currently in stock",
         icon: <AlertTriangle className="h-5 w-5 text-amber-500" />
       });
       return;
     }
     
-    // Show a confirmation toast
-    toast({
-      title: "Processing Order",
+    toast("Processing Order", {
       description: `Adding ${inStockItems.length} medicine${inStockItems.length > 1 ? 's' : ''} to cart`,
       icon: <ShoppingCart className="h-5 w-5 text-green-500" />
     });
     
-    // Navigate to medicine delivery or cart page
     setTimeout(() => {
       navigate("/medicine-delivery");
     }, 2000);

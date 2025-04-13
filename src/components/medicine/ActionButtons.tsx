@@ -1,6 +1,6 @@
 
 import { motion } from "framer-motion";
-import { FileUp, Filter, AlertTriangle, Pill, CheckCircle, XCircle, ShoppingCart, Phone } from "lucide-react";
+import { FileUp, Filter, AlertTriangle, Pill, CheckCircle, XCircle, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 
 interface Medicine {
@@ -29,8 +29,7 @@ const ActionButtons = ({
   const handleUpload = () => {
     if (analysisComplete) {
       // Notify user about follow-up call
-      toast({
-        title: "Prescription Uploaded Successfully",
+      toast("Prescription Uploaded Successfully", {
         description: "You will receive a call shortly to confirm your order.",
       });
       
@@ -41,16 +40,14 @@ const ActionButtons = ({
           const outOfStockItems = medicineList.filter(med => !med.inStock);
           
           if (inStockItems.length > 0) {
-            toast({
-              title: `${inStockItems.length} Medicine${inStockItems.length > 1 ? 's' : ''} in Stock`,
+            toast(`${inStockItems.length} Medicine${inStockItems.length > 1 ? 's' : ''} in Stock`, {
               description: inStockItems.map(med => med.name).join(", "),
               icon: <CheckCircle className="h-5 w-5 text-green-500" />,
             });
           }
           
           if (outOfStockItems.length > 0) {
-            toast({
-              title: `${outOfStockItems.length} Medicine${outOfStockItems.length > 1 ? 's' : ''} Not in Stock`,
+            toast(`${outOfStockItems.length} Medicine${outOfStockItems.length > 1 ? 's' : ''} Not in Stock`, {
               description: outOfStockItems.map(med => med.name).join(", "),
               icon: <XCircle className="h-5 w-5 text-red-500" />,
             });
@@ -58,8 +55,7 @@ const ActionButtons = ({
         }, 1000);
       }
     } else {
-      toast({
-        title: "Smart Prescription Analysis",
+      toast("Smart Prescription Analysis", {
         description: "Our AI can extract and analyze medicines from your prescription image",
       });
     }
