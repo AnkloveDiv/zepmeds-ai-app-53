@@ -1,4 +1,3 @@
-
 /**
  * Extend the Window interface to include our callback function and map libraries
  */
@@ -83,7 +82,10 @@ export const initializeMap = async (): Promise<boolean> => {
   }
 };
 
-// Get current position with maximum possible accuracy
+/**
+ * Get current position with maximum possible accuracy
+ * This function uses a more aggressive approach to get accurate location data
+ */
 export const getCurrentPosition = (options = {}): Promise<GeolocationPosition> => {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
@@ -94,26 +96,76 @@ export const getCurrentPosition = (options = {}): Promise<GeolocationPosition> =
     // Maximum accuracy options
     const enhancedOptions = {
       enableHighAccuracy: true,  // Always request high accuracy
-      timeout: 10000,            // 10 seconds timeout
+      timeout: 10000,            // 10 seconds timeout 
       maximumAge: 0,             // Never use cached position
       ...options
     };
 
     console.log("Requesting position with options:", enhancedOptions);
-
-    // Try to get position via the browser's Geolocation API
-    navigator.geolocation.getCurrentPosition(
-      position => {
-        console.log("Received raw position:", position.coords.latitude, position.coords.longitude, 
-                  "Accuracy:", position.coords.accuracy, "meters");
-        resolve(position);
-      },
-      error => {
-        console.error("Geolocation error code:", error.code, "Message:", error.message);
-        reject(error);
-      },
-      enhancedOptions
-    );
+    
+    // First check if we have permission
+    try {
+      navigator.permissions.query({ name: 'geolocation' as PermissionName })
+        .then(permissionStatus => {
+          if (permissionStatus.state === 'denied') {
+            reject(new Error("Geolocation permission denied"));
+            return;
+          }
+          
+          // If permission is granted or prompt, try to get location
+          navigator.geolocation.getCurrentPosition(
+            position => {
+              console.log("Received raw position:", position.coords.latitude, position.coords.longitude, 
+                        "Accuracy:", position.coords.accuracy, "meters");
+              
+              // If accuracy is extremely poor (> 10km), log additional info
+              if (position.coords.accuracy > 10000) {
+                console.warn("Extremely poor location accuracy. Device may not have GPS enabled or is indoors.");
+                
+                // Check if we have a timestamp to gauge freshness
+                if (position.timestamp) {
+                  const ageInSeconds = (Date.now() - position.timestamp) / 1000;
+                  console.warn(`Position data is ${ageInSeconds.toFixed(1)} seconds old`);
+                }
+              }
+              
+              resolve(position);
+            },
+            error => {
+              console.error("Geolocation error code:", error.code, "Message:", error.message);
+              
+              // Provide more detailed error message based on error code
+              if (error.code === 1) {
+                console.error("User denied geolocation prompt");
+              } else if (error.code === 2) {
+                console.error("Position unavailable. Device may have no GPS or poor signal.");
+              } else if (error.code === 3) {
+                console.error("Geolocation timed out. Try increasing timeout value.");
+              }
+              
+              reject(error);
+            },
+            enhancedOptions
+          );
+        })
+        .catch(error => {
+          console.warn("Permission check failed, falling back to direct geolocation request:", error);
+          // Still try to get location even if permission check fails
+          navigator.geolocation.getCurrentPosition(
+            position => resolve(position),
+            error => reject(error),
+            enhancedOptions
+          );
+        });
+    } catch (error) {
+      console.warn("Permission API not supported, falling back to direct geolocation request");
+      // Fall back to direct geolocation request
+      navigator.geolocation.getCurrentPosition(
+        position => resolve(position),
+        error => reject(error),
+        enhancedOptions
+      );
+    }
   });
 };
 

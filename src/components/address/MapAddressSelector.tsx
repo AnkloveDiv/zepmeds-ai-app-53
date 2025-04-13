@@ -2,8 +2,9 @@ import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader, MapPin, Navigation, Search, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Loader, MapPin, Navigation, Search, CheckCircle2, AlertTriangle, Info } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { 
   initializeMap, 
   getAddressFromCoordinates,
@@ -35,6 +36,8 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
   const [searchQuery, setSearchQuery] = useState("");
   const [usingMockData, setUsingMockData] = useState(false);
   const [locationRetries, setLocationRetries] = useState(0);
+  const [accuracyRetryAttempts, setAccuracyRetryAttempts] = useState(0);
+  const [showingAccuracyHelp, setShowingAccuracyHelp] = useState(false);
   const { toast } = useToast();
   
   const [fallbackLatitude, setFallbackLatitude] = useState(28.6139);
@@ -103,8 +106,9 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         let position;
         let attempt = 0;
         let bestAccuracy = Infinity;
+        const maxAttempts = 12;
         
-        while (attempt < 15 && bestAccuracy > 100) {
+        while (attempt < maxAttempts && bestAccuracy > 100) {
           try {
             attempt++;
             console.log(`Getting location attempt ${attempt}`);
@@ -126,7 +130,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
               }
             }
             
-            if (attempt < 15) {
+            if (attempt < maxAttempts) {
               await new Promise(r => setTimeout(r, 300));
             }
           } catch (err) {
@@ -153,27 +157,34 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
           }
         }
         
-        if (!position) {
-          if (locationRetries < 2) {
-            setLocationRetries(prev => prev + 1);
-            toast({
-              title: "Location accuracy poor",
-              description: "Trying again to get a more accurate position...",
-            });
-            await new Promise(r => setTimeout(r, 500));
-            getUserLocation();
-            return;
-          } else {
-            throw new Error("Could not get sufficiently accurate position after multiple attempts");
-          }
+        if (!position && accuracyRetryAttempts < 2) {
+          setAccuracyRetryAttempts(prev => prev + 1);
+          toast({
+            title: "Location accuracy poor",
+            description: "Trying again to get a more accurate position...",
+          });
+          await new Promise(r => setTimeout(r, 500));
+          getUserLocation();
+          return;
         }
         
         if (!isMounted) return;
         
+        if (!position) {
+          throw new Error("Could not get position after multiple attempts");
+        }
+        
         const { latitude, longitude, accuracy } = position.coords;
         console.log(`Final position selected with accuracy: ${accuracy} meters`);
         
-        if (accuracy > 100) {
+        if (accuracy > 1000) {
+          setShowingAccuracyHelp(true);
+          toast({
+            title: "Very limited accuracy",
+            description: `Location accurate to within ${Math.round(accuracy/1000)} km. Please check location settings and enable GPS.`,
+            variant: "warning",
+          });
+        } else if (accuracy > 100) {
           toast({
             title: "Limited accuracy",
             description: `Location accurate to within ${Math.round(accuracy)} meters. You can drag the pin to adjust.`,
@@ -238,7 +249,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         accuracyCircle.setMap(null);
       }
     };
-  }, [toast, usingMockData, locationRetries]);
+  }, [toast, usingMockData, locationRetries, accuracyRetryAttempts]);
   
   const initializeGoogleMap = async (lat: number, lng: number, accuracyInMeters: number = 100) => {
     if (!mapRef.current || !window.google || !window.google.maps) {
@@ -437,6 +448,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
   
   const handleCurrentLocation = async () => {
     setLoadingAddress(true);
+    setShowingAccuracyHelp(false);
     
     try {
       setLocationPermissionDenied(false);
@@ -444,8 +456,9 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       let bestPosition = null;
       let bestAccuracy = Infinity;
       
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 12; i++) {
         try {
+          console.log(`Current location attempt ${i+1}`);
           const position = await getCurrentPosition({ 
             timeout: 3000, 
             maximumAge: 0,
@@ -530,7 +543,14 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
           map.setZoom(17);
         }
         
-        if (accuracy > 100) {
+        if (accuracy > 1000) {
+          setShowingAccuracyHelp(true);
+          toast({
+            title: "Very limited accuracy",
+            description: `Location accurate to within ${Math.round(accuracy/1000)} km. Please manually adjust the pin.`,
+            variant: "warning",
+          });
+        } else if (accuracy > 100) {
           toast({
             title: "Limited accuracy",
             description: `Location accurate to within ${Math.round(accuracy)} meters. You can drag the pin to adjust.`,
@@ -585,13 +605,29 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       </div>
       
       {locationPermissionDenied && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-4 flex items-start gap-2">
-          <AlertTriangle className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
-          <div>
-            <h4 className="text-red-400 font-semibold mb-1">Location access denied</h4>
-            <p className="text-sm text-gray-300">Enable location access in your browser settings to get accurate location data. Until then, you can manually select a location on the map.</p>
-          </div>
-        </div>
+        <Alert variant="destructive" className="mb-4">
+          <AlertTriangle className="h-5 w-5" />
+          <AlertTitle>Location access denied</AlertTitle>
+          <AlertDescription>
+            Enable location access in your browser settings to get accurate location data. Until then, you can manually select a location on the map.
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {showingAccuracyHelp && (
+        <Alert variant="warning" className="mb-4">
+          <Info className="h-5 w-5" />
+          <AlertTitle>Improve location accuracy</AlertTitle>
+          <AlertDescription>
+            <p className="mb-2">To get better location accuracy:</p>
+            <ul className="list-disc pl-5 space-y-1 text-sm">
+              <li>Enable GPS on your device</li>
+              <li>Move to an area with better GPS signal (near windows or outdoors)</li>
+              <li>Try another browser (Chrome often has best location accuracy)</li>
+              <li>Manually adjust the pin to your exact location</li>
+            </ul>
+          </AlertDescription>
+        </Alert>
       )}
       
       <div className="relative flex-1 mb-4 rounded-xl overflow-hidden">
