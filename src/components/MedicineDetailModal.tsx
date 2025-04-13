@@ -1,6 +1,6 @@
 
 import React from "react";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import MedicineDetailContent from "./medicine/detail/MedicineDetailContent";
 
 interface MedicineDetailModalProps {
@@ -36,6 +36,7 @@ const MedicineDetailModal: React.FC<MedicineDetailModalProps> = ({
   medicine,
   onAddToCart,
 }) => {
+  // Control body scroll when modal is open/closed
   React.useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -54,14 +55,23 @@ const MedicineDetailModal: React.FC<MedicineDetailModalProps> = ({
     <AnimatePresence>
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4 py-6 overflow-y-auto"
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 px-4 py-3 overflow-y-auto"
           onClick={onClose}
         >
-          <MedicineDetailContent 
-            medicine={medicine}
-            onClose={onClose}
-            onAddToCart={onAddToCart}
-          />
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="w-full h-full flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MedicineDetailContent 
+              medicine={medicine}
+              onClose={onClose}
+              onAddToCart={onAddToCart}
+            />
+          </motion.div>
         </div>
       )}
     </AnimatePresence>

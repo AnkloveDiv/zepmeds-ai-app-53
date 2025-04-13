@@ -1,6 +1,21 @@
 
 import React from "react";
-import { Info, ScrollText, Pill, ArrowRight, CircleHelp, Droplets, ThermometerSun } from "lucide-react";
+import { 
+  Info, 
+  ScrollText, 
+  Pill, 
+  ArrowRight, 
+  CircleHelp, 
+  Droplets, 
+  ThermometerSun,
+  ChevronDown 
+} from "lucide-react";
+import { 
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger
+} from "@/components/ui/accordion";
 
 interface TabContentProps {
   activeTab: string;
@@ -32,7 +47,7 @@ const TabContent: React.FC<TabContentProps> = ({ activeTab, medicine }) => {
 
   if (activeTab === "description") {
     return (
-      <div>
+      <div className="space-y-3">
         <h3 className="text-white font-medium flex items-center gap-2 mb-2">
           <Info className="h-4 w-4" />
           Description
@@ -40,32 +55,50 @@ const TabContent: React.FC<TabContentProps> = ({ activeTab, medicine }) => {
         <p className="text-sm text-gray-300">{medicine.fullDescription || medicine.description || "No description available."}</p>
         
         {medicine.saltComposition && (
-          <div className="mt-4">
-            <h4 className="text-white text-sm font-medium mb-1">Salt Composition:</h4>
-            <p className="text-sm text-gray-300">{medicine.saltComposition}</p>
-          </div>
+          <Accordion type="single" collapsible className="border-gray-800 pt-2">
+            <AccordionItem value="saltComposition" className="border-gray-800">
+              <AccordionTrigger className="text-white text-sm font-medium py-2">
+                Salt Composition
+              </AccordionTrigger>
+              <AccordionContent className="text-sm text-gray-300">
+                {medicine.saltComposition}
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         )}
         
         {medicine.ingredients && medicine.ingredients.length > 0 && (
-          <div className="mt-4">
-            <h4 className="text-white text-sm font-medium mb-1">Ingredients:</h4>
-            <ul className="list-disc list-inside text-sm text-gray-300">
-              {medicine.ingredients.map((ingredient, idx) => (
-                <li key={idx}>{ingredient}</li>
-              ))}
-            </ul>
-          </div>
+          <Accordion type="single" collapsible className="border-gray-800">
+            <AccordionItem value="ingredients" className="border-gray-800">
+              <AccordionTrigger className="text-white text-sm font-medium py-2">
+                Ingredients
+              </AccordionTrigger>
+              <AccordionContent>
+                <ul className="list-disc list-inside text-sm text-gray-300 pl-2">
+                  {medicine.ingredients.map((ingredient, idx) => (
+                    <li key={idx} className="mb-1">{ingredient}</li>
+                  ))}
+                </ul>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         )}
         
         {medicine.sideEffects && medicine.sideEffects.length > 0 && (
-          <div className="mt-4">
-            <h4 className="text-white text-sm font-medium mb-1">Side Effects:</h4>
-            <ul className="list-disc list-inside text-sm text-gray-300">
-              {medicine.sideEffects.map((effect, idx) => (
-                <li key={idx}>{effect}</li>
-              ))}
-            </ul>
-          </div>
+          <Accordion type="single" collapsible className="border-gray-800">
+            <AccordionItem value="sideEffects" className="border-gray-800">
+              <AccordionTrigger className="text-white text-sm font-medium py-2">
+                Side Effects
+              </AccordionTrigger>
+              <AccordionContent>
+                <ul className="list-disc list-inside text-sm text-gray-300 pl-2">
+                  {medicine.sideEffects.map((effect, idx) => (
+                    <li key={idx} className="mb-1">{effect}</li>
+                  ))}
+                </ul>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         )}
       </div>
     );
@@ -117,13 +150,13 @@ const TabContent: React.FC<TabContentProps> = ({ activeTab, medicine }) => {
           Quick Tips
         </h3>
         {medicine.quickTips && medicine.quickTips.length > 0 ? (
-          <ul className="list-disc list-inside text-sm text-gray-300">
+          <ul className="list-disc list-inside text-sm text-gray-300 pl-2 space-y-1">
             {medicine.quickTips.map((tip, idx) => (
               <li key={idx}>{tip}</li>
             ))}
           </ul>
         ) : (
-          <ul className="list-disc list-inside text-sm text-gray-300">
+          <ul className="list-disc list-inside text-sm text-gray-300 pl-2 space-y-1">
             <li>Store in a cool, dry place away from direct sunlight</li>
             <li>Keep out of reach of children</li>
             <li>Do not use after expiry date</li>
@@ -141,27 +174,43 @@ const TabContent: React.FC<TabContentProps> = ({ activeTab, medicine }) => {
           <CircleHelp className="h-4 w-4" />
           Frequently Asked Questions
         </h3>
-        {medicine.faqs && medicine.faqs.length > 0 ? (
-          <div className="space-y-3">
-            {medicine.faqs.map((faq, idx) => (
-              <div key={idx}>
-                <h4 className="text-white text-sm font-medium">{faq.question}</h4>
-                <p className="text-sm text-gray-300">{faq.answer}</p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <div>
-              <h4 className="text-white text-sm font-medium">Is this medicine safe for long-term use?</h4>
-              <p className="text-sm text-gray-300">Consult with your doctor for long-term use recommendations.</p>
-            </div>
-            <div>
-              <h4 className="text-white text-sm font-medium">Can I take this with other medications?</h4>
-              <p className="text-sm text-gray-300">Always inform your doctor about all medications you are taking.</p>
-            </div>
-          </div>
-        )}
+        
+        <Accordion type="single" collapsible className="w-full border-gray-800">
+          {medicine.faqs && medicine.faqs.length > 0 ? (
+            <>
+              {medicine.faqs.map((faq, idx) => (
+                <AccordionItem key={idx} value={`faq-${idx}`} className="border-gray-800">
+                  <AccordionTrigger className="text-white text-sm font-medium py-2">
+                    {faq.question}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-sm text-gray-300">
+                    {faq.answer}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </>
+          ) : (
+            <>
+              <AccordionItem value="faq-1" className="border-gray-800">
+                <AccordionTrigger className="text-white text-sm font-medium py-2">
+                  Is this medicine safe for long-term use?
+                </AccordionTrigger>
+                <AccordionContent className="text-sm text-gray-300">
+                  Consult with your doctor for long-term use recommendations.
+                </AccordionContent>
+              </AccordionItem>
+              
+              <AccordionItem value="faq-2" className="border-gray-800">
+                <AccordionTrigger className="text-white text-sm font-medium py-2">
+                  Can I take this with other medications?
+                </AccordionTrigger>
+                <AccordionContent className="text-sm text-gray-300">
+                  Always inform your doctor about all medications you are taking.
+                </AccordionContent>
+              </AccordionItem>
+            </>
+          )}
+        </Accordion>
       </div>
     );
   }

@@ -72,11 +72,7 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 50 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 50 }}
-      transition={{ type: "spring", damping: 20 }}
-      className="bg-background border border-white/10 rounded-xl w-full max-w-md mx-auto max-h-[90vh] overflow-auto"
+      className="bg-[#1a1a2e] border border-gray-800 rounded-xl w-full max-w-md mx-auto max-h-[85vh] overflow-auto no-scrollbar"
       onClick={(e) => e.stopPropagation()}
     >
       <MedicineHeader 
@@ -91,7 +87,7 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
           setActiveTab={setActiveTab} 
         />
         
-        <div className="border border-gray-800 rounded-lg p-4 mb-6 bg-black/20 min-h-[150px]">
+        <div className="border border-gray-800 rounded-lg p-4 mb-6 bg-black/30 min-h-[150px] overflow-y-auto max-h-[200px]">
           <TabContent 
             activeTab={activeTab} 
             medicine={medicine} 
