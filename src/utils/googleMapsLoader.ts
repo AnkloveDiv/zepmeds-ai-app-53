@@ -1,5 +1,14 @@
 
 /**
+ * Extend the Window interface to include our callback function
+ */
+declare global {
+  interface Window {
+    initGoogleMapsCallback: () => void;
+  }
+}
+
+/**
  * Utility function to load the Google Maps API with the provided API key
  */
 export const loadGoogleMapsApi = (apiKey: string): Promise<void> => {
