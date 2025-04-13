@@ -23,7 +23,7 @@ const MedicineDelivery = () => {
       
       {/* Search Section */}
       <div className="px-4 py-5 bg-gradient-to-b from-[#58684a] to-black z-10">
-        <SearchBar placeholder="Search "Multi-Vitamin"" />
+        <SearchBar placeholder="Search &quot;Multi-Vitamin&quot;" />
         
         {/* Upload Prescription */}
         <div className="mt-4 p-4 bg-[#1a1a1a] rounded-xl flex items-center justify-between">
