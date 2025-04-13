@@ -38,7 +38,10 @@ export const verifyOTP = async (phoneNumber: string, otp: string): Promise<boole
     
     // Clear OTP after verification attempt for security
     if (isValid) {
+      console.log("OTP verification successful, clearing stored OTP");
       sessionStorage.removeItem(`otp_${phoneNumber}`);
+    } else {
+      console.log("OTP verification failed");
     }
     
     return isValid;
