@@ -213,8 +213,8 @@ const PrescriptionUpload = () => {
     }
     
     toast("Processing Order", {
-      description: `Adding ${inStockItems.length} medicine${inStockItems.length > 1 ? 's' : ''} to cart`,
-      icon: <ShoppingCart className="h-5 w-5 text-green-500" />
+        description: `Adding ${inStockItems.length} medicine${inStockItems.length > 1 ? 's' : ''} to cart`,
+        icon: <ShoppingCart className="h-5 w-5 text-green-500" />
     });
     
     setTimeout(() => {

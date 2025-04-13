@@ -15,9 +15,8 @@ import { useBackNavigation } from '../hooks/useBackNavigation';
 import { fetchWeatherByCoordinates, WeatherData } from '../services/weatherService';
 import { allProducts } from '../data/medicineData';
 import { 
-  loadGoogleMapsAPI, 
   reverseGeocode as getAddressFromCoordinates 
-} from '@/utils/googleMapsLoader';
+} from '@/utils/openLayersLoader';
 
 const MedicineDelivery = () => {
   const navigate = useNavigate();

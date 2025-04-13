@@ -348,14 +348,19 @@ export const getMapLoadError = (): string | null => {
  * Get coordinates from a map click
  */
 export const getCoordinatesFromClick = (map: Map, event: any): Location => {
-  if (!event || !event.originalEvent) {
-    console.error('Invalid event object passed to getCoordinatesFromClick');
-    // Return a default location if event is invalid
-    return { lng: 0, lat: 0 };
+  if (!map) {
+    console.error('Map is not initialized in getCoordinatesFromClick');
+    return { lat: 0, lng: 0 };
   }
   
-  const coordinates = map.getEventCoordinate(event.originalEvent);
+  if (!event || !event.coordinate) {
+    console.error('Invalid event object passed to getCoordinatesFromClick');
+    return { lat: 0, lng: 0 };
+  }
+  
+  const coordinates = event.coordinate;
   const lonLat = toLonLat(coordinates);
+  
   return {
     lng: lonLat[0],
     lat: lonLat[1]

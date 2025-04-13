@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,10 +18,8 @@ import {
   getMapLoadError,
   getCoordinatesFromClick
 } from '@/utils/openLayersLoader';
-
-// Import OpenLayers CSS
-import 'ol/ol.css';
 import { Map } from 'ol';
+import 'ol/ol.css';
 
 interface MapAddressSelectorProps {
   onAddressSelected?: (addressDetails: {
@@ -46,7 +43,6 @@ const MapAddressSelector: React.FC<MapAddressSelectorProps> = ({
   const [error, setError] = useState<string | null>(null);
   const mapRef = useRef<HTMLDivElement>(null);
 
-  // Form state
   const [houseNumber, setHouseNumber] = useState('');
   const [streetName, setStreetName] = useState('');
   const [area, setArea] = useState('');
@@ -72,28 +68,23 @@ const MapAddressSelector: React.FC<MapAddressSelectorProps> = ({
     handleSearchResultClick
   } = useAddressSearch(map, setLocation);
 
-  // Initialize OpenLayers Map
   useEffect(() => {
     if (!mapRef.current) return;
     
     try {
       const newMap = initializeMap(mapRef.current);
       
-      // Check if there's a map loading error
       const mapError = getMapLoadError();
       if (mapError) {
         setError(mapError);
         return;
       }
       
-      // Set up click handler to update location when map is clicked
       newMap.on('click', (event) => {
         try {
-          // Use the getCoordinatesFromClick helper function
           const newLocation = getCoordinatesFromClick(newMap, event);
           setLocation(newLocation);
           
-          // Get address information
           reverseGeocode(newLocation.lat, newLocation.lng)
             .then(result => {
               if (result && result.address_components) {
@@ -119,7 +110,6 @@ const MapAddressSelector: React.FC<MapAddressSelectorProps> = ({
       setMap(newMap);
       setIsMapLoaded(true);
       
-      // Try to get user's current location
       getMyLocation();
     } catch (error) {
       console.error("Error initializing map:", error);
@@ -127,7 +117,6 @@ const MapAddressSelector: React.FC<MapAddressSelectorProps> = ({
     }
   }, []);
 
-  // Update address fields when location changes
   useEffect(() => {
     const updateAddressFields = async () => {
       if (!location || !isMapLoaded) return;
@@ -153,7 +142,6 @@ const MapAddressSelector: React.FC<MapAddressSelectorProps> = ({
   }, [location, isMapLoaded]);
 
   const handleSaveAddress = () => {
-    // Create the full address object
     const addressObj = {
       houseNumber,
       streetName,
@@ -166,7 +154,6 @@ const MapAddressSelector: React.FC<MapAddressSelectorProps> = ({
       coords: location,
     };
     
-    // If using as a component with callback
     if (onAddressSelected && location) {
       onAddressSelected({
         fullAddress: `${houseNumber} ${streetName}, ${area}, ${city}, ${state} ${pincode}`,
@@ -179,12 +166,10 @@ const MapAddressSelector: React.FC<MapAddressSelectorProps> = ({
       return;
     }
     
-    // Otherwise, save to localStorage (in a real app, this would be saved to a database)
     const addresses = JSON.parse(localStorage.getItem('addresses') || '[]');
     addresses.push(addressObj);
     localStorage.setItem('addresses', JSON.stringify(addresses));
     
-    // Set as selected address
     localStorage.setItem('selectedAddress', JSON.stringify(addressObj));
     
     toast.success("Address saved successfully!");
@@ -193,7 +178,6 @@ const MapAddressSelector: React.FC<MapAddressSelectorProps> = ({
 
   return (
     <div className="flex flex-col h-full max-h-[90vh] overflow-hidden">
-      {/* Map Container */}
       <div className="relative flex-shrink-0 w-full h-2/5 min-h-[200px]">
         {error && <AlertMessages error={error} />}
         
@@ -222,7 +206,6 @@ const MapAddressSelector: React.FC<MapAddressSelectorProps> = ({
         )}
       </div>
       
-      {/* Address Form */}
       <div className="flex-grow overflow-auto">
         <Card className="border-0 shadow-none rounded-none h-full">
           <CardHeader className="sticky top-0 bg-black z-10 px-4 py-3">

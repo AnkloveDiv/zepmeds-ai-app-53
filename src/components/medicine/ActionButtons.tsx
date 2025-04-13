@@ -30,7 +30,7 @@ const ActionButtons = ({
     if (analysisComplete) {
       // Notify user about follow-up call
       toast("Prescription Uploaded Successfully", {
-        description: "You will receive a call shortly to confirm your order.",
+        description: "You will receive a call shortly to confirm your order."
       });
       
       // Show stock status when prescription is successfully uploaded
@@ -42,21 +42,21 @@ const ActionButtons = ({
           if (inStockItems.length > 0) {
             toast(`${inStockItems.length} Medicine${inStockItems.length > 1 ? 's' : ''} in Stock`, {
               description: inStockItems.map(med => med.name).join(", "),
-              icon: <CheckCircle className="h-5 w-5 text-green-500" />,
+              icon: <CheckCircle className="h-5 w-5 text-green-500" />
             });
           }
           
           if (outOfStockItems.length > 0) {
             toast(`${outOfStockItems.length} Medicine${outOfStockItems.length > 1 ? 's' : ''} Not in Stock`, {
               description: outOfStockItems.map(med => med.name).join(", "),
-              icon: <XCircle className="h-5 w-5 text-red-500" />,
+              icon: <XCircle className="h-5 w-5 text-red-500" />
             });
           }
         }, 1000);
       }
     } else {
       toast("Smart Prescription Analysis", {
-        description: "Our AI can extract and analyze medicines from your prescription image",
+        description: "Our AI can extract and analyze medicines from your prescription image"
       });
     }
     

@@ -1,7 +1,17 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { loadGoogleMapsAPI } from "@/utils/googleMapsLoader";
+import { Map, View } from 'ol';
+import TileLayer from 'ol/layer/Tile';
+import OSM from 'ol/source/OSM';
+import { fromLonLat } from 'ol/proj';
+import { Feature } from 'ol';
+import Point from 'ol/geom/Point';
+import { Vector as VectorLayer } from 'ol/layer';
+import { Vector as VectorSource } from 'ol/source';
+import { Style, Icon, Stroke } from 'ol/style';
+import LineString from 'ol/geom/LineString';
+import 'ol/ol.css';
 
 interface DeliveryMapProps {
   showRider?: boolean;
@@ -13,159 +23,156 @@ const DeliveryMap = ({ showRider = true, orderId }: DeliveryMapProps) => {
   const [distance, setDistance] = useState(2.4);
   const [eta, setEta] = useState(15);
   const [animating, setAnimating] = useState(false);
-  const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [riderMarker, setRiderMarker] = useState<google.maps.Marker | null>(null);
-  const [destinationMarker, setDestinationMarker] = useState<google.maps.Marker | null>(null);
-  const [storeMarker, setStoreMarker] = useState<google.maps.Marker | null>(null);
-  const [routePath, setRoutePath] = useState<google.maps.Polyline | null>(null);
+  const [map, setMap] = useState<Map | null>(null);
+  const [layersInitialized, setLayersInitialized] = useState(false);
   const { toast } = useToast();
 
   // Simulated coordinates for demonstration
-  const storeCoords = { lat: 28.6139, lng: 77.2090 }; // Store location
-  const destinationCoords = { lat: 28.6239, lng: 77.2290 }; // Delivery destination
-  const initialRiderCoords = { lat: 28.6180, lng: 77.2160 }; // Initial rider position
+  const storeCoords = [77.2090, 28.6139]; // Store location in [lon, lat] for OpenLayers
+  const destinationCoords = [77.2290, 28.6239]; // Delivery destination
+  const initialRiderCoords = [77.2160, 28.6180]; // Initial rider position
 
   useEffect(() => {
     // Initialize map when component mounts
-    const setupMap = async () => {
-      await loadGoogleMapsAPI();
-      
-      if (mapRef.current && window.google && window.google.maps) {
-        try {
-          // Create Google Map
-          const googleMap = new google.maps.Map(mapRef.current, {
-            center: initialRiderCoords,
-            zoom: 14,
-            mapTypeControl: false,
-            fullscreenControl: false,
-            streetViewControl: false,
-            zoomControl: false
-          });
-          
-          setMap(googleMap);
-          
-          // Store marker (origin)
-          const storeIcon = {
-            path: google.maps.SymbolPath.CIRCLE,
-            fillColor: '#9b87f5',
-            fillOpacity: 1,
-            strokeWeight: 2,
-            strokeColor: '#FFFFFF',
-            scale: 8
-          };
-          
-          const store = new google.maps.Marker({
-            position: storeCoords,
-            map: googleMap,
-            icon: storeIcon,
-            title: 'Store'
-          });
-          
-          setStoreMarker(store);
-          
-          // Destination marker
-          const destinationIcon = {
-            path: google.maps.SymbolPath.CIRCLE,
-            fillColor: '#FF4500',
-            fillOpacity: 1,
-            strokeWeight: 2,
-            strokeColor: '#FFFFFF',
-            scale: 8
-          };
-          
-          const destination = new google.maps.Marker({
-            position: destinationCoords,
-            map: googleMap,
-            icon: destinationIcon,
-            title: 'Your Location'
-          });
-          
-          setDestinationMarker(destination);
-          
-          // Draw route between store and destination
-          const routeCoordinates = [
-            storeCoords,
-            initialRiderCoords,
-            destinationCoords
-          ];
-          
-          const path = new google.maps.Polyline({
-            path: routeCoordinates,
-            geodesic: true,
-            strokeColor: '#9b87f5',
-            strokeOpacity: 0.7,
-            strokeWeight: 4,
-            icons: [{
-              icon: {
-                path: 'M 0,-1 0,1',
-                strokeOpacity: 1,
-                strokeWeight: 4,
-                scale: 3
-              },
-              offset: '0',
-              repeat: '20px'
-            }]
-          });
-          
-          path.setMap(googleMap);
-          setRoutePath(path);
-          
-          // Add a moving marker for the rider if showRider is true
-          if (showRider) {
-            const riderIcon = {
-              path: google.maps.SymbolPath.CIRCLE,
-              fillColor: '#FF9500',
-              fillOpacity: 1,
-              strokeWeight: 2,
-              strokeColor: '#FFFFFF',
-              scale: 8
-            };
-            
-            const rider = new google.maps.Marker({
-              position: initialRiderCoords,
-              map: googleMap,
-              icon: riderIcon,
-              title: `${eta} min`
-            });
-            
-            setRiderMarker(rider);
-            
-            // Fit map to show all markers
-            const bounds = new google.maps.LatLngBounds();
-            bounds.extend(storeCoords);
-            bounds.extend(destinationCoords);
-            bounds.extend(initialRiderCoords);
-            googleMap.fitBounds(bounds, 30);
-            
-            // Start animation
-            startRiderAnimation();
-          } else {
-            // Just fit the map to store and destination
-            const bounds = new google.maps.LatLngBounds();
-            bounds.extend(storeCoords);
-            bounds.extend(destinationCoords);
-            googleMap.fitBounds(bounds, 30);
-          }
-        } catch (error) {
-          console.error("Error initializing map:", error);
-          renderFallbackMap();
-        }
-      } else {
-        console.error("Google Maps not available or map container not found");
-        renderFallbackMap();
-      }
-    };
+    if (!mapRef.current || map) return;
     
-    setupMap();
+    try {
+      // Create OpenLayers Map
+      const olMap = new Map({
+        target: mapRef.current,
+        layers: [
+          new TileLayer({
+            source: new OSM()
+          })
+        ],
+        view: new View({
+          center: fromLonLat(initialRiderCoords),
+          zoom: 14,
+          maxZoom: 19
+        }),
+        controls: []
+      });
+      
+      setMap(olMap);
+      
+      // Create marker source and layers after map is initialized
+      const markerSource = new VectorSource();
+      const routeSource = new VectorSource();
+      
+      // Create style for store marker
+      const storeStyle = new Style({
+        image: new Icon({
+          anchor: [0.5, 0.5],
+          src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%239b87f5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" fill="%239b87f5" stroke="white"/></svg>',
+          scale: 1.5
+        })
+      });
+      
+      // Create style for destination marker
+      const destStyle = new Style({
+        image: new Icon({
+          anchor: [0.5, 0.5],
+          src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23FF4500" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" fill="%23FF4500" stroke="white"/></svg>',
+          scale: 1.5
+        })
+      });
+      
+      // Create style for rider marker
+      const riderStyle = new Style({
+        image: new Icon({
+          anchor: [0.5, 0.5],
+          src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23FF9500" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" fill="%23FF9500" stroke="white"/></svg>',
+          scale: 1.5
+        })
+      });
+      
+      // Create store feature
+      const storeFeature = new Feature({
+        geometry: new Point(fromLonLat(storeCoords)),
+        name: 'Store'
+      });
+      storeFeature.setStyle(storeStyle);
+      markerSource.addFeature(storeFeature);
+      
+      // Create destination feature
+      const destFeature = new Feature({
+        geometry: new Point(fromLonLat(destinationCoords)),
+        name: 'Destination'
+      });
+      destFeature.setStyle(destStyle);
+      markerSource.addFeature(destFeature);
+      
+      // Create route feature
+      const routeCoords = [
+        fromLonLat(storeCoords),
+        fromLonLat(initialRiderCoords),
+        fromLonLat(destinationCoords)
+      ];
+      
+      const routeFeature = new Feature({
+        geometry: new LineString(routeCoords)
+      });
+      
+      const routeStyle = new Style({
+        stroke: new Stroke({
+          color: '#9b87f5',
+          width: 4,
+          lineDash: [8, 8]
+        })
+      });
+      
+      routeFeature.setStyle(routeStyle);
+      routeSource.addFeature(routeFeature);
+      
+      // Create route layer
+      const routeLayer = new VectorLayer({
+        source: routeSource
+      });
+      
+      // Create marker layer
+      const markerLayer = new VectorLayer({
+        source: markerSource
+      });
+      
+      // Add layers to map
+      olMap.addLayer(routeLayer);
+      olMap.addLayer(markerLayer);
+      
+      // If showRider is true, add rider marker
+      if (showRider) {
+        const riderFeature = new Feature({
+          geometry: new Point(fromLonLat(initialRiderCoords)),
+          name: 'Rider'
+        });
+        riderFeature.setStyle(riderStyle);
+        markerSource.addFeature(riderFeature);
+        
+        // Start rider animation
+        setTimeout(() => {
+          startRiderAnimation(riderFeature, markerSource);
+        }, 1000);
+      }
+      
+      setLayersInitialized(true);
+      
+      // Fit view to show all markers
+      const extent = markerSource.getExtent();
+      olMap.getView().fit(extent, {
+        padding: [50, 50, 50, 50],
+        maxZoom: 16
+      });
+      
+    } catch (error) {
+      console.error("Error initializing map:", error);
+      renderFallbackMap();
+    }
     
     return () => {
-      // Clean up map markers
-      if (riderMarker) riderMarker.setMap(null);
-      if (storeMarker) storeMarker.setMap(null);
-      if (destinationMarker) destinationMarker.setMap(null);
-      if (routePath) routePath.setMap(null);
+      if (map) {
+        map.setTarget(undefined);
+      }
     };
-  }, []);
+  }, [map, showRider]);
 
   const renderFallbackMap = () => {
     if (mapRef.current) {
@@ -259,6 +266,7 @@ const DeliveryMap = ({ showRider = true, orderId }: DeliveryMapProps) => {
           
           // ETA indicator
           ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+          ctx.beginPath();
           ctx.roundRect(riderX - 25, riderY - 25, 50, 20, 5);
           ctx.fill();
           
@@ -270,25 +278,25 @@ const DeliveryMap = ({ showRider = true, orderId }: DeliveryMapProps) => {
     }
   };
 
-  const startRiderAnimation = () => {
-    if (!riderMarker || animating || !map) return;
+  const startRiderAnimation = (riderFeature: Feature, markerSource: VectorSource) => {
+    if (animating) return;
     
     setAnimating(true);
     
     // Define waypoints for the rider to travel (from store to destination)
     const waypoints = [
       initialRiderCoords,
-      {lat: initialRiderCoords.lat + 0.001, lng: initialRiderCoords.lng + 0.002},
-      {lat: initialRiderCoords.lat + 0.003, lng: initialRiderCoords.lng + 0.003},
-      {lat: initialRiderCoords.lat + 0.005, lng: initialRiderCoords.lng + 0.0025},
-      {lat: destinationCoords.lat - 0.002, lng: destinationCoords.lng - 0.001},
+      [initialRiderCoords[0] + 0.002, initialRiderCoords[1] + 0.001],
+      [initialRiderCoords[0] + 0.003, initialRiderCoords[1] + 0.003],
+      [initialRiderCoords[0] + 0.0025, initialRiderCoords[1] + 0.005],
+      [destinationCoords[0] - 0.001, destinationCoords[1] - 0.002],
       destinationCoords
     ];
     
     let currentWaypoint = 0;
-    let startTime = Date.now();
     const totalTime = 60000; // 60 seconds for full animation
     const waypointInterval = totalTime / (waypoints.length - 1);
+    const startTime = Date.now();
     
     const animationInterval = setInterval(() => {
       const elapsedTime = Date.now() - startTime;
@@ -312,7 +320,14 @@ const DeliveryMap = ({ showRider = true, orderId }: DeliveryMapProps) => {
       if (currentSegment >= waypoints.length - 1) {
         // Animation complete
         clearInterval(animationInterval);
-        riderMarker.setPosition(waypoints[waypoints.length - 1]);
+        const finalPoint = fromLonLat(waypoints[waypoints.length - 1]);
+        
+        if (riderFeature) {
+          riderFeature.setGeometry(new Point(finalPoint));
+          markerSource.changed();
+        }
+        
+        setAnimating(false);
         return;
       }
       
@@ -323,31 +338,14 @@ const DeliveryMap = ({ showRider = true, orderId }: DeliveryMapProps) => {
       const startPoint = waypoints[currentSegment];
       const endPoint = waypoints[currentSegment + 1];
       
-      const lat = startPoint.lat + (endPoint.lat - startPoint.lat) * segmentProgress;
-      const lng = startPoint.lng + (endPoint.lng - startPoint.lng) * segmentProgress;
+      const lon = startPoint[0] + (endPoint[0] - startPoint[0]) * segmentProgress;
+      const lat = startPoint[1] + (endPoint[1] - startPoint[1]) * segmentProgress;
       
-      riderMarker.setPosition({ lat, lng });
-      
-      // Update the title by creating a new marker with the updated title
-      // since setTitle doesn't exist on the Marker type
-      const newTitle = `${eta} min`;
-      if (riderMarker.getTitle() !== newTitle) {
-        // Create a new marker with updated title
-        const position = riderMarker.getPosition();
-        if (position) {
-          const icon = riderMarker.getIcon();
-          riderMarker.setMap(null);
-          
-          const newRiderMarker = new google.maps.Marker({
-            position: position,
-            map: map,
-            icon: icon,
-            title: newTitle
-          });
-          
-          setRiderMarker(newRiderMarker);
-        }
+      if (riderFeature) {
+        riderFeature.setGeometry(new Point(fromLonLat([lon, lat])));
+        markerSource.changed();
       }
+      
     }, 5000); // Update every 5 seconds
     
     return () => clearInterval(animationInterval);
