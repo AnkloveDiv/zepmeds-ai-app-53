@@ -72,45 +72,48 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
 
   return (
     <motion.div
-      className="bg-[#1a1a2e] border border-gray-800 rounded-xl w-full max-w-md mx-auto max-h-[85vh] overflow-auto no-scrollbar"
+      className="bg-[#1a1a2e] border border-gray-800 rounded-xl w-full max-w-md mx-auto overflow-hidden"
       onClick={(e) => e.stopPropagation()}
+      style={{ maxHeight: '90vh' }}
     >
-      <MedicineHeader 
-        medicine={medicine} 
-        discount={discount} 
-        onClose={onClose} 
-      />
-      
-      <div className="px-4 sm:px-5 pt-0 pb-4">
-        <TabSelector 
-          activeTab={activeTab} 
-          setActiveTab={setActiveTab} 
+      <div className="flex flex-col h-full">
+        <MedicineHeader 
+          medicine={medicine} 
+          discount={discount} 
+          onClose={onClose} 
         />
         
-        <div className="border border-gray-800 rounded-lg p-4 mb-6 bg-black/30 min-h-[150px] overflow-y-auto max-h-[200px]">
-          <TabContent 
+        <div className="px-4 sm:px-5 pt-0 pb-4 flex-1 overflow-auto">
+          <TabSelector 
             activeTab={activeTab} 
-            medicine={medicine} 
+            setActiveTab={setActiveTab} 
+          />
+          
+          <div className="border border-gray-800 rounded-lg p-4 mb-6 bg-black/30 overflow-y-auto">
+            <TabContent 
+              activeTab={activeTab} 
+              medicine={medicine} 
+            />
+          </div>
+          
+          <div className="border-t border-gray-700 my-5"></div>
+          
+          <QuantitySelector 
+            quantity={quantity}
+            setQuantity={setQuantity}
+            strips={strips}
+            setStrips={setStrips}
+            isLiquid={isLiquid}
+            isDevice={isDevice}
+            handleDecrement={handleDecrement}
+            handleIncrement={handleIncrement}
+          />
+          
+          <ActionButtons 
+            onClose={onClose} 
+            handleAddToCart={handleAddToCart} 
           />
         </div>
-        
-        <div className="border-t border-gray-700 my-5"></div>
-        
-        <QuantitySelector 
-          quantity={quantity}
-          setQuantity={setQuantity}
-          strips={strips}
-          setStrips={setStrips}
-          isLiquid={isLiquid}
-          isDevice={isDevice}
-          handleDecrement={handleDecrement}
-          handleIncrement={handleIncrement}
-        />
-        
-        <ActionButtons 
-          onClose={onClose} 
-          handleAddToCart={handleAddToCart} 
-        />
       </div>
     </motion.div>
   );

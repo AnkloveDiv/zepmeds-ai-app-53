@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import MedicineDetailContent from "./medicine/detail/MedicineDetailContent";
 
@@ -37,7 +37,7 @@ const MedicineDetailModal: React.FC<MedicineDetailModalProps> = ({
   onAddToCart,
 }) => {
   // Control body scroll when modal is open/closed
-  React.useEffect(() => {
+  useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
     } else {
@@ -55,7 +55,7 @@ const MedicineDetailModal: React.FC<MedicineDetailModalProps> = ({
     <AnimatePresence>
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 px-4 py-3 overflow-y-auto"
+          className="fixed inset-0 bg-black/80 z-50 px-4 py-3 overflow-hidden"
           onClick={onClose}
         >
           <motion.div

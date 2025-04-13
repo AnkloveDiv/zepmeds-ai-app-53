@@ -61,17 +61,17 @@ const AnimatedSearchInput = ({
             onBlur={handleInputBlur}
           />
         ) : (
-          <div className="flex items-center">
+          <div className="flex items-center w-full">
             <span className="text-gray-400 whitespace-nowrap">Search for </span>
-            <div className="h-6 ml-1 overflow-hidden">
-              <AnimatePresence mode="wait">
+            <div className="h-6 ml-1 overflow-hidden relative">
+              <AnimatePresence initial={false} mode="wait">
                 <motion.span
                   key={activePromptIndex}
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: -20, opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="text-white inline-block"
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="text-white inline-block absolute left-0"
                 >
                   {searchPrompts[activePromptIndex]}
                 </motion.span>

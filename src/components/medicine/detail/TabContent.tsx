@@ -111,9 +111,9 @@ const TabContent: React.FC<TabContentProps> = ({ activeTab, medicine }) => {
           <ScrollText className="h-4 w-4" />
           Directions of Use
         </h3>
-        <p className="text-sm text-gray-300">
+        <div className="text-sm text-gray-300">
           {medicine.directions || medicine.dosage || "Take as directed by your physician."}
-        </p>
+        </div>
       </div>
     );
   }
@@ -131,13 +131,13 @@ const TabContent: React.FC<TabContentProps> = ({ activeTab, medicine }) => {
           )}
           How it Works
         </h3>
-        <p className="text-sm text-gray-300">
+        <div className="text-sm text-gray-300">
           {medicine.howItWorks || (isLiquid 
             ? "This solution works by direct application to the affected area to provide relief." 
             : isDevice 
               ? "This device helps monitor and track your health metrics with precision." 
               : "This medicine works by targeting specific receptors in the body to provide relief.")}
-        </p>
+        </div>
       </div>
     );
   }
