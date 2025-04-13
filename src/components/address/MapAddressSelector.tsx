@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -184,7 +185,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       // Initialize Leaflet map
       const leafletMap = window.L.map(mapRef.current).setView([lat, lng], 15);
       
-      // Add OpenFreeMap tile layer instead of Geoapify
+      // Add OpenStreetMap tile layer
       window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 19
@@ -229,28 +230,8 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
           });
         });
         
-        // Add Geoapify address search control
-        if (window.L.Control && window.L.Control.GeoapifyAddressSearch) {
-          const addressSearchControl = window.L.Control.GeoapifyAddressSearch({
-            position: 'topright',
-            apiKey: GEOAPIFY_API_KEY,
-            placeholder: 'Search for places...',
-            /* Required. Geoapify GeoJSON Features for found addresses are passed to this function */
-            locationCallback: (location: any) => {
-              if (!location) return;
-              
-              const { lat, lon } = location.properties;
-              leafletMap.setView([lat, lon], 15);
-              mapMarker.setLatLng([lat, lon]);
-              
-              getAddressFromCoordinates(lat, lon).then(result => {
-                handleGeocodeResult(result, lat, lon);
-              });
-            }
-          });
-          
-          addressSearchControl.addTo(leafletMap);
-        }
+        // We're removing the GeoapifyAddressSearch control since it's causing errors
+        // and implementing a simpler search box instead
       });
       
       // Handle map errors
@@ -448,7 +429,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
             </div>
             <div className="absolute inset-0 bg-black/20"></div>
             <img 
-              src="/lovable-uploads/e4b9e4de-da09-47a5-8942-e28c08e1e69e.png" 
+              src="/lovable-uploads/92febc6f-53c5-4316-8532-8912db81a86e.png" 
               alt="Map placeholder" 
               className="absolute inset-0 w-full h-full object-cover opacity-40" 
             />

@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { initializeMap } from "@/utils/googleMapsLoader";
@@ -33,7 +34,7 @@ const DeliveryMap = ({ showRider = true, orderId }: DeliveryMapProps) => {
           // Create Leaflet map
           const leafletMap = window.L.map(mapRef.current).setView([initialRiderCoords.lat, initialRiderCoords.lng], 14);
           
-          // Add OpenFreeMap tile layer
+          // Add OpenStreetMap tile layer
           window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
             maxZoom: 19

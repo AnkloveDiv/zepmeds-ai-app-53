@@ -18,7 +18,7 @@ let isLoadingMapApi = false;
 export const GEOAPIFY_API_KEY = "835fe0df9146416e94c2daf974a66f6a";
 
 /**
- * Utility function to load the Leaflet and Geoapify APIs
+ * Utility function to load the Leaflet API
  */
 export const loadMapApis = (): Promise<void> => {
   return new Promise((resolve, reject) => {
@@ -73,29 +73,7 @@ export const loadMapApis = (): Promise<void> => {
     // Handle loading and errors
     leafletScript.onload = () => {
       console.log("Leaflet loaded successfully");
-      
-      // Now load Geoapify marker plugin
-      const geoapifyMarkerScript = document.createElement("script");
-      geoapifyMarkerScript.src = "https://cdn.jsdelivr.net/npm/@geoapify/leaflet-address-search-plugin@1.0.0/dist/L.Control.GeoapifyAddressSearch.min.js";
-      
-      const geoapifyMarkerCss = document.createElement("link");
-      geoapifyMarkerCss.rel = "stylesheet";
-      geoapifyMarkerCss.href = "https://cdn.jsdelivr.net/npm/@geoapify/leaflet-address-search-plugin@1.0.0/dist/L.Control.GeoapifyAddressSearch.min.css";
-      
-      document.head.appendChild(geoapifyMarkerCss);
-      
-      geoapifyMarkerScript.onload = () => {
-        console.log("Geoapify Address Search plugin loaded successfully");
-        window.initMapCallback();
-      };
-      
-      geoapifyMarkerScript.onerror = () => {
-        console.error("Error loading Geoapify Address Search plugin");
-        isLoadingMapApi = false;
-        reject(new Error("Failed to load Geoapify Address Search plugin"));
-      };
-      
-      document.head.appendChild(geoapifyMarkerScript);
+      window.initMapCallback();
     };
     
     leafletScript.onerror = () => {
