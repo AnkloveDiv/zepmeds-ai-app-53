@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +16,8 @@ import {
   initializeMap, 
   reverseGeocode, 
   parseAddressComponents, 
-  getMapLoadError
+  getMapLoadError,
+  getCoordinatesFromClick
 } from '@/utils/openLayersLoader';
 
 // Import OpenLayers CSS
@@ -86,10 +88,10 @@ const MapAddressSelector: React.FC<MapAddressSelectorProps> = ({
       
       // Set up click handler to update location when map is clicked
       newMap.on('click', (event) => {
-        const clickCoord = newMap.getEventCoordinate(event.originalEvent);
-        const lonLat = ol.proj.toLonLat(clickCoord);
-        const newLocation = { lng: lonLat[0], lat: lonLat[1] };
+        if (!event.originalEvent) return;
         
+        // Use the getCoordinatesFromClick helper function
+        const newLocation = getCoordinatesFromClick(newMap, event);
         setLocation(newLocation);
         
         // Get address information

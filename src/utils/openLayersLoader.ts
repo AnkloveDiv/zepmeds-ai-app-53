@@ -336,7 +336,7 @@ export const getMapLoadError = (): string | null => {
  * Get coordinates from a map click
  */
 export const getCoordinatesFromClick = (map: Map, event: any): Location => {
-  const coordinates = map.getEventCoordinate(event);
+  const coordinates = map.getEventCoordinate(event.originalEvent);
   const lonLat = toLonLat(coordinates);
   return {
     lng: lonLat[0],
