@@ -122,11 +122,7 @@ declare namespace google {
     }
 
     interface GeocoderResult {
-      address_components: {
-        long_name: string;
-        short_name: string;
-        types: string[];
-      }[];
+      address_components: GeocoderAddressComponent[];
       formatted_address: string;
       geometry: {
         location: LatLng;
@@ -141,6 +137,12 @@ declare namespace google {
       };
       types?: string[];
       partial_match?: boolean;
+    }
+
+    interface GeocoderAddressComponent {
+      long_name: string;
+      short_name: string;
+      types: string[];
     }
 
     type GeocoderStatus = 'OK' | 'ZERO_RESULTS' | 'OVER_QUERY_LIMIT' | 'REQUEST_DENIED' | 'INVALID_REQUEST' | 'UNKNOWN_ERROR';
@@ -304,5 +306,126 @@ declare namespace google {
       RIGHT_CENTER: number;
       RIGHT_BOTTOM: number;
     };
+
+    // Add Places API definitions
+    namespace places {
+      class AutocompleteService {
+        getPlacePredictions(
+          request: AutocompletionRequest,
+          callback: (results: AutocompletePrediction[] | null, status: PlacesServiceStatus) => void
+        ): void;
+      }
+      
+      class PlacesService {
+        constructor(attrContainer: Map | Element);
+        getDetails(
+          request: PlaceDetailsRequest,
+          callback: (result: PlaceResult | null, status: PlacesServiceStatus) => void
+        ): void;
+        
+        findPlaceFromQuery(
+          request: FindPlaceFromQueryRequest,
+          callback: (results: PlaceResult[] | null, status: PlacesServiceStatus) => void
+        ): void;
+      }
+      
+      interface AutocompletionRequest {
+        input: string;
+        bounds?: LatLngBounds | LatLngBoundsLiteral;
+        componentRestrictions?: ComponentRestrictions;
+        location?: LatLng;
+        offset?: number;
+        radius?: number;
+        types?: string[];
+      }
+      
+      interface ComponentRestrictions {
+        country: string | string[];
+      }
+      
+      interface PlaceDetailsRequest {
+        placeId: string;
+        fields?: string[];
+        sessionToken?: AutocompleteSessionToken;
+      }
+      
+      interface FindPlaceFromQueryRequest {
+        query: string;
+        fields: string[];
+        locationBias?: LocationBias;
+        locationRestriction?: LocationRestriction;
+      }
+      
+      type LocationBias = LatLngLiteral | LatLngBounds | Circle | string;
+      type LocationRestriction = LatLngBounds | string;
+      
+      interface AutocompletePrediction {
+        description: string;
+        matched_substrings: PredictionSubstring[];
+        place_id: string;
+        reference: string;
+        structured_formatting: StructuredFormatting;
+        terms: PredictionTerm[];
+        types: string[];
+      }
+      
+      interface PredictionTerm {
+        offset: number;
+        value: string;
+      }
+      
+      interface PredictionSubstring {
+        length: number;
+        offset: number;
+      }
+      
+      interface StructuredFormatting {
+        main_text: string;
+        main_text_matched_substrings: PredictionSubstring[];
+        secondary_text: string;
+      }
+      
+      interface PlaceResult {
+        address_components?: GeocoderAddressComponent[];
+        formatted_address?: string;
+        geometry?: PlaceGeometry;
+        icon?: string;
+        name?: string;
+        photos?: PlacePhoto[];
+        place_id?: string;
+        types?: string[];
+        vicinity?: string;
+      }
+      
+      interface PlaceGeometry {
+        location: LatLng;
+        viewport: LatLngBounds;
+      }
+      
+      interface PlacePhoto {
+        height: number;
+        width: number;
+        html_attributions: string[];
+        getUrl(opts: PhotoOptions): string;
+      }
+      
+      interface PhotoOptions {
+        maxHeight?: number;
+        maxWidth?: number;
+      }
+      
+      enum PlacesServiceStatus {
+        OK = 'OK',
+        ZERO_RESULTS = 'ZERO_RESULTS',
+        OVER_QUERY_LIMIT = 'OVER_QUERY_LIMIT',
+        REQUEST_DENIED = 'REQUEST_DENIED',
+        INVALID_REQUEST = 'INVALID_REQUEST',
+        UNKNOWN_ERROR = 'UNKNOWN_ERROR',
+        NOT_FOUND = 'NOT_FOUND'
+      }
+      
+      class AutocompleteSessionToken {}
+    }
   }
 }
+
