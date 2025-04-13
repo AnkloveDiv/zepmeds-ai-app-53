@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader, MapPin, Navigation, Search, CheckCircle2 } from "lucide-react";
+import { Loader, MapPin, Navigation, Search, CheckCircle2, AlertTriangle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { 
   initializeMap, 
@@ -41,6 +41,8 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
   const [fallbackLongitude, setFallbackLongitude] = useState(77.2090);
   
   const [accuracyCircle, setAccuracyCircle] = useState<google.maps.Circle | null>(null);
+  const [locationPermissionDenied, setLocationPermissionDenied] = useState(false);
+  const [highAccuracyFailed, setHighAccuracyFailed] = useState(false);
   
   useEffect(() => {
     let isMounted = true;
@@ -52,7 +54,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         if (!isMounted) return;
         
         if (!window.google || !window.google.maps || !mapsInitialized) {
-          console.error("Google Maps is not loaded after initialization");
+          console.error("Go Maps is not loaded after initialization");
           toast({
             title: "Maps API not available",
             description: "Using fallback map view. Full functionality may be limited.",
@@ -84,17 +86,31 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       setLoadingAddress(true);
       
       try {
+        if (!navigator.geolocation) {
+          throw new Error("Browser does not support geolocation");
+        }
+        
+        try {
+          const permissionStatus = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
+          if (permissionStatus.state === 'denied') {
+            setLocationPermissionDenied(true);
+            throw new Error("Location permission is denied");
+          }
+        } catch (permError) {
+          console.warn("Could not check permission status:", permError);
+        }
+        
         let position;
         let attempt = 0;
         let bestAccuracy = Infinity;
         
-        while (attempt < 10 && bestAccuracy > 100) {
+        while (attempt < 15 && bestAccuracy > 100) {
           try {
             attempt++;
             console.log(`Getting location attempt ${attempt}`);
             
             const currentPosition = await getCurrentPosition({
-              timeout: attempt < 5 ? 3000 : 5000,
+              timeout: attempt < 8 ? 3000 : 5000,
               maximumAge: 0,
               enableHighAccuracy: true
             });
@@ -110,11 +126,30 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
               }
             }
             
-            if (attempt < 10) {
-              await new Promise(r => setTimeout(r, 200));
+            if (attempt < 15) {
+              await new Promise(r => setTimeout(r, 300));
             }
           } catch (err) {
             console.warn(`Attempt ${attempt} failed:`, err);
+            
+            if (attempt === 5) {
+              try {
+                console.log("Trying with high accuracy disabled");
+                const lowAccuracyPosition = await getCurrentPosition({
+                  timeout: 5000,
+                  maximumAge: 0,
+                  enableHighAccuracy: false
+                });
+                
+                if (!position || lowAccuracyPosition.coords.accuracy < bestAccuracy) {
+                  position = lowAccuracyPosition;
+                  bestAccuracy = lowAccuracyPosition.coords.accuracy;
+                  setHighAccuracyFailed(true);
+                }
+              } catch (lowAccErr) {
+                console.warn("Even low accuracy failed:", lowAccErr);
+              }
+            }
           }
         }
         
@@ -138,6 +173,14 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         const { latitude, longitude, accuracy } = position.coords;
         console.log(`Final position selected with accuracy: ${accuracy} meters`);
         
+        if (accuracy > 100) {
+          toast({
+            title: "Limited accuracy",
+            description: `Location accurate to within ${Math.round(accuracy)} meters. You can drag the pin to adjust.`,
+            variant: "warning",
+          });
+        }
+        
         setFallbackLatitude(latitude);
         setFallbackLongitude(longitude);
         
@@ -155,11 +198,21 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         if (!isMounted) return;
         
         console.error("Error getting location:", error);
-        toast({
-          title: "Location access denied",
-          description: "Please enable location access for better results.",
-          variant: "destructive",
-        });
+        
+        if (error instanceof GeolocationPositionError && error.code === 1) {
+          setLocationPermissionDenied(true);
+          toast({
+            title: "Location access denied",
+            description: "You need to enable location services in your browser settings.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Location error",
+            description: "Could not get accurate location. You can manually set location by dragging the pin.",
+            variant: "destructive",
+          });
+        }
         
         if (!usingMockData && window.google && window.google.maps) {
           initializeGoogleMap(28.6139, 77.2090, 1000);
@@ -202,7 +255,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       
       const mapOptions: google.maps.MapOptions = {
         center: { lat, lng },
-        zoom: 17,
+        zoom: accuracyInMeters > 500 ? 15 : (accuracyInMeters > 200 ? 16 : 17),
         mapTypeControl: false,
         streetViewControl: false,
         fullscreenControl: false,
@@ -236,7 +289,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       const circle = new google.maps.Circle({
         map: googleMap,
         center: { lat, lng },
-        radius: Math.min(accuracyInMeters, 200),
+        radius: Math.min(accuracyInMeters, 1000),
         fillColor: '#4285F4',
         fillOpacity: 0.15,
         strokeColor: '#4285F4',
@@ -245,6 +298,16 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       });
       
       setAccuracyCircle(circle);
+      
+      const infoDiv = document.createElement('div');
+      infoDiv.className = 'accuracy-info';
+      infoDiv.innerHTML = `
+        <div style="background-color: rgba(0,0,0,0.7); color: white; padding: 6px 10px; border-radius: 4px; font-size: 12px; display: flex; align-items: center;">
+          <span style="display: inline-block; width: 10px; height: 10px; background-color: #4285F4; border-radius: 50%; margin-right: 6px;"></span>
+          Location accuracy: ${Math.round(accuracyInMeters)} meters
+        </div>
+      `;
+      googleMap.controls[google.maps.ControlPosition.BOTTOM_CENTER].push(infoDiv);
       
       googleMarker.addListener('dragend', () => {
         const position = googleMarker.getPosition();
@@ -376,10 +439,12 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     setLoadingAddress(true);
     
     try {
+      setLocationPermissionDenied(false);
+      
       let bestPosition = null;
       let bestAccuracy = Infinity;
       
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < 10; i++) {
         try {
           const position = await getCurrentPosition({ 
             timeout: 3000, 
@@ -398,11 +463,45 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
           await new Promise(r => setTimeout(r, 300));
         } catch (e) {
           console.warn(`Attempt ${i+1} to get location failed:`, e);
+          
+          if (i === 4) {
+            try {
+              const lowAccuracyPosition = await getCurrentPosition({
+                timeout: 5000,
+                maximumAge: 0,
+                enableHighAccuracy: false
+              });
+              
+              if (!bestPosition || lowAccuracyPosition.coords.accuracy < bestAccuracy) {
+                bestPosition = lowAccuracyPosition;
+                bestAccuracy = lowAccuracyPosition.coords.accuracy;
+                setHighAccuracyFailed(true);
+              }
+            } catch (lowAccErr) {
+              console.warn("Even low accuracy failed:", lowAccErr);
+            }
+          }
+          
+          if (e instanceof GeolocationPositionError && e.code === 1) {
+            setLocationPermissionDenied(true);
+            toast({
+              title: "Location access denied",
+              description: "Please enable location access in your browser settings.",
+              variant: "destructive",
+            });
+            break;
+          }
         }
       }
       
       if (!bestPosition) {
-        throw new Error("Could not get accurate position after multiple attempts");
+        toast({
+          title: "Location error",
+          description: "Could not get an accurate location. Try moving to an open area or check your device settings.",
+          variant: "destructive",
+        });
+        setLoadingAddress(false);
+        return;
       }
       
       const { latitude, longitude, accuracy } = bestPosition.coords;
@@ -416,6 +515,11 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         marker.setPosition({ lat: latitude, lng: longitude });
         map.panTo({ lat: latitude, lng: longitude });
         
+        if (accuracyCircle) {
+          accuracyCircle.setCenter({ lat: latitude, lng: longitude });
+          accuracyCircle.setRadius(Math.min(accuracy, 1000));
+        }
+        
         if (accuracy > 500) {
           map.setZoom(14);
         } else if (accuracy > 200) {
@@ -424,6 +528,14 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
           map.setZoom(16);
         } else {
           map.setZoom(17);
+        }
+        
+        if (accuracy > 100) {
+          toast({
+            title: "Limited accuracy",
+            description: `Location accurate to within ${Math.round(accuracy)} meters. You can drag the pin to adjust.`,
+            variant: "warning",
+          });
         }
       }
       
@@ -471,6 +583,16 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
           <Navigation className="h-4 w-4" />
         </Button>
       </div>
+      
+      {locationPermissionDenied && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-4 flex items-start gap-2">
+          <AlertTriangle className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
+          <div>
+            <h4 className="text-red-400 font-semibold mb-1">Location access denied</h4>
+            <p className="text-sm text-gray-300">Enable location access in your browser settings to get accurate location data. Until then, you can manually select a location on the map.</p>
+          </div>
+        </div>
+      )}
       
       <div className="relative flex-1 mb-4 rounded-xl overflow-hidden">
         {isLoading && (

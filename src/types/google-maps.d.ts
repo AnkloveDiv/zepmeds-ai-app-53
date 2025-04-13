@@ -1,3 +1,4 @@
+
 // Type definitions for Go Maps JavaScript API
 declare namespace google {
   namespace maps {
@@ -9,6 +10,7 @@ declare namespace google {
       getCenter(): LatLng;
       addListener(eventName: string, handler: Function): MapsEventListener;
       fitBounds(bounds: LatLngBounds, padding?: number | Padding): void;
+      controls: google.maps.MVCArray<Element>[];
     }
 
     class Marker {
@@ -286,6 +288,21 @@ declare namespace google {
       SATELLITE: string;
       HYBRID: string;
       TERRAIN: string;
+    };
+    
+    const ControlPosition: {
+      TOP_LEFT: number;
+      TOP_CENTER: number;
+      TOP_RIGHT: number;
+      LEFT_TOP: number;
+      LEFT_CENTER: number;
+      LEFT_BOTTOM: number;
+      BOTTOM_LEFT: number;
+      BOTTOM_CENTER: number;
+      BOTTOM_RIGHT: number;
+      RIGHT_TOP: number;
+      RIGHT_CENTER: number;
+      RIGHT_BOTTOM: number;
     };
   }
 }
