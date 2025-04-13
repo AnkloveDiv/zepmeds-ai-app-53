@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Pill, Heart, Brain, Eye, Stethoscope, Bone, Sun, Dog, Thermometer } from "lucide-react";
+import { Pill, Heart, Brain, Eye, Stethoscope, Bone, Sun, Dog, Thermometer, Star } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface CategoryProps {
@@ -14,7 +14,7 @@ const CategoriesNav = ({
 }: CategoryProps) => {
   const categories = [
     { name: "All", icon: <Pill className="h-5 w-5" /> },
-    { name: "Popular", icon: <Heart className="h-5 w-5" /> },
+    { name: "Popular", icon: <Star className="h-5 w-5" /> },
     { name: "Skin Care", icon: <Heart className="h-5 w-5" /> },
     { name: "Supplements", icon: <Pill className="h-5 w-5" /> },
     { name: "Eye Care", icon: <Eye className="h-5 w-5" /> },

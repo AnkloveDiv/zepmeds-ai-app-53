@@ -23,20 +23,26 @@ interface ProductGridProps {
   products: Product[];
   onAddToCart: (product: Product, quantity: number) => void;
   onProductClick?: (product: Product) => void;
+  filteredCategory?: string;
 }
 
-const ProductGrid = ({ products, onAddToCart, onProductClick }: ProductGridProps) => {
-  if (!products || products.length === 0) {
+const ProductGrid = ({ products, onAddToCart, onProductClick, filteredCategory }: ProductGridProps) => {
+  // Filter products by category if specified
+  const filteredProducts = filteredCategory && filteredCategory !== "All"
+    ? products.filter(p => p.category === filteredCategory)
+    : products;
+    
+  if (!filteredProducts || filteredProducts.length === 0) {
     return (
       <div className="py-10 text-center">
-        <p className="text-gray-400">No medicines available</p>
+        <p className="text-gray-400">No medicines available in this category</p>
       </div>
     );
   }
 
   return (
     <div className="mt-4 grid grid-cols-2 gap-4">
-      {products.map((product, index) => (
+      {filteredProducts.map((product, index) => (
         <motion.div
           key={product.id}
           initial={{ opacity: 0, y: 20 }}

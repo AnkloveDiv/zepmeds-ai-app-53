@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { CloudSun, CloudRain, Sun, Cloud, CloudDrizzle, CloudLightning, CloudSnow } from 'lucide-react';
 
 interface WeatherForecastProps {
@@ -11,15 +11,13 @@ const WeatherForecast: React.FC<WeatherForecastProps> = ({
   temperature = "29°",
   weather = "Clear" 
 }) => {
-  const [isLoading, setIsLoading] = useState(false);
-
   const getWeatherIcon = () => {
     const weatherType = weather?.toLowerCase() || "";
 
     if (weatherType.includes('clear')) {
       return <Sun className="w-5 h-5 text-yellow-400 animate-pulse" />;
     } else if (weatherType.includes('cloud')) {
-      return <Cloud className="w-5 h-5 text-gray-400 animate-pulse" />;
+      return <Cloud className="w-5 h-5 text-gray-300 animate-pulse" />;
     } else if (weatherType.includes('rain')) {
       return <CloudRain className="w-5 h-5 text-blue-400 animate-pulse" />;
     } else if (weatherType.includes('drizzle')) {
@@ -33,16 +31,8 @@ const WeatherForecast: React.FC<WeatherForecastProps> = ({
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center w-16 h-8 animate-pulse">
-        <div className="w-4 h-4 rounded-full bg-gray-300"></div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex items-center space-x-1 px-2 py-1 rounded-md bg-opacity-40 backdrop-blur-sm">
+    <div className="flex items-center space-x-1 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm">
       {getWeatherIcon()}
       <span className="text-sm font-semibold text-white">{temperature}</span>
     </div>

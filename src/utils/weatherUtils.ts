@@ -1,6 +1,6 @@
 
 export const mapWeatherCondition = (weatherId: number): 'sunny' | 'rainy' | 'cloudy' => {
-  // Weather condition codes: https://openweathermap.org/weather-conditions
+  // Weather condition codes from OpenWeatherMap: https://openweathermap.org/weather-conditions
   if (weatherId >= 200 && weatherId < 600) {
     return 'rainy'; // Thunderstorm, Drizzle, Rain, Snow
   } else if (weatherId === 800) {

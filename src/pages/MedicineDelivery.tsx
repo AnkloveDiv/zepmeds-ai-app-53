@@ -14,6 +14,21 @@ import { useTrendingProducts } from '../hooks/useTrendingProducts';
 import { useBackNavigation } from '../hooks/useBackNavigation';
 import { fetchWeatherByCoordinates, WeatherData } from '../services/weatherService';
 
+// Add category to products
+const addCategoryToProducts = (products) => {
+  return products.map((product, index) => {
+    // Assign categories based on product properties or id
+    let category = "Popular";
+    
+    if (index % 4 === 0) category = "Skin Care";
+    else if (index % 4 === 1) category = "Supplements";
+    else if (index % 4 === 2) category = "Eye Care";
+    else if (index % 4 === 3) category = "Devices";
+    
+    return { ...product, category };
+  });
+};
+
 const MedicineDelivery = () => {
   // Add navigation and toast
   const navigate = useNavigate();
@@ -22,7 +37,16 @@ const MedicineDelivery = () => {
   
   // Get trending products
   const [cartItemsCount, setCartItemsCount] = useState(0);
-  const { products, handleAddToCart, handleProductClick } = useTrendingProducts(setCartItemsCount);
+  const [activeCategory, setActiveCategory] = useState("All");
+  const { products: originalProducts, handleAddToCart, handleProductClick } = useTrendingProducts(setCartItemsCount);
+  
+  // Add categories to products
+  const [products, setProducts] = useState([]);
+  
+  useEffect(() => {
+    // Add categories to the products
+    setProducts(addCategoryToProducts(originalProducts));
+  }, [originalProducts]);
   
   // Weather state with API data
   const [weatherData, setWeatherData] = useState<WeatherData>({
@@ -45,9 +69,19 @@ const MedicineDelivery = () => {
     
     // Fetch weather data on component mount
     const fetchWeather = async () => {
-      // Using Gurugram coordinates based on the image
-      const weather = await fetchWeatherByCoordinates(28.4595, 77.0266);
-      setWeatherData(weather);
+      try {
+        // Using Gurugram coordinates based on the image
+        const weather = await fetchWeatherByCoordinates(28.4595, 77.0266);
+        setWeatherData(weather);
+        console.log("Weather data:", weather);
+      } catch (error) {
+        console.error("Error fetching weather:", error);
+        toast({
+          title: "Weather Error",
+          description: "Could not load weather data. Using default values.",
+          variant: "destructive",
+        });
+      }
     };
     
     fetchWeather();
@@ -55,7 +89,7 @@ const MedicineDelivery = () => {
     return () => {
       window.removeEventListener('storage', getCartCount);
     };
-  }, []);
+  }, [toast]);
   
   // Handle cart button click
   const handleCartClick = () => {
@@ -77,6 +111,16 @@ const MedicineDelivery = () => {
     navigate('/prescription-upload');
   };
 
+  // Handle category click
+  const handleCategoryClick = (category) => {
+    setActiveCategory(category);
+    toast({
+      title: `${category} selected`,
+      description: `Showing medicines in the ${category} category.`,
+      duration: 2000,
+    });
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-black relative">
       <WeatherAnimation type={weatherData.condition} />
@@ -91,7 +135,7 @@ const MedicineDelivery = () => {
       />
       
       {/* Search Section */}
-      <div className="px-4 py-5 bg-gradient-to-b from-[#58684a] to-black z-10">
+      <div className="px-4 py-5 bg-gradient-to-b from-[#3d4355] to-black z-10">
         <SearchBar placeholder="Search for medicines.." />
         
         {/* Upload Prescription */}
@@ -104,8 +148,8 @@ const MedicineDelivery = () => {
               </svg>
             </div>
             <div>
-              <p className="text-white text-sm font-medium truncate">Add prescription and our</p>
-              <p className="text-white text-sm font-medium truncate">pharmacist will assist you!</p>
+              <p className="text-white text-sm font-medium">Add prescription and our</p>
+              <p className="text-white text-sm font-medium">pharmacist will assist you!</p>
             </div>
           </div>
           <Button 
@@ -121,15 +165,21 @@ const MedicineDelivery = () => {
       {/* Categories Section */}
       <div className="flex-1 bg-black px-4 pt-6 pb-20">
         <h2 className="text-white text-2xl font-bold mb-4">Categories</h2>
-        <CategoriesNav />
+        <CategoriesNav 
+          activeCategory={activeCategory}
+          onCategoryClick={handleCategoryClick}
+        />
         
         {/* Products Grid */}
         <div className="mt-6">
-          <h2 className="text-white text-xl font-bold mb-2">Featured Medicines</h2>
+          <h2 className="text-white text-xl font-bold mb-2">
+            {activeCategory === "All" ? "Featured Medicines" : `${activeCategory}`}
+          </h2>
           <ProductGrid 
             products={products} 
             onAddToCart={handleAddToCart}
             onProductClick={handleProductClick}
+            filteredCategory={activeCategory}
           />
         </div>
       </div>

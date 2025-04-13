@@ -19,7 +19,7 @@ const AddressWithWeather: React.FC<AddressWithWeatherProps> = ({
   onBackClick
 }) => {
   return (
-    <div className="w-full bg-[#5d6c92]/70 backdrop-blur-md px-4 py-2">
+    <div className="w-full bg-[#4d5e82]/90 backdrop-blur-md px-4 py-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center">
           <button className="text-white mr-2" onClick={onBackClick}>
