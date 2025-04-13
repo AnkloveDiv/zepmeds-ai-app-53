@@ -68,7 +68,7 @@ const InvoiceGenerator: React.FC<InvoiceGeneratorProps> = ({
       
       toast({
         title: "Invoice Downloaded",
-        description: `Invoice for order #${orderId} has been downloaded.`,
+        description: `Invoice for order #${orderId} has been downloaded as JPG file.`,
       });
     } catch (error) {
       console.error("Error generating invoice:", error);
@@ -91,6 +91,9 @@ const InvoiceGenerator: React.FC<InvoiceGeneratorProps> = ({
             customerName={customerName}
             customerAddress={customerAddress}
             items={items}
+            subtotal={subtotal}
+            deliveryFee={deliveryFee}
+            discount={discount}
             totalAmount={totalAmount}
             isPaid={isPaid}
             paymentMethod={paymentMethod}

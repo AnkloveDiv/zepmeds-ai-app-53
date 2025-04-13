@@ -19,6 +19,9 @@ interface InvoiceTemplateProps {
   customerName: string;
   customerAddress: string;
   items: InvoiceItem[];
+  subtotal: number;
+  deliveryFee: number;
+  discount: number;
   totalAmount: number;
   isPaid: boolean;
   paymentMethod: string;
@@ -30,6 +33,9 @@ const InvoiceTemplate = ({
   customerName,
   customerAddress,
   items,
+  subtotal,
+  deliveryFee,
+  discount,
   totalAmount,
   isPaid,
   paymentMethod
@@ -43,7 +49,14 @@ const InvoiceTemplate = ({
       <AddressSection customerName={customerName} customerAddress={customerAddress} />
       <LegalInfo />
       <ItemsTable items={items} />
-      <TotalSection totalAmount={totalAmount} isPaid={isPaid} paymentMethod={paymentMethod} />
+      <TotalSection 
+        subtotal={subtotal}
+        deliveryFee={deliveryFee}
+        discount={discount}
+        totalAmount={totalAmount} 
+        isPaid={isPaid} 
+        paymentMethod={paymentMethod} 
+      />
       <InvoiceFooter />
     </div>
   );

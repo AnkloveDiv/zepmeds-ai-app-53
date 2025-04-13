@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { FileDown, HelpCircle, AlertTriangle, MessageSquare } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface OrderActionsProps {
   orderId: string;
@@ -11,6 +12,7 @@ interface OrderActionsProps {
 
 const OrderActions = ({ orderId, compact = false, onOpenChat }: OrderActionsProps) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   const handleDownloadInvoice = () => {
     toast({
@@ -40,14 +42,8 @@ Thank you for shopping with Zepmeds!
   };
   
   const handleGetSupport = () => {
-    if (onOpenChat) {
-      onOpenChat();
-    } else {
-      toast({
-        title: "Support Request Sent",
-        description: "A support agent will contact you shortly.",
-      });
-    }
+    // Navigate to the Support page when user clicks on Help & Support button
+    navigate('/support');
   };
   
   const handleRaiseIssue = () => {
