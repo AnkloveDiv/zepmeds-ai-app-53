@@ -246,6 +246,7 @@ const ProductCard = ({
               <motion.button
                 className={`p-2 rounded-full ${(!inStock || disabled) ? 'bg-gray-700' : 'bg-zepmeds-purple'} ${isAnimating ? 'cart-animation' : ''} cart-icon-button`}
                 onClick={toggleStepper}
+                whileTap={{ scale: 0.9 }}
               >
                 {showStepper ? (
                   <Plus className="w-4 h-4 text-white" />

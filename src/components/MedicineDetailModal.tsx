@@ -79,7 +79,10 @@ const MedicineDetailModal: React.FC<MedicineDetailModalProps> = ({
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
         >
-          <div className="min-h-screen py-10 px-4 flex items-center justify-center w-full" onClick={onClose}>
+          <div 
+            className="min-h-[100dvh] sm:min-h-0 py-4 sm:py-10 px-2 sm:px-4 flex items-center justify-center w-full" 
+            onClick={onClose}
+          >
             <motion.div
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}

@@ -186,26 +186,49 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
             
             <div className="border-t border-gray-700 my-5"></div>
             
-            <QuantitySelector 
-              quantity={quantity}
-              setQuantity={setQuantity}
-              strips={strips}
-              setStrips={setStrips}
-              isLiquid={isLiquid}
-              isDevice={isDevice}
-              handleDecrement={handleDecrement}
-              handleIncrement={handleIncrement}
-              disabled={!inStock}
-              medicineType={medicineType}
-              unitsPerStrip={unitsPerStrip}
-              totalQuantity={totalUnits}
-            />
+            {/* Only show quantity selector for liquid or device type medicines */}
+            {(isLiquid || isDevice) && (
+              <QuantitySelector 
+                quantity={quantity}
+                setQuantity={setQuantity}
+                strips={strips}
+                setStrips={setStrips}
+                isLiquid={isLiquid}
+                isDevice={isDevice}
+                handleDecrement={handleDecrement}
+                handleIncrement={handleIncrement}
+                disabled={!inStock}
+                medicineType={medicineType}
+                unitsPerStrip={unitsPerStrip}
+                totalQuantity={totalUnits}
+              />
+            )}
+            
+            {/* For tablets, show both quantity and strips selectors */}
+            {!isLiquid && !isDevice && (
+              <QuantitySelector 
+                quantity={quantity}
+                setQuantity={setQuantity}
+                strips={strips}
+                setStrips={setStrips}
+                isLiquid={isLiquid}
+                isDevice={isDevice}
+                handleDecrement={handleDecrement}
+                handleIncrement={handleIncrement}
+                disabled={!inStock}
+                medicineType={medicineType}
+                unitsPerStrip={unitsPerStrip}
+                totalQuantity={totalUnits}
+              />
+            )}
             
             <ActionButtons 
               onClose={onClose} 
               handleAddToCart={handleAddToCart}
               disabled={!inStock}
               inStock={inStock}
+              quantity={quantity}
+              setQuantity={setQuantity}
             />
           </div>
         </div>
