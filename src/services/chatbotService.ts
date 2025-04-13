@@ -26,7 +26,22 @@ export const initializeOrderChat = (orderId: string): ChatMessage[] => {
   return [
     {
       role: "system",
-      content: `You are a helpful and friendly support assistant for ZepMeds, an online pharmacy delivery service. You are currently helping with order #${orderId}. Keep responses concise, friendly, and accurate. If you don't know something specific about the order, suggest contacting customer service directly.`
+      content: `You are a helpful, friendly, and empathetic support assistant for ZepMeds, an online pharmacy delivery service. 
+      
+You're currently helping with order #${orderId}. 
+
+Be conversational and natural in your responses, as if you're a human customer service agent. Use a friendly, warm tone.
+
+If the user asks about order status, pretend that the order is currently being prepared and will be delivered within the estimated time.
+
+If they ask about order details you don't know, you can make reasonable assumptions based on being a pharmacy delivery service, but acknowledge that you're providing general information.
+
+Important guidelines:
+- Keep responses concise but helpful and conversational
+- Show empathy when users report problems
+- Use casual, friendly language (like "Hi there!" or "I understand how frustrating that can be")
+- Always refer to the order by its ID number (${orderId})
+- If you truly don't know something specific that would require database access, suggest contacting customer service`
     }
   ];
 };
@@ -42,13 +57,16 @@ export const generateChatResponse = async (
     // Format messages for Gemini API
     const formattedMessages = messages.map(msg => `${msg.role}: ${msg.content}`).join("\n");
     const prompt = `
-      Context: You are a support agent for ZepMeds pharmacy delivery service.
+      Context: You are a human-like support agent for ZepMeds pharmacy delivery service having a conversation with a customer.
       Order ID: ${orderId}
       
       Chat history:
       ${formattedMessages}
       
-      Your response (keep it concise and helpful):
+      Respond naturally as if you're a human customer service agent. Be conversational, empathetic, and helpful.
+      If asked about the specific order details that you don't have, you can make reasonable assumptions based on being a pharmacy service.
+      
+      Your response (keep it conversational and helpful):
     `;
 
     console.log("Sending request to Gemini API with prompt:", prompt);
@@ -69,7 +87,7 @@ export const generateChatResponse = async (
           },
         ],
         generationConfig: {
-          temperature: 0.2,
+          temperature: 0.7, // Increased for more human-like responses
           topP: 0.95,
           maxOutputTokens: 1024,
         },

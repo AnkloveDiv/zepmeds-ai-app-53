@@ -9,7 +9,9 @@ import {
   Loader2, 
   Star, 
   X,
-  ChevronRight
+  ChevronRight,
+  ThumbsUp,
+  ThumbsDown
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { 
@@ -31,6 +33,8 @@ const SupportChatbot = ({ orderId, onClose }: SupportChatbotProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showRating, setShowRating] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
+  const [askForFeedback, setAskForFeedback] = useState(false);
+  const [conversationLength, setConversationLength] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -54,6 +58,17 @@ const SupportChatbot = ({ orderId, onClose }: SupportChatbotProps) => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Check conversation length to prompt for feedback
+  useEffect(() => {
+    const userMessages = messages.filter(m => m.role === "user").length;
+    setConversationLength(userMessages);
+    
+    // After 3-4 user messages, we should ask for feedback if we haven't already
+    if (userMessages >= 3 && !showRating && !askForFeedback) {
+      setAskForFeedback(true);
+    }
+  }, [messages, showRating]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -95,10 +110,11 @@ const SupportChatbot = ({ orderId, onClose }: SupportChatbotProps) => {
         timestamp: new Date()
       });
       
-      // After 3 messages from the user, show rating
-      const userMessageCount = allMessages.filter(m => m.role === "user").length;
-      if (userMessageCount >= 3 && !showRating) {
-        setShowRating(true);
+      // After a few exchanges, ask for rating if appropriate
+      if (askForFeedback && !showRating) {
+        setTimeout(() => {
+          setShowRating(true);
+        }, 1000);
       }
     } catch (error) {
       console.error("Error in chat:", error);
@@ -130,11 +146,26 @@ const SupportChatbot = ({ orderId, onClose }: SupportChatbotProps) => {
     setTimeout(() => {
       handleAddMessage({
         role: "assistant",
-        content: "Thank you for your feedback! Is there anything else I can help you with?",
+        content: "Thank you for your feedback! Is there anything else I can help you with regarding your order?",
         timestamp: new Date()
       });
     }, 500);
   };
+
+  const handleFeedback = (isPositive: boolean) => {
+    toast({
+      title: "Thank you for your feedback!",
+      description: isPositive ? "We're glad you found this helpful!" : "We'll work on improving our responses."
+    });
+    
+    // Remove the feedback UI
+    setAskForFeedback(false);
+  };
+
+  // Get last assistant message for feedback
+  const lastAssistantMessage = [...messages]
+    .filter(m => m.role === "assistant")
+    .pop();
 
   return (
     <div className="flex flex-col h-full">
@@ -194,6 +225,31 @@ const SupportChatbot = ({ orderId, onClose }: SupportChatbotProps) => {
             <div className="bg-black/40 rounded-lg p-3 flex items-center space-x-2">
               <Loader2 className="h-4 w-4 text-gray-400 animate-spin" />
               <span className="text-gray-400 text-sm">Typing...</span>
+            </div>
+          </div>
+        )}
+        
+        {/* Feedback for last assistant message */}
+        {askForFeedback && lastAssistantMessage && !showRating && !isLoading && conversationLength >= 3 && (
+          <div className="flex justify-start">
+            <div className="bg-black/20 rounded-lg p-2 flex items-center space-x-2">
+              <span className="text-gray-400 text-xs">Was this helpful?</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 rounded-full hover:bg-green-500/20"
+                onClick={() => handleFeedback(true)}
+              >
+                <ThumbsUp className="h-4 w-4 text-green-400" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 rounded-full hover:bg-red-500/20"
+                onClick={() => handleFeedback(false)}
+              >
+                <ThumbsDown className="h-4 w-4 text-red-400" />
+              </Button>
             </div>
           </div>
         )}
