@@ -204,9 +204,9 @@ const MapAddressSelector: React.FC<MapAddressSelectorProps> = ({
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex flex-col h-full max-h-[90vh] overflow-hidden">
       {/* Map Container */}
-      <div className="relative w-full h-1/2 min-h-[300px]">
+      <div className="relative flex-shrink-0 w-full h-2/5 min-h-[200px]">
         {error && <AlertMessages error={error} />}
         
         <div id="map" className="w-full h-full"></div>
@@ -235,126 +235,135 @@ const MapAddressSelector: React.FC<MapAddressSelectorProps> = ({
       </div>
       
       {/* Address Form */}
-      <Card className="flex-1 rounded-none border-0 shadow-none overflow-auto">
-        <CardHeader className="px-4 py-3 sticky top-0 bg-black z-10">
-          <CardTitle className="text-lg font-semibold">Address Details</CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 py-2 space-y-4 overflow-y-auto pb-24 md:pb-20">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="flex-grow overflow-auto">
+        <Card className="border-0 shadow-none rounded-none h-full">
+          <CardHeader className="sticky top-0 bg-black z-10 px-4 py-3">
+            <CardTitle className="text-lg font-semibold">Address Details</CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 py-2 space-y-4 pb-20">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="houseNumber">House/Flat Number*</Label>
+                <Input 
+                  id="houseNumber"
+                  value={houseNumber}
+                  onChange={(e) => setHouseNumber(e.target.value)}
+                  placeholder="e.g. 123, Flat 4B"
+                  required
+                  className="bg-black/20 border-gray-700"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="streetName">Street Name*</Label>
+                <Input 
+                  id="streetName"
+                  value={streetName}
+                  onChange={(e) => setStreetName(e.target.value)}
+                  placeholder="e.g. Main Street"
+                  required
+                  className="bg-black/20 border-gray-700"
+                />
+              </div>
+            </div>
+            
             <div className="space-y-2">
-              <Label htmlFor="houseNumber">House/Flat Number*</Label>
+              <Label htmlFor="area">Area/Locality*</Label>
               <Input 
-                id="houseNumber"
-                value={houseNumber}
-                onChange={(e) => setHouseNumber(e.target.value)}
-                placeholder="e.g. 123, Flat 4B"
+                id="area"
+                value={area}
+                onChange={(e) => setArea(e.target.value)}
+                placeholder="e.g. Koramangala"
                 required
+                className="bg-black/20 border-gray-700"
               />
             </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="city">City*</Label>
+                <Input 
+                  id="city"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="e.g. Bangalore"
+                  required
+                  className="bg-black/20 border-gray-700"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="state">State*</Label>
+                <Input 
+                  id="state"
+                  value={state}
+                  onChange={(e) => setState(e.target.value)}
+                  placeholder="e.g. Karnataka"
+                  required
+                  className="bg-black/20 border-gray-700"
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="pincode">Pincode*</Label>
+                <Input 
+                  id="pincode"
+                  value={pincode}
+                  onChange={(e) => setPincode(e.target.value)}
+                  placeholder="e.g. 560034"
+                  required
+                  className="bg-black/20 border-gray-700"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="landmark">Landmark</Label>
+                <Input 
+                  id="landmark"
+                  value={landmark}
+                  onChange={(e) => setLandmark(e.target.value)}
+                  placeholder="e.g. Near Park"
+                  className="bg-black/20 border-gray-700"
+                />
+              </div>
+            </div>
+            
             <div className="space-y-2">
-              <Label htmlFor="streetName">Street Name*</Label>
-              <Input 
-                id="streetName"
-                value={streetName}
-                onChange={(e) => setStreetName(e.target.value)}
-                placeholder="e.g. Main Street"
-                required
-              />
+              <Label>Address Type</Label>
+              <div className="flex flex-wrap gap-2">
+                {['home', 'work', 'other'].map((type) => (
+                  <Button
+                    key={type}
+                    type="button"
+                    variant={addressType === type ? "default" : "outline"}
+                    onClick={() => setAddressType(type)}
+                    className="capitalize"
+                  >
+                    {type}
+                  </Button>
+                ))}
+              </div>
             </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="area">Area/Locality*</Label>
-            <Input 
-              id="area"
-              value={area}
-              onChange={(e) => setArea(e.target.value)}
-              placeholder="e.g. Koramangala"
-              required
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="city">City*</Label>
-              <Input 
-                id="city"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                placeholder="e.g. Bangalore"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="state">State*</Label>
-              <Input 
-                id="state"
-                value={state}
-                onChange={(e) => setState(e.target.value)}
-                placeholder="e.g. Karnataka"
-                required
-              />
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="pincode">Pincode*</Label>
-              <Input 
-                id="pincode"
-                value={pincode}
-                onChange={(e) => setPincode(e.target.value)}
-                placeholder="e.g. 560034"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="landmark">Landmark</Label>
-              <Input 
-                id="landmark"
-                value={landmark}
-                onChange={(e) => setLandmark(e.target.value)}
-                placeholder="e.g. Near Park"
-              />
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label>Address Type</Label>
-            <div className="flex flex-wrap gap-2">
-              {['home', 'work', 'other'].map((type) => (
-                <Button
-                  key={type}
-                  type="button"
-                  variant={addressType === type ? "default" : "outline"}
-                  onClick={() => setAddressType(type)}
-                  className="capitalize"
-                >
-                  {type}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-        <CardFooter className="px-4 py-3 flex justify-end gap-3 fixed bottom-0 left-0 right-0 bg-black border-t border-gray-800 z-10">
-          {onCancel && (
+          </CardContent>
+          <CardFooter className="px-4 py-3 flex justify-end gap-3 sticky bottom-0 bg-black border-t border-gray-800 z-10">
+            {onCancel && (
+              <Button
+                variant="outline"
+                onClick={onCancel}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+            )}
             <Button
-              variant="outline"
-              onClick={onCancel}
-              className="flex-1"
+              onClick={handleSaveAddress}
+              disabled={!houseNumber || !streetName || !area || !city || !state || !pincode}
+              className={onCancel ? "flex-1" : "w-full"}
             >
-              Cancel
+              {onAddressSelected ? "Select Location" : "Save Address"}
             </Button>
-          )}
-          <Button
-            onClick={handleSaveAddress}
-            disabled={!houseNumber || !streetName || !area || !city || !state || !pincode}
-            className={onCancel ? "flex-1" : "w-full"}
-          >
-            {onAddressSelected ? "Select Location" : "Save Address"}
-          </Button>
-        </CardFooter>
-      </Card>
+          </CardFooter>
+        </Card>
+      </div>
     </div>
   );
 };
