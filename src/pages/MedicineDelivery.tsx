@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import SearchBar from '../components/SearchBar';
 import { Button } from "../components/ui/button";
 import { Upload } from 'lucide-react';
@@ -9,10 +9,35 @@ import FloatingCartButton from '../components/medicine/FloatingCartButton';
 import AddressWithWeather from '../components/medicine/AddressWithWeather';
 import WeatherAnimation from '../components/medicine/WeatherAnimation';
 import LocationWeather from '../components/medicine/LocationWeather';
+import { useNavigate } from 'react-router-dom';
 
 const MedicineDelivery = () => {
   // Mock weather condition - in a real app, this would come from an API
   const weatherCondition: 'sunny' | 'rainy' | 'cloudy' = 'cloudy';
+  const navigate = useNavigate();
+  const [cartItemsCount, setCartItemsCount] = useState(0);
+  
+  // Get cart items count from localStorage on component mount
+  useEffect(() => {
+    const getCartCount = () => {
+      const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+      setCartItemsCount(cart.length);
+    };
+    
+    getCartCount();
+    
+    // Add event listener for storage changes (if cart is modified in another tab)
+    window.addEventListener('storage', getCartCount);
+    
+    return () => {
+      window.removeEventListener('storage', getCartCount);
+    };
+  }, []);
+  
+  // Handle cart button click
+  const handleCartClick = () => {
+    navigate('/cart');
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-black relative">
@@ -52,7 +77,7 @@ const MedicineDelivery = () => {
       </div>
 
       {/* Floating Cart Button */}
-      <FloatingCartButton />
+      <FloatingCartButton itemsCount={cartItemsCount} onClick={handleCartClick} />
     </div>
   );
 };
