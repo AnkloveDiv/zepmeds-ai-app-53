@@ -45,7 +45,7 @@ const AddressWithWeather: React.FC<AddressWithWeatherProps> = ({
           <div className="text-xs text-gray-400">{deliveryTime}</div>
           <div className="flex items-center text-sm font-medium text-white">
             <MapPin className="h-4 w-4 mr-1 text-zepmeds-purple" />
-            <span className="mr-1 max-w-[180px] truncate">{address}</span>
+            <span className="mr-1 max-w-[120px] sm:max-w-[220px] truncate">{address}</span>
             <ChevronDown className="h-4 w-4" />
           </div>
         </div>

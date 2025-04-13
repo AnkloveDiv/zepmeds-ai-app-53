@@ -22,7 +22,7 @@ const TabSelector: React.FC<TabSelectorProps> = ({ activeTab, setActiveTab }) =>
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            className={`flex items-center rounded-full px-2 py-1.5 text-xs font-medium whitespace-nowrap sm:px-3 ${
+            className={`flex items-center rounded-full px-2 py-1.5 text-xs font-medium whitespace-nowrap sm:px-3 transition-colors ${
               activeTab === tab.id
                 ? "bg-zepmeds-purple text-white"
                 : "bg-black/20 text-gray-400 hover:bg-black/40 hover:text-gray-300"

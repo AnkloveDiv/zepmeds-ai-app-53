@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader, MapPin, Navigation, Search, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { initializeGoogleMaps } from "@/utils/googleMapsLoader";
 
 interface MapAddressSelectorProps {
   onAddressSelected: (address: AddressDetails) => void;
@@ -20,83 +21,6 @@ interface AddressDetails {
   zipCode: string;
 }
 
-// Mock implementation for development environment
-const mockGoogleMaps = () => {
-  if (typeof window !== 'undefined' && !window.google) {
-    // @ts-ignore
-    window.google = {
-      maps: {
-        Map: class MockMap {
-          constructor() {}
-          setCenter() {}
-          setZoom() {}
-          panTo() {}
-          getCenter() { return { lat: () => 28.6139, lng: () => 77.2090 }; }
-          addListener(event: string, callback: Function) {
-            return { remove: () => {} };
-          }
-        },
-        Marker: class MockMarker {
-          constructor() {}
-          setPosition() {}
-          getPosition() { return { lat: () => 28.6139, lng: () => 77.2090 }; }
-          setMap() {}
-          addListener(event: string, callback: Function) {
-            return { remove: () => {} };
-          }
-          setAnimation() {}
-        },
-        LatLng: class MockLatLng {
-          private _lat: number;
-          private _lng: number;
-          
-          constructor(lat: number, lng: number) {
-            this._lat = lat;
-            this._lng = lng;
-          }
-          
-          lat() { return this._lat; }
-          lng() { return this._lng; }
-        },
-        Geocoder: class MockGeocoder {
-          geocode(request: any, callback: Function) {
-            // Simulate a geocoding response
-            setTimeout(() => {
-              const mockResult = [{
-                address_components: [
-                  { long_name: 'City', short_name: 'CT', types: ['locality'] },
-                  { long_name: 'State', short_name: 'ST', types: ['administrative_area_level_1'] },
-                  { long_name: '12345', short_name: '12345', types: ['postal_code'] }
-                ],
-                formatted_address: 'Mock Address, City, State 12345',
-                geometry: {
-                  location: { lat: () => 28.6139, lng: () => 77.2090 }
-                },
-                place_id: 'mock-place-id'
-              }];
-              callback(mockResult, 'OK');
-            }, 500);
-          }
-        },
-        MapsEventListener: class MockMapsEventListener {
-          remove() {}
-        },
-        Animation: {
-          DROP: 1,
-          BOUNCE: 2
-        },
-        SymbolPath: {
-          CIRCLE: 0,
-          FORWARD_CLOSED_ARROW: 1,
-          FORWARD_OPEN_ARROW: 2,
-          BACKWARD_CLOSED_ARROW: 3,
-          BACKWARD_OPEN_ARROW: 4
-        }
-      }
-    };
-  }
-};
-
 const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
@@ -108,143 +32,153 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
   const { toast } = useToast();
   
   useEffect(() => {
-    // Initialize mock Google Maps for development
-    mockGoogleMaps();
-    
-    // Check if Google Maps API is available
-    if (!window.google || !window.google.maps) {
-      console.error("Google Maps API is not loaded");
-      toast({
-        title: "Maps API not available",
-        description: "Could not load Google Maps. Using mock data instead.",
-        variant: "destructive",
-      });
-      
-      // Initialize with mock data anyway
-      setTimeout(() => {
+    const loadMap = async () => {
+      try {
+        // Initialize Google Maps API
+        await initializeGoogleMaps();
+        
+        // Check if Google Maps API is available
+        if (!window.google || !window.google.maps) {
+          console.error("Google Maps API is not loaded after initialization");
+          toast({
+            title: "Maps API not available",
+            description: "Could not load Google Maps. Please try again later.",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+        
+        // Get user's current location
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const { latitude, longitude } = position.coords;
+              console.log("Got user location:", latitude, longitude);
+              initializeMap(latitude, longitude);
+            },
+            (error) => {
+              console.error("Error getting location:", error);
+              // Default to a location if geolocation fails
+              toast({
+                title: "Location access denied",
+                description: "Using default location. Please enable location access for better results.",
+                variant: "destructive",
+              });
+              initializeMap(28.6139, 77.2090); // New Delhi coordinates as fallback
+            }
+          );
+        } else {
+          console.error("Geolocation not supported by this browser");
+          toast({
+            title: "Geolocation not supported",
+            description: "Your browser doesn't support geolocation. Using default location.",
+            variant: "destructive",
+          });
+          initializeMap(28.6139, 77.2090); // New Delhi coordinates as fallback
+        }
+      } catch (error) {
+        console.error("Error during map initialization:", error);
         setIsLoading(false);
-        simulateAddressSelection(28.6139, 77.2090);
-      }, 1000);
+        toast({
+          title: "Map initialization failed",
+          description: "Could not initialize the map. Please try again later.",
+          variant: "destructive",
+        });
+      }
+    };
+    
+    loadMap();
+  }, [toast]);
+  
+  const initializeMap = (lat: number, lng: number) => {
+    if (!mapRef.current || !window.google || !window.google.maps) {
+      setIsLoading(false);
       return;
     }
     
-    // Get user's current location
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        initializeMap(latitude, longitude);
-      },
-      (error) => {
-        console.error("Error getting location:", error);
-        // Default to a location if geolocation fails
-        initializeMap(28.6139, 77.2090); // New Delhi coordinates
-      }
-    );
-  }, []);
-  
-  const initializeMap = (lat: number, lng: number) => {
-    if (!mapRef.current) return;
-    
-    const mapOptions: google.maps.MapOptions = {
-      center: { lat, lng },
-      zoom: 15,
-      mapTypeControl: false,
-      fullscreenControl: false,
-      streetViewControl: false,
-      zoomControl: true,
-      styles: [
-        {
-          featureType: "poi",
-          elementType: "labels",
-          stylers: [{ visibility: "off" }]
+    try {
+      console.log("Initializing map with coordinates:", lat, lng);
+      const mapOptions: google.maps.MapOptions = {
+        center: { lat, lng },
+        zoom: 15,
+        mapTypeControl: false,
+        fullscreenControl: false,
+        streetViewControl: false,
+        zoomControl: true,
+        styles: [
+          {
+            featureType: "poi",
+            elementType: "labels",
+            stylers: [{ visibility: "off" }]
+          }
+        ]
+      };
+      
+      const newMap = new google.maps.Map(mapRef.current, mapOptions);
+      setMap(newMap);
+      
+      const newMarker = new google.maps.Marker({
+        position: { lat, lng },
+        map: newMap,
+        draggable: true,
+        animation: google.maps.Animation.DROP,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 10,
+          fillColor: "#7D41E1",
+          fillOpacity: 1,
+          strokeColor: "#ffffff",
+          strokeWeight: 2,
         }
-      ]
-    };
-    
-    const newMap = new google.maps.Map(mapRef.current, mapOptions);
-    setMap(newMap);
-    
-    const newMarker = new google.maps.Marker({
-      position: { lat, lng },
-      map: newMap,
-      draggable: true,
-      animation: google.maps.Animation.DROP,
-      icon: {
-        path: google.maps.SymbolPath.CIRCLE,
-        scale: 10,
-        fillColor: "#7D41E1",
-        fillOpacity: 1,
-        strokeColor: "#ffffff",
-        strokeWeight: 2,
-      }
-    });
-    setMarker(newMarker);
-    
-    // Get address for initial location
-    getAddressFromCoordinates(lat, lng);
-    
-    // Add event listener for marker drag end
-    newMarker.addListener("dragend", () => {
-      const position = newMarker.getPosition();
-      if (position) {
-        getAddressFromCoordinates(position.lat(), position.lng());
-      }
-    });
-    
-    // Add event listener for map click
-    newMap.addListener("click", (e: any) => {
-      const position = e.latLng;
-      if (position && newMarker) {
-        newMarker.setPosition(position);
-        getAddressFromCoordinates(position.lat(), position.lng());
-      }
-    });
-    
-    setIsLoading(false);
-  };
-  
-  const simulateAddressSelection = (lat: number, lng: number) => {
-    // For development - simulate address selection
-    const mockAddress: AddressDetails = {
-      fullAddress: "123 Example Street, New Delhi, India, 110001",
-      latitude: lat,
-      longitude: lng,
-      city: "New Delhi",
-      state: "Delhi",
-      zipCode: "110001"
-    };
-    
-    setSelectedAddress(mockAddress);
+      });
+      setMarker(newMarker);
+      
+      // Get address for initial location
+      getAddressFromCoordinates(lat, lng);
+      
+      // Add event listener for marker drag end
+      newMarker.addListener("dragend", () => {
+        const position = newMarker.getPosition();
+        if (position) {
+          getAddressFromCoordinates(position.lat(), position.lng());
+        }
+      });
+      
+      // Add event listener for map click
+      newMap.addListener("click", (e: google.maps.MapMouseEvent) => {
+        const position = e.latLng;
+        if (position && newMarker) {
+          newMarker.setPosition(position);
+          getAddressFromCoordinates(position.lat(), position.lng());
+        }
+      });
+      
+      setIsLoading(false);
+    } catch (error) {
+      console.error("Error creating map:", error);
+      setIsLoading(false);
+      toast({
+        title: "Map creation failed",
+        description: "Could not create the map. Please try again later.",
+        variant: "destructive",
+      });
+    }
   };
   
   const getAddressFromCoordinates = (lat: number, lng: number) => {
+    if (!window.google || !window.google.maps) return;
+    
     setLoadingAddress(true);
+    console.log("Getting address for coordinates:", lat, lng);
     
-    // In a real app, you would use the Google Maps Geocoding API
-    // For demo purposes, we'll simulate a geocoding response
-    setTimeout(() => {
-      // Create a "realistic" address based on coordinates
-      const latRounded = lat.toFixed(2);
-      const lngRounded = lng.toFixed(2);
-      const mockAddress: AddressDetails = {
-        fullAddress: `${latRounded}, ${lngRounded} Avenue, Example City, State, ZIP`,
-        latitude: lat,
-        longitude: lng,
-        city: "Example City",
-        state: "EX",
-        zipCode: "12345"
-      };
-      
-      setSelectedAddress(mockAddress);
-      setLoadingAddress(false);
-    }, 1000);
-    
-    // With actual Google Maps API, you would use:
-    /*
     const geocoder = new google.maps.Geocoder();
     geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-      if (status === "OK" && results?.[0]) {
-        const addressComponents = results[0].address_components;
+      if (status === "OK" && results && results[0]) {
+        const result = results[0];
+        console.log("Geocoder result:", result);
+        
+        const addressComponents = result.address_components;
         
         // Extract address components
         const city = addressComponents.find(c => 
@@ -255,7 +189,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
           c.types.includes("postal_code"))?.long_name || "";
         
         const addressDetails: AddressDetails = {
-          fullAddress: results[0].formatted_address,
+          fullAddress: result.formatted_address,
           latitude: lat,
           longitude: lng,
           city,
@@ -263,59 +197,55 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
           zipCode
         };
         
+        console.log("Address details:", addressDetails);
         setSelectedAddress(addressDetails);
       } else {
+        console.error("Geocoding failed:", status);
         toast({
           title: "Geocoding failed",
           description: "Could not get address for this location",
           variant: "destructive",
         });
+        
+        // Fallback to coordinates as address
+        setSelectedAddress({
+          fullAddress: `Location at ${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+          latitude: lat,
+          longitude: lng,
+          city: "Unknown City",
+          state: "Unknown State",
+          zipCode: "Unknown"
+        });
       }
       
       setLoadingAddress(false);
     });
-    */
   };
   
   const handleSearch = () => {
-    if (!searchQuery.trim() || !map) return;
+    if (!searchQuery.trim() || !map || !window.google || !window.google.maps) return;
     
     setLoadingAddress(true);
+    console.log("Searching for address:", searchQuery);
     
-    // In a real app, you would use the Google Maps Places API
-    // For demo purposes, we'll simulate a places search response
-    setTimeout(() => {
-      // Simulate a random location near the current center
-      const center = map.getCenter();
-      if (center && marker) {
-        const lat = center.lat() + (Math.random() - 0.5) * 0.01;
-        const lng = center.lng() + (Math.random() - 0.5) * 0.01;
-        
-        marker.setPosition({ lat, lng });
-        map.panTo({ lat, lng });
-        getAddressFromCoordinates(lat, lng);
-      }
-      
-      setLoadingAddress(false);
-    }, 1000);
-    
-    // With actual Google Maps API:
-    /*
-    const placesService = new google.maps.places.PlacesService(map);
-    placesService.findPlaceFromQuery({
-      query: searchQuery,
-      fields: ["geometry", "formatted_address", "name"]
-    }, (results, status) => {
-      if (status === google.maps.places.PlacesServiceStatus.OK && results?.[0]?.geometry?.location) {
+    const geocoder = new google.maps.Geocoder();
+    geocoder.geocode({ address: searchQuery }, (results, status) => {
+      if (status === "OK" && results && results[0] && results[0].geometry && results[0].geometry.location) {
         const location = results[0].geometry.location;
+        const lat = location.lat();
+        const lng = location.lng();
+        
+        console.log("Found location:", lat, lng);
         
         if (marker) {
           marker.setPosition(location);
         }
         
         map.panTo(location);
-        getAddressFromCoordinates(location.lat(), location.lng());
+        map.setZoom(15);
+        getAddressFromCoordinates(lat, lng);
       } else {
+        console.error("Place search failed:", status);
         toast({
           title: "Place not found",
           description: "Could not find the location you searched for",
@@ -324,30 +254,41 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         setLoadingAddress(false);
       }
     });
-    */
   };
   
   const handleCurrentLocation = () => {
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        
-        if (map && marker) {
-          const location = new google.maps.LatLng(latitude, longitude);
-          marker.setPosition(location);
-          map.panTo(location);
-          getAddressFromCoordinates(latitude, longitude);
+    if (navigator.geolocation) {
+      setLoadingAddress(true);
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          console.log("Current location:", latitude, longitude);
+          
+          if (map && marker) {
+            const location = new google.maps.LatLng(latitude, longitude);
+            marker.setPosition(location);
+            map.panTo(location);
+            map.setZoom(15);
+            getAddressFromCoordinates(latitude, longitude);
+          }
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          toast({
+            title: "Location error",
+            description: "Could not get your current location",
+            variant: "destructive",
+          });
+          setLoadingAddress(false);
         }
-      },
-      (error) => {
-        console.error("Error getting location:", error);
-        toast({
-          title: "Location error",
-          description: "Could not get your current location",
-          variant: "destructive",
-        });
-      }
-    );
+      );
+    } else {
+      toast({
+        title: "Geolocation not supported",
+        description: "Your browser doesn't support geolocation",
+        variant: "destructive",
+      });
+    }
   };
   
   const handleConfirmAddress = () => {
@@ -368,7 +309,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
             className="pr-10 bg-black/20 border-gray-700"
           />
           <Search 
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 cursor-pointer"
             onClick={handleSearch}
           />
         </div>

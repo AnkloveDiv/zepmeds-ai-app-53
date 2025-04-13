@@ -43,12 +43,13 @@ export const loadGoogleMapsApi = (apiKey: string): Promise<void> => {
   });
 };
 
-// Specify Google Maps API key - normally this would be in an env file
+// Specify Google Maps API key
 export const GOOGLE_MAPS_API_KEY = "AIzaSyAZeMByxk5MMF_oSSz49bsS2IFLsO0K4B0";
 
 // Function to initialize Google Maps in a specific component when needed
 export const initializeGoogleMaps = async (): Promise<void> => {
   try {
+    console.log("Initializing Google Maps with API key:", GOOGLE_MAPS_API_KEY);
     await loadGoogleMapsApi(GOOGLE_MAPS_API_KEY);
   } catch (error) {
     console.error("Failed to initialize Google Maps:", error);
