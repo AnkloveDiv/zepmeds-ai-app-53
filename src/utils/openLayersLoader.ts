@@ -64,6 +64,18 @@ export const initializeMap = (
       })
     });
 
+    // Add event to confirm map is rendered
+    map.once('rendercomplete', () => {
+      console.log('Map rendered completely');
+      mapLoadError = null;
+    });
+    
+    // Handle map loading error
+    map.getTargetElement().addEventListener('error', (event) => {
+      console.error('Map loading error:', event);
+      mapLoadError = 'Failed to load map tiles. Please check your internet connection.';
+    }, true);
+
     mapInstance = map;
     return map;
   } catch (error) {
@@ -336,6 +348,12 @@ export const getMapLoadError = (): string | null => {
  * Get coordinates from a map click
  */
 export const getCoordinatesFromClick = (map: Map, event: any): Location => {
+  if (!event || !event.originalEvent) {
+    console.error('Invalid event object passed to getCoordinatesFromClick');
+    // Return a default location if event is invalid
+    return { lng: 0, lat: 0 };
+  }
+  
   const coordinates = map.getEventCoordinate(event.originalEvent);
   const lonLat = toLonLat(coordinates);
   return {

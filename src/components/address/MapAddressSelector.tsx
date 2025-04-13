@@ -88,30 +88,32 @@ const MapAddressSelector: React.FC<MapAddressSelectorProps> = ({
       
       // Set up click handler to update location when map is clicked
       newMap.on('click', (event) => {
-        if (!event.originalEvent) return;
-        
-        // Use the getCoordinatesFromClick helper function
-        const newLocation = getCoordinatesFromClick(newMap, event);
-        setLocation(newLocation);
-        
-        // Get address information
-        reverseGeocode(newLocation.lat, newLocation.lng)
-          .then(result => {
-            if (result && result.address_components) {
-              const addressData = parseAddressComponents(result.address_components);
-              
-              setHouseNumber(addressData.street_number);
-              setStreetName(addressData.route);
-              setArea(addressData.locality);
-              setCity(addressData.city);
-              setState(addressData.state);
-              setPincode(addressData.postal_code);
-            }
-          })
-          .catch(error => {
-            console.error("Error reverse geocoding:", error);
-            toast.error("Couldn't fetch address details. Please fill manually.");
-          });
+        try {
+          // Use the getCoordinatesFromClick helper function
+          const newLocation = getCoordinatesFromClick(newMap, event);
+          setLocation(newLocation);
+          
+          // Get address information
+          reverseGeocode(newLocation.lat, newLocation.lng)
+            .then(result => {
+              if (result && result.address_components) {
+                const addressData = parseAddressComponents(result.address_components);
+                
+                setHouseNumber(addressData.street_number);
+                setStreetName(addressData.route);
+                setArea(addressData.locality);
+                setCity(addressData.city);
+                setState(addressData.state);
+                setPincode(addressData.postal_code);
+              }
+            })
+            .catch(error => {
+              console.error("Error reverse geocoding:", error);
+              toast.error("Couldn't fetch address details. Please fill manually.");
+            });
+        } catch (err) {
+          console.error("Error handling map click:", err);
+        }
       });
       
       setMap(newMap);

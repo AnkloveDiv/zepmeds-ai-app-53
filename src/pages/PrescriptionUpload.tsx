@@ -1,7 +1,7 @@
 
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { Camera, Image, Upload, Check, AlertCircle, FileText, AlertTriangle, Pill } from "lucide-react";
+import { Camera, Image, Upload, Check, AlertCircle, FileText, AlertTriangle, Pill, Phone, ShoppingCart } from "lucide-react";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,12 @@ import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { detectTextFromImage, TextDetectionResult, generateMockResultForTesting } from "@/services/visionService";
 import ActionButtons from "@/components/medicine/ActionButtons";
+import { toast } from "sonner";
+
+interface Medicine {
+  name: string;
+  inStock: boolean;
+}
 
 const PrescriptionUpload = () => {
   const navigate = useNavigate();
@@ -20,6 +26,8 @@ const PrescriptionUpload = () => {
   const [analysisResult, setAnalysisResult] = useState<TextDetectionResult | null>(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [detectionError, setDetectionError] = useState(false);
+  const [analysisComplete, setAnalysisComplete] = useState(false);
+  const [medicinesList, setMedicinesList] = useState<Medicine[]>([]);
   
   const handleCameraCapture = async () => {
     try {
@@ -59,6 +67,7 @@ const PrescriptionUpload = () => {
         setUploadSuccess(false);
         setShowAnalysis(false);
         setDetectionError(false);
+        setAnalysisComplete(false);
       };
       reader.readAsDataURL(file);
     }
@@ -74,6 +83,7 @@ const PrescriptionUpload = () => {
     setUploadSuccess(false);
     setShowAnalysis(false);
     setDetectionError(false);
+    setAnalysisComplete(false);
   };
   
   const handleProcessPrescription = async () => {
@@ -132,6 +142,16 @@ const PrescriptionUpload = () => {
           description: "Prescription analyzed successfully",
         });
       }
+      
+      // Generate random in-stock status for each medicine
+      if (hasMedicines) {
+        const medicinesWithStock = result.medicineNames.map(med => ({
+          name: med,
+          inStock: Math.random() > 0.3 // 70% chance of being in stock
+        }));
+        setMedicinesList(medicinesWithStock);
+      }
+      
     } catch (error) {
       console.error("Error processing image:", error);
       toast({
@@ -146,6 +166,16 @@ const PrescriptionUpload = () => {
   };
   
   const handleUploadPrescription = () => {
+    if (analysisComplete) {
+      // Reset for new prescription
+      setImage(null);
+      setAnalysisResult(null);
+      setShowAnalysis(false);
+      setUploadSuccess(false);
+      setAnalysisComplete(false);
+      return;
+    }
+    
     if (!analysisResult) {
       toast({
         title: "No analysis result",
@@ -171,19 +201,49 @@ const PrescriptionUpload = () => {
     setTimeout(() => {
       setProcessing(false);
       setUploadSuccess(true);
+      setAnalysisComplete(true);
       
       toast({
-        title: "Medicines processed",
-        description: analysisResult.isPrescription 
-          ? "Your prescription has been processed successfully" 
-          : "Medicine names extracted successfully",
+        title: "Prescription Uploaded Successfully",
+        description: "You will receive a call shortly to confirm your order.",
+        icon: <Phone className="h-5 w-5 text-green-500" />
       });
       
-      // Simulate navigating to medicine list after another delay
-      setTimeout(() => {
-        navigate("/medicine-delivery");
-      }, 2000);
     }, 1500);
+  };
+  
+  const handleBuyNow = () => {
+    if (medicinesList.length === 0) {
+      toast({
+        title: "No medicines to purchase",
+        description: "Please upload a prescription with detected medicines",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const inStockItems = medicinesList.filter(med => med.inStock);
+    
+    if (inStockItems.length === 0) {
+      toast({
+        title: "No medicines in stock",
+        description: "Sorry, none of the medicines in your prescription are currently in stock",
+        icon: <AlertTriangle className="h-5 w-5 text-amber-500" />
+      });
+      return;
+    }
+    
+    // Show a confirmation toast
+    toast({
+      title: "Processing Order",
+      description: `Adding ${inStockItems.length} medicine${inStockItems.length > 1 ? 's' : ''} to cart`,
+      icon: <ShoppingCart className="h-5 w-5 text-green-500" />
+    });
+    
+    // Navigate to medicine delivery or cart page
+    setTimeout(() => {
+      navigate("/medicine-delivery");
+    }, 2000);
   };
   
   const getConfidenceLabel = () => {
@@ -284,9 +344,21 @@ const PrescriptionUpload = () => {
                     <>
                       <p className="text-white text-sm mb-2">Prescribed medications:</p>
                       <ul className="list-disc pl-5 text-gray-300 text-sm space-y-1 mb-3">
-                        {analysisResult.medicineNames.map((medicine, index) => (
-                          <li key={index}>{medicine}</li>
-                        ))}
+                        {analysisResult.medicineNames.map((medicine, index) => {
+                          const inStock = medicinesList.find(med => med.name === medicine)?.inStock;
+                          return (
+                            <li key={index} className="flex items-center justify-between">
+                              <span>{medicine}</span>
+                              {inStock !== undefined && (
+                                <span className={inStock ? "text-green-400 text-xs flex items-center" : "text-red-400 text-xs flex items-center"}>
+                                  {inStock ? 
+                                    <><CheckCircle className="h-3 w-3 mr-1 text-green-400" /> In Stock</> : 
+                                    <><XCircle className="h-3 w-3 mr-1 text-red-400" /> Out of Stock</>}
+                                </span>
+                              )}
+                            </li>
+                          );
+                        })}
                       </ul>
                     </>
                   ) : (
@@ -304,9 +376,21 @@ const PrescriptionUpload = () => {
                   
                   <p className="text-white text-sm mb-2">Detected medicine names:</p>
                   <ul className="list-disc pl-5 text-gray-300 text-sm space-y-1 mb-3">
-                    {analysisResult.medicineNames.map((medicine, index) => (
-                      <li key={index}>{medicine}</li>
-                    ))}
+                    {analysisResult.medicineNames.map((medicine, index) => {
+                      const inStock = medicinesList.find(med => med.name === medicine)?.inStock;
+                      return (
+                        <li key={index} className="flex items-center justify-between">
+                          <span>{medicine}</span>
+                          {inStock !== undefined && analysisComplete && (
+                            <span className={inStock ? "text-green-400 text-xs flex items-center" : "text-red-400 text-xs flex items-center"}>
+                              {inStock ? 
+                                <><CheckCircle className="h-3 w-3 mr-1 text-green-400" /> In Stock</> : 
+                                <><XCircle className="h-3 w-3 mr-1 text-red-400" /> Out of Stock</>}
+                            </span>
+                          )}
+                        </li>
+                      );
+                    })}
                   </ul>
                 </>
               ) : (
@@ -325,7 +409,7 @@ const PrescriptionUpload = () => {
               variant="outline"
               className="py-6 border-white/10 hover:bg-white/5"
               onClick={handleCameraCapture}
-              disabled={uploadSuccess}
+              disabled={uploadSuccess && !analysisComplete}
             >
               <div className="flex flex-col items-center">
                 <Camera className="h-6 w-6 text-zepmeds-purple mb-2" />
@@ -337,7 +421,7 @@ const PrescriptionUpload = () => {
               variant="outline"
               className="py-6 border-white/10 hover:bg-white/5"
               onClick={handleGalleryUpload}
-              disabled={uploadSuccess}
+              disabled={uploadSuccess && !analysisComplete}
             >
               <div className="flex flex-col items-center">
                 <Image className="h-6 w-6 text-zepmeds-purple mb-2" />
@@ -372,38 +456,14 @@ const PrescriptionUpload = () => {
           )}
           
           {showAnalysis && (
-            <Button
-              className="w-full bg-zepmeds-purple hover:bg-zepmeds-purple-light py-3"
-              onClick={handleUploadPrescription}
-              disabled={
-                processing || 
-                uploadSuccess ||
-                (!hasMedicineNames)
-              }
-            >
-              {processing ? (
-                <div className="flex items-center">
-                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
-                  <span>Processing...</span>
-                </div>
-              ) : uploadSuccess ? (
-                <div className="flex items-center">
-                  <Check className="h-4 w-4 mr-2" />
-                  <span>Processed Successfully</span>
-                </div>
-              ) : (
-                <div className="flex items-center">
-                  <Pill className="h-4 w-4 mr-2" />
-                  <span>
-                    {analysisResult?.isPrescription 
-                      ? "Upload Prescription" 
-                      : hasMedicineNames 
-                        ? "Use Detected Medicines" 
-                        : "No Medicines Found"}
-                  </span>
-                </div>
-              )}
-            </Button>
+            <ActionButtons 
+              onUploadPrescription={handleUploadPrescription}
+              hasError={detectionError}
+              hasMedicines={hasMedicineNames}
+              medicineList={medicinesList}
+              onBuyNow={handleBuyNow}
+              analysisComplete={analysisComplete}
+            />
           )}
         </div>
         
