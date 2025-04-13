@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -185,10 +184,9 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       // Initialize Leaflet map
       const leafletMap = window.L.map(mapRef.current).setView([lat, lng], 15);
       
-      // Add tile layer (Geoapify Streets)
-      window.L.tileLayer('https://maps.geoapify.com/v1/tile/osm-bright/{z}/{x}/{y}.png?apiKey={apiKey}', {
-        attribution: 'Powered by <a href="https://www.geoapify.com/" target="_blank">Geoapify</a>',
-        apiKey: GEOAPIFY_API_KEY,
+      // Add OpenFreeMap tile layer instead of Geoapify
+      window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 19
       }).addTo(leafletMap);
       

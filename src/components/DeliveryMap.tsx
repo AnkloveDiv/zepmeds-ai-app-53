@@ -1,7 +1,6 @@
-
 import { useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { GEOAPIFY_API_KEY, initializeMap } from "@/utils/googleMapsLoader";
+import { initializeMap } from "@/utils/googleMapsLoader";
 
 interface DeliveryMapProps {
   showRider?: boolean;
@@ -34,10 +33,9 @@ const DeliveryMap = ({ showRider = true, orderId }: DeliveryMapProps) => {
           // Create Leaflet map
           const leafletMap = window.L.map(mapRef.current).setView([initialRiderCoords.lat, initialRiderCoords.lng], 14);
           
-          // Add tile layer (Geoapify Streets)
-          window.L.tileLayer('https://maps.geoapify.com/v1/tile/osm-bright/{z}/{x}/{y}.png?apiKey={apiKey}', {
-            attribution: 'Powered by <a href="https://www.geoapify.com/" target="_blank">Geoapify</a>',
-            apiKey: GEOAPIFY_API_KEY,
+          // Add OpenFreeMap tile layer
+          window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
             maxZoom: 19
           }).addTo(leafletMap);
           
