@@ -146,7 +146,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       });
       
       // Add event listener for map click
-      newMap.addListener("click", (e: google.maps.MapMouseEvent) => {
+      newMap.addListener("click", (e: google.maps.MouseEvent) => {
         const position = e.latLng;
         if (position && newMarker) {
           newMarker.setPosition(position);

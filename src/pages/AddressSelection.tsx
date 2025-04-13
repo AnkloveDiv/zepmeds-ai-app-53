@@ -31,7 +31,7 @@ const AddressSelection = () => {
   const [userCurrentLocation, setUserCurrentLocation] = useState<string | null>(null);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   const [newAddress, setNewAddress] = useState<Partial<Address>>({
-    type: 'home',
+    label: 'Home',
     address: '',
     isSelected: false
   });

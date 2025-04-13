@@ -109,5 +109,10 @@ declare namespace google {
       BACKWARD_CLOSED_ARROW: number;
       BACKWARD_OPEN_ARROW: number;
     };
+    
+    // Add MouseEvent interface that was missing
+    interface MouseEvent {
+      latLng: LatLng;
+    }
   }
 }
