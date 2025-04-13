@@ -16,8 +16,6 @@ interface OrderInvoiceProps {
 }
 
 const OrderInvoice = ({ orderId, orderDate, items, totalAmount }: OrderInvoiceProps) => {
-  const { toast } = useToast();
-  
   // Calculate subtotal and delivery fee for display in invoice
   const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const deliveryFee = Math.round(subtotal * 0.1); // Example: 10% of subtotal for delivery
