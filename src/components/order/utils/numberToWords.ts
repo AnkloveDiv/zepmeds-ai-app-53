@@ -1,36 +1,46 @@
 
-// Helper function to convert number to words
-export function convertToWords(amount: number): string {
-  const ones = [
-    "", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", 
-    "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", 
-    "Seventeen", "Eighteen", "Nineteen"
-  ];
-  const tens = [
-    "", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"
-  ];
+// Convert a number to words (for invoice amounts)
+export const numberToWords = (num: number): string => {
+  const units = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+  const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
   
-  const numString = Math.floor(amount).toString();
+  if (num === 0) return 'zero';
   
-  if (amount < 20) {
-    return ones[amount];
+  const convertLessThanThousand = (num: number): string => {
+    if (num < 20) return units[num];
+    
+    const digit = num % 10;
+    if (num < 100) return tens[Math.floor(num / 10)] + (digit ? '-' + units[digit] : '');
+    
+    const hundred = Math.floor(num / 100);
+    return units[hundred] + ' hundred' + (num % 100 ? ' and ' + convertLessThanThousand(num % 100) : '');
+  };
+  
+  let result = '';
+  let numStr = num.toString();
+  
+  // Handle decimal part
+  if (numStr.includes('.')) {
+    const parts = numStr.split('.');
+    numStr = parts[0];
+    const decimalPart = parseInt(parts[1]);
+    if (decimalPart > 0) {
+      result = convertLessThanThousand(parseInt(numStr)) + ' rupees and ' + convertLessThanThousand(decimalPart) + ' paise';
+      return result;
+    }
   }
   
-  if (amount < 100) {
-    return tens[Math.floor(amount / 10)] + (amount % 10 ? " " + ones[amount % 10] : "");
+  // Convert the whole number part
+  const numToConvert = parseInt(numStr);
+  if (numToConvert < 1000) {
+    result = convertLessThanThousand(numToConvert);
+  } else if (numToConvert < 100000) {
+    result = convertLessThanThousand(Math.floor(numToConvert / 1000)) + ' thousand' + 
+             (numToConvert % 1000 ? ' ' + convertLessThanThousand(numToConvert % 1000) : '');
+  } else {
+    result = convertLessThanThousand(Math.floor(numToConvert / 100000)) + ' lakh' + 
+             (numToConvert % 100000 ? ' ' + convertLessThanThousand(numToConvert % 100000) : '');
   }
   
-  if (amount < 1000) {
-    return ones[Math.floor(amount / 100)] + " Hundred" + (amount % 100 ? " And " + convertToWords(amount % 100) : "");
-  }
-  
-  if (amount < 100000) {
-    return convertToWords(Math.floor(amount / 1000)) + " Thousand" + (amount % 1000 ? " " + convertToWords(amount % 1000) : "");
-  }
-  
-  if (amount < 10000000) {
-    return convertToWords(Math.floor(amount / 100000)) + " Lakh" + (amount % 100000 ? " " + convertToWords(amount % 100000) : "");
-  }
-  
-  return convertToWords(Math.floor(amount / 10000000)) + " Crore" + (amount % 10000000 ? " " + convertToWords(amount % 10000000) : "");
-}
+  return result + ' rupees only';
+};
