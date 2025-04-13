@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -45,8 +46,13 @@ const AddressSelection = () => {
 
   useEffect(() => {
     const setupMap = async () => {
-      const initialized = await loadGoogleMapsAPI();
-      setMapplsReady(!!initialized);
+      try {
+        await loadGoogleMapsAPI();
+        setMapplsReady(true);
+      } catch (error) {
+        console.error("Error loading Google Maps API:", error);
+        setMapplsReady(false);
+      }
     };
     
     setupMap();

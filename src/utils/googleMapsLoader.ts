@@ -24,22 +24,16 @@ export const loadGoogleMapsAPI = (): Promise<void> => {
       reject(new Error(`Google Maps API failed to load: ${error}`));
     };
     
+    // If the script loaded but callback wasn't triggered
+    script.onload = () => {
+      resolve();
+    };
+    
     // Append script to document
     document.head.appendChild(script);
   });
 
   return googleMapsPromise;
-};
-
-// Helper function to initialize a Google Map
-export const initializeMap = async (): Promise<boolean> => {
-  try {
-    await loadGoogleMapsAPI();
-    return true;
-  } catch (error) {
-    console.error("Failed to initialize Google Maps:", error);
-    return false;
-  }
 };
 
 // Helper function to get current position using the browser's geolocation API
@@ -65,7 +59,7 @@ export const geocodeAddress = async (address: string): Promise<google.maps.Geoco
   return new Promise((resolve, reject) => {
     const geocoder = new google.maps.Geocoder();
     geocoder.geocode({ address }, (results, status) => {
-      if (status === google.maps.GeocoderStatus.OK && results && results.length > 0) {
+      if (status === "OK" && results && results.length > 0) {
         resolve(results[0]);
       } else {
         reject(new Error(`Geocoding failed: ${status}`));
@@ -74,8 +68,8 @@ export const geocodeAddress = async (address: string): Promise<google.maps.Geoco
   });
 };
 
-// Get address details from coordinates
-export const getAddressFromCoordinates = async (
+// Reverse geocode coordinates to get address
+export const reverseGeocode = async (
   lat: number, 
   lng: number
 ): Promise<google.maps.GeocoderResult> => {
@@ -86,21 +80,13 @@ export const getAddressFromCoordinates = async (
     const latlng = { lat, lng };
     
     geocoder.geocode({ location: latlng }, (results, status) => {
-      if (status === google.maps.GeocoderStatus.OK && results && results.length > 0) {
+      if (status === "OK" && results && results.length > 0) {
         resolve(results[0]);
       } else {
         reject(new Error(`Reverse geocoding failed: ${status}`));
       }
     });
   });
-};
-
-// Reverse geocode coordinates to get address
-export const reverseGeocode = async (
-  lat: number, 
-  lng: number
-): Promise<google.maps.GeocoderResult | null> => {
-  return getAddressFromCoordinates(lat, lng);
 };
 
 // Parse address components to extract specific details
@@ -146,6 +132,18 @@ export const parseAddressComponents = (
   });
 
   return result;
+};
+
+// For backwards compatibility - add these exports
+export const getAddressFromCoordinates = reverseGeocode;
+export const initializeMap = async (): Promise<boolean> => {
+  try {
+    await loadGoogleMapsAPI();
+    return true;
+  } catch (error) {
+    console.error("Failed to initialize Google Maps:", error);
+    return false;
+  }
 };
 
 declare global {
