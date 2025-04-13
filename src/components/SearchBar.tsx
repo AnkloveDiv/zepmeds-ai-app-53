@@ -164,8 +164,8 @@ const SearchBar = ({ placeholder = "Search for medicines, products..." }) => {
               
               {noResultsFound && !isTyping && (
                 <div className="px-3 py-4 text-center">
-                  <p className="text-sm text-white mb-1">Sorry, "{searchQuery}" is not in stock</p>
-                  <p className="text-xs text-green-400">We'll add it to our inventory soon!</p>
+                  <p className="text-sm text-white mb-1">Sorry, "{searchQuery}" is out of stock</p>
+                  <p className="text-xs text-red-400">Out of stock, we will notify you</p>
                 </div>
               )}
               
