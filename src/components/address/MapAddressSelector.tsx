@@ -9,8 +9,8 @@ import {
   initializeMap, 
   mockGeocodeResponse, 
   getAddressFromCoordinates,
-  searchAddressWithMapTiler,
-  MAPTILER_API_KEY
+  searchAddressWithGeoapify,
+  GEOAPIFY_API_KEY
 } from "@/utils/googleMapsLoader";
 
 interface MapAddressSelectorProps {
@@ -46,14 +46,14 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     let isMounted = true;
     const loadMap = async () => {
       try {
-        // Initialize MapTiler SDK
+        // Initialize Leaflet and Geoapify
         const mapsInitialized = await initializeMap();
         
         if (!isMounted) return;
         
-        // Check if MapTiler SDK is available
-        if (!window.maptilersdk || !mapsInitialized) {
-          console.error("MapTiler SDK is not loaded after initialization");
+        // Check if Leaflet is available
+        if (!window.L || !mapsInitialized) {
+          console.error("Leaflet is not loaded after initialization");
           toast({
             title: "Maps API not available",
             description: "Using fallback map view. Full functionality may be limited.",
@@ -96,8 +96,8 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
             setFallbackLatitude(latitude);
             setFallbackLongitude(longitude);
             
-            if (!usingMockData && window.maptilersdk) {
-              initializeMapTiler(latitude, longitude);
+            if (!usingMockData && window.L) {
+              initializeLeafletMap(latitude, longitude);
             } else {
               // For fallback map
               setIsLoading(false);
@@ -119,8 +119,8 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
               variant: "destructive",
             });
             
-            if (!usingMockData && window.maptilersdk) {
-              initializeMapTiler(28.6139, 77.2090); // New Delhi coordinates as fallback
+            if (!usingMockData && window.L) {
+              initializeLeafletMap(28.6139, 77.2090); // New Delhi coordinates as fallback
             } else {
               setIsLoading(false);
               getAddressFromCoordinates(28.6139, 77.2090).then(result => {
@@ -141,8 +141,8 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
           variant: "destructive",
         });
         
-        if (!usingMockData && window.maptilersdk) {
-          initializeMapTiler(28.6139, 77.2090); // New Delhi coordinates as fallback
+        if (!usingMockData && window.L) {
+          initializeLeafletMap(28.6139, 77.2090); // New Delhi coordinates as fallback
         } else {
           setIsLoading(false);
           getAddressFromCoordinates(28.6139, 77.2090).then(result => {
@@ -169,8 +169,8 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     };
   }, [toast, usingMockData]);
   
-  const initializeMapTiler = (lat: number, lng: number) => {
-    if (!mapRef.current || !window.maptilersdk) {
+  const initializeLeafletMap = (lat: number, lng: number) => {
+    if (!mapRef.current || !window.L) {
       setIsLoading(false);
       setUsingMockData(true);
       getAddressFromCoordinates(lat, lng).then(result => {
@@ -180,38 +180,30 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     }
     
     try {
-      console.log("Initializing map with coordinates:", lat, lng);
+      console.log("Initializing Leaflet map with coordinates:", lat, lng);
       
-      // Initialize MapTiler map
-      const maptilerMap = new window.maptilersdk.Map({
-        container: mapRef.current,
-        style: window.maptilersdk.MapStyle.STREETS,
-        center: [lng, lat], // MapTiler uses [lng, lat] format for coordinates
-        zoom: 15
-      });
+      // Initialize Leaflet map
+      const leafletMap = window.L.map(mapRef.current).setView([lat, lng], 15);
       
-      setMap(maptilerMap);
+      // Add tile layer (Geoapify Streets)
+      window.L.tileLayer('https://maps.geoapify.com/v1/tile/osm-bright/{z}/{x}/{y}.png?apiKey={apiKey}', {
+        attribution: 'Powered by <a href="https://www.geoapify.com/" target="_blank">Geoapify</a>',
+        apiKey: GEOAPIFY_API_KEY,
+        maxZoom: 19
+      }).addTo(leafletMap);
+      
+      setMap(leafletMap);
       
       // Wait for the map to load
-      maptilerMap.on('load', () => {
-        console.log("Map loaded successfully");
+      leafletMap.whenReady(() => {
+        console.log("Leaflet map loaded successfully");
         setIsLoading(false);
         
-        // Create a DOM element for the marker
-        const el = document.createElement('div');
-        el.className = 'marker';
-        el.style.backgroundImage = 'url(https://docs.maptiler.com/sdk-js/assets/marker-icon.png)';
-        el.style.width = '25px';
-        el.style.height = '41px';
-        el.style.backgroundSize = 'cover';
-        
-        // Add marker
-        const mapMarker = new window.maptilersdk.Marker({
-          element: el,
+        // Add marker for current location
+        const mapMarker = window.L.marker([lat, lng], {
           draggable: true,
-        })
-          .setLngLat([lng, lat])
-          .addTo(maptilerMap);
+          autoPan: true
+        }).addTo(leafletMap);
         
         setMarker(mapMarker);
         
@@ -222,7 +214,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         
         // Add event listener for marker drag end
         mapMarker.on("dragend", () => {
-          const position = mapMarker.getLngLat();
+          const position = mapMarker.getLatLng();
           if (position) {
             getAddressFromCoordinates(position.lat, position.lng).then(result => {
               handleGeocodeResult(result, position.lat, position.lng);
@@ -231,17 +223,40 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         });
         
         // Add event listener for map click
-        maptilerMap.on("click", (e: any) => {
-          const { lng, lat } = e.lngLat;
-          mapMarker.setLngLat([lng, lat]);
+        leafletMap.on("click", (e: any) => {
+          const { lat, lng } = e.latlng;
+          mapMarker.setLatLng([lat, lng]);
           getAddressFromCoordinates(lat, lng).then(result => {
             handleGeocodeResult(result, lat, lng);
           });
         });
+        
+        // Add Geoapify address search control
+        if (window.L.Control && window.L.Control.GeoapifyAddressSearch) {
+          const addressSearchControl = window.L.Control.GeoapifyAddressSearch({
+            position: 'topright',
+            apiKey: GEOAPIFY_API_KEY,
+            placeholder: 'Search for places...',
+            /* Required. Geoapify GeoJSON Features for found addresses are passed to this function */
+            locationCallback: (location: any) => {
+              if (!location) return;
+              
+              const { lat, lon } = location.properties;
+              leafletMap.setView([lat, lon], 15);
+              mapMarker.setLatLng([lat, lon]);
+              
+              getAddressFromCoordinates(lat, lon).then(result => {
+                handleGeocodeResult(result, lat, lon);
+              });
+            }
+          });
+          
+          addressSearchControl.addTo(leafletMap);
+        }
       });
       
       // Handle map errors
-      maptilerMap.on('error', (e: any) => {
+      leafletMap.on('error', (e: any) => {
         console.error("Map error:", e);
         if (!usingMockData) {
           setUsingMockData(true);
@@ -302,8 +317,8 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     console.log("Searching for address:", searchQuery);
     
     try {
-      // Use MapTiler API for geocoding
-      const searchResult = await searchAddressWithMapTiler(searchQuery);
+      // Use Geoapify API for geocoding
+      const searchResult = await searchAddressWithGeoapify(searchQuery);
       const { lat, lng, address } = searchResult;
       
       // Update fallback coordinates in case we switch to fallback view
@@ -312,8 +327,8 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       
       // Update marker and map if available
       if (map && marker && !usingMockData) {
-        marker.setLngLat([lng, lat]);
-        map.flyTo({center: [lng, lat], zoom: 15});
+        marker.setLatLng([lat, lng]);
+        map.setView([lat, lng], 15);
       }
       
       handleGeocodeResult(address, lat, lng);
@@ -346,8 +361,8 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
           setFallbackLongitude(longitude);
           
           if (map && marker && !usingMockData) {
-            marker.setLngLat([longitude, latitude]);
-            map.flyTo({center: [longitude, latitude], zoom: 15});
+            marker.setLatLng([latitude, longitude]);
+            map.setView([latitude, longitude], 15);
           }
           
           getAddressFromCoordinates(latitude, longitude).then(result => {

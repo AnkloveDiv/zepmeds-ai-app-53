@@ -1,27 +1,30 @@
 
 /**
- * Extend the Window interface to include our callback function
+ * Extend the Window interface to include our callback function and map libraries
  */
 declare global {
   interface Window {
     initMapCallback: () => void;
     mapInitialized: boolean;
-    maplibregl?: any;
-    maptilersdk?: any;
+    L?: any; // Leaflet
+    geoapify?: any;
   }
 }
 
 // Flag to track if Map API is already being loaded
 let isLoadingMapApi = false;
 
+// Geoapify API key
+export const GEOAPIFY_API_KEY = "835fe0df9146416e94c2daf974a66f6a";
+
 /**
- * Utility function to load the MapTiler API
+ * Utility function to load the Leaflet and Geoapify APIs
  */
-export const loadMapTilerApi = (): Promise<void> => {
+export const loadMapApis = (): Promise<void> => {
   return new Promise((resolve, reject) => {
-    // Check if the API is already loaded
-    if (window.maptilersdk && window.maplibregl) {
-      console.log("MapTiler API already loaded");
+    // Check if the APIs are already loaded
+    if (window.L) {
+      console.log("Leaflet already loaded");
       window.mapInitialized = true;
       resolve();
       return;
@@ -29,7 +32,7 @@ export const loadMapTilerApi = (): Promise<void> => {
 
     // Check if API is already being loaded
     if (isLoadingMapApi) {
-      console.log("MapTiler API is already being loaded");
+      console.log("Map APIs are already being loaded");
       // Wait for the initialization callback
       const checkInterval = setInterval(() => {
         if (window.mapInitialized) {
@@ -44,84 +47,76 @@ export const loadMapTilerApi = (): Promise<void> => {
     window.mapInitialized = false;
 
     // Create CSS elements first to ensure styles are loaded before scripts
-    const mapLibreCss = document.createElement("link");
-    mapLibreCss.rel = "stylesheet";
-    mapLibreCss.href = "https://cdn.maptiler.com/maplibre-gl-js/v3.3.1/maplibre-gl.css";
-    
-    const maptilerCss = document.createElement("link");
-    maptilerCss.rel = "stylesheet";
-    maptilerCss.href = "https://cdn.maptiler.com/maptiler-sdk-js/v1.2.0/maptiler-sdk.css";
+    const leafletCss = document.createElement("link");
+    leafletCss.rel = "stylesheet";
+    leafletCss.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+    leafletCss.integrity = "sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=";
+    leafletCss.crossOrigin = "";
     
     // Add CSS to document head
-    document.head.appendChild(mapLibreCss);
-    document.head.appendChild(maptilerCss);
+    document.head.appendChild(leafletCss);
     
-    // Setup callback for when API is loaded
+    // Setup callback for when APIs are loaded
     window.initMapCallback = () => {
-      console.log("MapTiler API loaded successfully");
-      
-      // Initialize MapTiler SDK with API key
-      if (window.maptilersdk) {
-        window.maptilersdk.config.apiKey = MAPTILER_API_KEY;
-        console.log("MapTiler SDK initialized with API key");
-        window.mapInitialized = true;
-        isLoadingMapApi = false;
-        resolve();
-      } else {
-        console.error("MapTiler SDK not found after loading");
-        isLoadingMapApi = false;
-        reject(new Error("MapTiler SDK not found after loading"));
-      }
+      console.log("Map APIs loaded successfully");
+      window.mapInitialized = true;
+      isLoadingMapApi = false;
+      resolve();
     };
     
-    // Create script elements 
-    const mapLibreScript = document.createElement("script");
-    mapLibreScript.src = "https://cdn.maptiler.com/maplibre-gl-js/v3.3.1/maplibre-gl.js";
-    mapLibreScript.crossOrigin = "anonymous";
-    
-    const maptilerScript = document.createElement("script");
-    maptilerScript.src = "https://cdn.maptiler.com/maptiler-sdk-js/v1.2.0/maptiler-sdk.umd.min.js";
-    maptilerScript.crossOrigin = "anonymous";
+    // Create script elements
+    const leafletScript = document.createElement("script");
+    leafletScript.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+    leafletScript.integrity = "sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=";
+    leafletScript.crossOrigin = "";
     
     // Handle loading and errors
-    mapLibreScript.onload = () => {
-      console.log("MapLibre GL loaded successfully");
-      document.head.appendChild(maptilerScript);
+    leafletScript.onload = () => {
+      console.log("Leaflet loaded successfully");
+      
+      // Now load Geoapify marker plugin
+      const geoapifyMarkerScript = document.createElement("script");
+      geoapifyMarkerScript.src = "https://cdn.jsdelivr.net/npm/@geoapify/leaflet-address-search-plugin@1.0.0/dist/L.Control.GeoapifyAddressSearch.min.js";
+      
+      const geoapifyMarkerCss = document.createElement("link");
+      geoapifyMarkerCss.rel = "stylesheet";
+      geoapifyMarkerCss.href = "https://cdn.jsdelivr.net/npm/@geoapify/leaflet-address-search-plugin@1.0.0/dist/L.Control.GeoapifyAddressSearch.min.css";
+      
+      document.head.appendChild(geoapifyMarkerCss);
+      
+      geoapifyMarkerScript.onload = () => {
+        console.log("Geoapify Address Search plugin loaded successfully");
+        window.initMapCallback();
+      };
+      
+      geoapifyMarkerScript.onerror = () => {
+        console.error("Error loading Geoapify Address Search plugin");
+        isLoadingMapApi = false;
+        reject(new Error("Failed to load Geoapify Address Search plugin"));
+      };
+      
+      document.head.appendChild(geoapifyMarkerScript);
     };
     
-    maptilerScript.onload = () => {
-      console.log("MapTiler SDK loaded successfully");
-      window.initMapCallback();
-    };
-    
-    mapLibreScript.onerror = () => {
-      console.error("Error loading MapLibre GL");
+    leafletScript.onerror = () => {
+      console.error("Error loading Leaflet");
       isLoadingMapApi = false;
-      reject(new Error("Failed to load MapLibre GL"));
+      reject(new Error("Failed to load Leaflet"));
     };
     
-    maptilerScript.onerror = () => {
-      console.error("Error loading MapTiler SDK");
-      isLoadingMapApi = false;
-      reject(new Error("Failed to load MapTiler SDK"));
-    };
-    
-    // Start loading MapLibre GL first
-    document.head.appendChild(mapLibreScript);
+    // Start loading Leaflet first
+    document.head.appendChild(leafletScript);
   });
 };
 
-// MapTiler API key
-export const MAPTILER_API_KEY = "64tBboIY6Afyz6MQH2jS";
-
-// Function to initialize MapTiler and handle errors gracefully
+// Function to initialize map libraries and handle errors gracefully
 export const initializeMap = async (): Promise<boolean> => {
   try {
-    console.log("Initializing MapTiler");
-    await loadMapTilerApi();
+    console.log("Initializing map libraries");
+    await loadMapApis();
     return true;
   } catch (error) {
-    console.error("Failed to initialize MapTiler:", error);
+    console.error("Failed to initialize map libraries:", error);
     return false;
   }
 };
@@ -147,62 +142,79 @@ export const mockGeocodeResponse = (latitude: number, longitude: number) => {
   };
 };
 
-// Helper function to get address from coordinates using MapTiler Geocoding API
+// Helper function to get address from coordinates using Geoapify Reverse Geocoding API
 export const getAddressFromCoordinates = async (lat: number, lng: number) => {
   try {
-    // Using MapTiler Geocoding API for reverse geocoding
+    // Using Geoapify Reverse Geocoding API
     const response = await fetch(
-      `https://api.maptiler.com/geocoding/${lng},${lat}.json?key=${MAPTILER_API_KEY}`
+      `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&apiKey=${GEOAPIFY_API_KEY}`
     );
     
     if (!response.ok) {
-      throw new Error('MapTiler API request failed');
+      throw new Error('Geoapify API request failed');
     }
     
     const data = await response.json();
     
     if (data.features && data.features.length > 0) {
       const result = data.features[0];
-      const placeType = result.place_type?.[0] || "place";
+      const properties = result.properties;
       
       // Extract address components from result
       const address_components = [];
       
-      if (result.text) {
+      // Route/street
+      if (properties.street) {
         address_components.push({ 
-          long_name: result.text, 
-          short_name: result.text, 
-          types: [placeType] 
+          long_name: properties.street, 
+          short_name: properties.street, 
+          types: ["route"] 
         });
       }
       
-      // Extract locality, region, etc. from context if available
-      if (result.context) {
-        for (const ctx of result.context) {
-          const id = ctx.id || "";
-          const type = id.split('.')[0];
-          address_components.push({
-            long_name: ctx.text,
-            short_name: ctx.text,
-            types: [type]
-          });
-        }
+      // City/locality
+      if (properties.city) {
+        address_components.push({
+          long_name: properties.city,
+          short_name: properties.city,
+          types: ["locality"]
+        });
       }
       
-      // Extract city, state, postal code if available
-      const locality = address_components.find(c => c.types.includes('place'))?.long_name || "Gurugram";
-      const state = address_components.find(c => c.types.includes('region'))?.long_name || "Haryana";
-      const postal = address_components.find(c => c.types.includes('postcode'))?.long_name || "122001";
+      // State/region
+      if (properties.state) {
+        address_components.push({
+          long_name: properties.state,
+          short_name: properties.state_code || properties.state,
+          types: ["administrative_area_level_1"]
+        });
+      }
+      
+      // Country
+      if (properties.country) {
+        address_components.push({
+          long_name: properties.country,
+          short_name: properties.country_code,
+          types: ["country"]
+        });
+      }
+      
+      // Postal code
+      if (properties.postcode) {
+        address_components.push({
+          long_name: properties.postcode,
+          short_name: properties.postcode,
+          types: ["postal_code"]
+        });
+      }
+      
+      // Create formatted address
+      const formatted_address = properties.formatted || 
+        `${properties.street || ''}, ${properties.city || ''}, ${properties.state || ''} ${properties.postcode || ''}`;
       
       return {
-        formatted_address: result.place_name || `${result.text}, ${locality}, ${state}`,
-        address_components: [
-          { long_name: result.text || "", short_name: result.text || "", types: [placeType] },
-          { long_name: locality, short_name: locality, types: ["locality"] },
-          { long_name: state, short_name: state, types: ["administrative_area_level_1"] },
-          { long_name: "India", short_name: "IN", types: ["country"] },
-          { long_name: postal, short_name: postal, types: ["postal_code"] }
-        ],
+        formatted_address,
+        address_components,
         geometry: {
           location: {
             lat: () => lat,
@@ -215,27 +227,27 @@ export const getAddressFromCoordinates = async (lat: number, lng: number) => {
     // Fallback to mock data if no results
     return mockGeocodeResponse(lat, lng);
   } catch (error) {
-    console.error("Error getting address from MapTiler:", error);
+    console.error("Error getting address from Geoapify:", error);
     return mockGeocodeResponse(lat, lng);
   }
 };
 
-// Helper function to search for an address using MapTiler Geocoding API
-export const searchAddressWithMapTiler = async (searchQuery: string) => {
+// Helper function to search for an address using Geoapify Geocoding API
+export const searchAddressWithGeoapify = async (searchQuery: string) => {
   try {
     const response = await fetch(
-      `https://api.maptiler.com/geocoding/${encodeURIComponent(searchQuery)}.json?key=${MAPTILER_API_KEY}`
+      `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(searchQuery)}&apiKey=${GEOAPIFY_API_KEY}`
     );
     
     if (!response.ok) {
-      throw new Error('MapTiler geocode API request failed');
+      throw new Error('Geoapify geocode API request failed');
     }
     
     const data = await response.json();
     
     if (data.features && data.features.length > 0) {
       const result = data.features[0];
-      const coordinates = result.center || [77.2090, 28.6139]; // [lng, lat]
+      const coordinates = result.geometry.coordinates;
       const lng = coordinates[0];
       const lat = coordinates[1];
       
@@ -253,7 +265,7 @@ export const searchAddressWithMapTiler = async (searchQuery: string) => {
       address: mockGeocodeResponse(28.6139, 77.2090)
     };
   } catch (error) {
-    console.error("Error searching with MapTiler:", error);
+    console.error("Error searching with Geoapify:", error);
     return {
       lat: 28.6139,
       lng: 77.2090,
