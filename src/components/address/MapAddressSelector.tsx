@@ -1,9 +1,10 @@
+
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { loadGoogleMapsAPI, getCurrentPosition, reverseGeocode, parseAddressComponents } from '@/utils/googleMapsLoader';
+import { loadGoogleMapsAPI, getCurrentPosition, reverseGeocode, parseAddressComponents, getMapLoadError } from '@/utils/googleMapsLoader';
 import { useNavigate } from 'react-router-dom';
 import AlertMessages from './map/AlertMessages';
 import MapOverlays from './map/MapOverlays';
@@ -67,6 +68,13 @@ const MapAddressSelector: React.FC<MapAddressSelectorProps> = ({
       try {
         await loadGoogleMapsAPI();
         
+        // Check if there's a map loading error from the utility
+        const mapError = getMapLoadError();
+        if (mapError) {
+          setError(mapError);
+          return;
+        }
+        
         // Create the map
         const mapElement = document.getElementById('map');
         if (!mapElement) return;
@@ -124,7 +132,7 @@ const MapAddressSelector: React.FC<MapAddressSelectorProps> = ({
         getMyLocation();
       } catch (error) {
         console.error("Error initializing map:", error);
-        setError("Failed to load Google Maps. Please try again later.");
+        setError("Failed to load Google Maps. Please check your internet connection or API key settings.");
       }
     };
     
@@ -228,11 +236,11 @@ const MapAddressSelector: React.FC<MapAddressSelectorProps> = ({
       
       {/* Address Form */}
       <Card className="flex-1 rounded-none border-0 shadow-none overflow-auto">
-        <CardHeader className="px-4 py-3">
+        <CardHeader className="px-4 py-3 sticky top-0 bg-black z-10">
           <CardTitle className="text-lg font-semibold">Address Details</CardTitle>
         </CardHeader>
-        <CardContent className="px-4 py-2 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        <CardContent className="px-4 py-2 space-y-4 overflow-y-auto pb-24 md:pb-20">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="houseNumber">House/Flat Number*</Label>
               <Input 
@@ -266,7 +274,7 @@ const MapAddressSelector: React.FC<MapAddressSelectorProps> = ({
             />
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="city">City*</Label>
               <Input 
@@ -289,7 +297,7 @@ const MapAddressSelector: React.FC<MapAddressSelectorProps> = ({
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="pincode">Pincode*</Label>
               <Input 
@@ -313,7 +321,7 @@ const MapAddressSelector: React.FC<MapAddressSelectorProps> = ({
           
           <div className="space-y-2">
             <Label>Address Type</Label>
-            <div className="flex space-x-4">
+            <div className="flex flex-wrap gap-2">
               {['home', 'work', 'other'].map((type) => (
                 <Button
                   key={type}
@@ -328,7 +336,7 @@ const MapAddressSelector: React.FC<MapAddressSelectorProps> = ({
             </div>
           </div>
         </CardContent>
-        <CardFooter className="px-4 py-3 flex justify-end gap-3">
+        <CardFooter className="px-4 py-3 flex justify-end gap-3 fixed bottom-0 left-0 right-0 bg-black border-t border-gray-800 z-10">
           {onCancel && (
             <Button
               variant="outline"

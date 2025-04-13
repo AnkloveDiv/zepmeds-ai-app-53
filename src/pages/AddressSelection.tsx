@@ -1,17 +1,17 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
-import { X, Home, MapPin, Navigation, PlusCircle, Edit, Briefcase } from "lucide-react";
+import { X, Home, MapPin, Navigation, PlusCircle, Edit, Briefcase, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Header from "@/components/Header";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import MapAddressSelector from "@/components/address/MapAddressSelector";
 import { 
   loadGoogleMapsAPI, 
   getCurrentPosition,
-  reverseGeocode as getAddressFromCoordinates
+  reverseGeocode as getAddressFromCoordinates,
+  getMapLoadError
 } from "@/utils/googleMapsLoader";
 
 interface Address {
@@ -43,14 +43,25 @@ const AddressSelection = () => {
   const [mapplsReady, setMapplsReady] = useState(false);
   const [currentCoordinates, setCurrentCoordinates] = useState<{lat: number, lng: number} | null>(null);
   const [locationRetryCount, setLocationRetryCount] = useState(0);
+  const [showMapErrorDialog, setShowMapErrorDialog] = useState(false);
+  const [mapError, setMapError] = useState<string | null>(null);
 
   useEffect(() => {
     const setupMap = async () => {
       try {
         await loadGoogleMapsAPI();
+        
+        const error = getMapLoadError();
+        if (error) {
+          setMapError(error);
+          setMapplsReady(false);
+          return;
+        }
+        
         setMapplsReady(true);
       } catch (error) {
         console.error("Error loading Google Maps API:", error);
+        setMapError("Google Maps API could not be loaded. Please check your internet connection and try again.");
         setMapplsReady(false);
       }
     };
@@ -89,14 +100,23 @@ const AddressSelection = () => {
   const loadUserCurrentLocation = async () => {
     setUserCurrentLocation("Getting your location...");
     
+    if (!navigator.geolocation) {
+      setUserCurrentLocation("Geolocation is not supported by your browser");
+      return;
+    }
+    
     try {
       let bestPosition = null;
       let bestAccuracy = Infinity;
       
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < 3; i++) {
         try {
           console.log(`Attempting to get user location, try ${i+1}`);
-          const position = await getCurrentPosition();
+          const position = await getCurrentPosition({
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+          });
           
           if (position.coords.accuracy < bestAccuracy) {
             bestPosition = position;
@@ -106,7 +126,7 @@ const AddressSelection = () => {
             if (bestAccuracy < 100) break;
           }
           
-          if (i < 4) await new Promise(r => setTimeout(r, 300));
+          if (i < 2) await new Promise(r => setTimeout(r, 300));
         } catch (e) {
           console.warn(`Attempt ${i+1} failed:`, e);
         }
@@ -134,16 +154,20 @@ const AddressSelection = () => {
       console.log("Location accuracy:", accuracy, "meters");
       
       try {
-        const addressData = await getAddressFromCoordinates(roundedLat, roundedLng);
-        setUserCurrentLocation(addressData.formatted_address);
-        console.log("Current location address:", addressData.formatted_address);
+        if (mapplsReady) {
+          const addressData = await getAddressFromCoordinates(roundedLat, roundedLng);
+          setUserCurrentLocation(addressData.formatted_address);
+          console.log("Current location address:", addressData.formatted_address);
+        } else {
+          setUserCurrentLocation(`Location at ${roundedLat.toFixed(4)}, ${roundedLng.toFixed(4)}`);
+        }
       } catch (error) {
         console.error("Error getting address:", error);
         setUserCurrentLocation(`Location at ${roundedLat.toFixed(4)}, ${roundedLng.toFixed(4)}`);
       }
     } catch (error) {
       console.error("Error getting current location:", error);
-      setUserCurrentLocation("Location access denied");
+      setUserCurrentLocation("Location access denied or unavailable");
     }
   };
 
@@ -170,6 +194,11 @@ const AddressSelection = () => {
   };
 
   const handleUseCurrentLocation = async () => {
+    if (mapError) {
+      setShowMapErrorDialog(true);
+      return;
+    }
+    
     if (!userCurrentLocation || userCurrentLocation.includes("denied") || userCurrentLocation.includes("not supported") || userCurrentLocation.includes("Getting")) {
       toast({
         title: "Location Unavailable",
@@ -194,7 +223,11 @@ const AddressSelection = () => {
         for (let i = 0; i < 3; i++) {
           try {
             console.log(`Getting current location for use, attempt ${i+1}`);
-            const position = await getCurrentPosition();
+            const position = await getCurrentPosition({
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 0
+            });
             
             if (position.coords.accuracy < bestAccuracy) {
               bestPosition = position;
@@ -220,11 +253,31 @@ const AddressSelection = () => {
       
       console.log("Using current location:", roundedLat, roundedLng);
       
-      try {
-        const result = await getAddressFromCoordinates(roundedLat, roundedLng);
-        processAddressResults(result, roundedLat, roundedLng);
-      } catch (error) {
-        console.error("Error getting address:", error);
+      if (mapplsReady) {
+        try {
+          const result = await getAddressFromCoordinates(roundedLat, roundedLng);
+          processAddressResults(result, roundedLat, roundedLng);
+        } catch (error) {
+          console.error("Error getting address:", error);
+          const fallbackAddress = {
+            address_components: [
+              { long_name: "Unknown Location", short_name: "Unknown Location", types: ["route"] },
+              { long_name: "Unknown City", short_name: "Unknown City", types: ["locality"] },
+              { long_name: "Unknown State", short_name: "Unknown", types: ["administrative_area_level_1"] },
+              { long_name: "Unknown Country", short_name: "Unknown", types: ["country"] },
+              { long_name: "000000", short_name: "000000", types: ["postal_code"] }
+            ],
+            formatted_address: `Location at ${roundedLat.toFixed(6)}, ${roundedLng.toFixed(6)}`,
+            geometry: {
+              location: {
+                lat: () => roundedLat,
+                lng: () => roundedLng
+              }
+            }
+          };
+          processAddressResults(fallbackAddress, roundedLat, roundedLng);
+        }
+      } else {
         const fallbackAddress = {
           address_components: [
             { long_name: "Unknown Location", short_name: "Unknown Location", types: ["route"] },
@@ -305,6 +358,11 @@ const AddressSelection = () => {
   };
 
   const handleAddNewAddress = () => {
+    if (mapError) {
+      setShowMapErrorDialog(true);
+      return;
+    }
+    
     setEditingAddress(null);
     setNewAddress({
       label: 'Home',
@@ -315,6 +373,11 @@ const AddressSelection = () => {
   };
 
   const handleEditAddress = (address: Address) => {
+    if (mapError) {
+      setShowMapErrorDialog(true);
+      return;
+    }
+    
     setEditingAddress(address);
     setNewAddress({
       label: address.label,
@@ -358,6 +421,11 @@ const AddressSelection = () => {
   };
 
   const openMapSelector = () => {
+    if (mapError) {
+      setShowMapErrorDialog(true);
+      return;
+    }
+    
     setShowMapDialog(true);
     setShowAddressModal(false);
   };
@@ -450,7 +518,7 @@ const AddressSelection = () => {
     <div className="min-h-screen bg-black text-white">
       <Header showBackButton title="Select Location" />
       
-      <main className="px-4 py-6">
+      <main className="px-4 py-6 mb-24">
         <div className="relative">
           <Input
             placeholder="Search for area, street name..."
@@ -460,6 +528,27 @@ const AddressSelection = () => {
             <MapPin className="h-5 w-5 text-gray-500" />
           </div>
         </div>
+
+        {mapError ? (
+          <div className="mt-4 p-4 bg-red-900/30 border border-red-700/50 rounded-xl">
+            <div className="flex items-center mb-2">
+              <AlertTriangle className="h-5 w-5 text-red-400 mr-2" />
+              <h3 className="text-red-400 font-medium">Google Maps Error</h3>
+            </div>
+            <p className="text-sm text-gray-300">{mapError}</p>
+            <p className="text-xs text-gray-400 mt-2">
+              Note: For this demo app, you need to enable billing for the Google Maps API key.
+              <a 
+                href="https://developers.google.com/maps/documentation/javascript/error-messages#billing-errors" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="block mt-1 text-blue-400 underline"
+              >
+                Learn how to fix this
+              </a>
+            </p>
+          </div>
+        ) : null}
 
         <Button
           variant="outline"
@@ -549,7 +638,7 @@ const AddressSelection = () => {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <label className="text-sm text-gray-400">Address Type</label>
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"
                   variant={newAddress.label === 'Home' ? "default" : "outline"}
@@ -663,16 +752,50 @@ const AddressSelection = () => {
       </Dialog>
       
       <Dialog open={showMapDialog} onOpenChange={setShowMapDialog}>
-        <DialogContent className="bg-background border-gray-800 text-white max-w-xl p-0">
+        <DialogContent className="bg-background border-gray-800 text-white max-w-xl p-0 h-[90vh] overflow-hidden">
           <DialogTitle className="p-4 border-b border-gray-800">Select Location on Map</DialogTitle>
           
-          <MapAddressSelector 
-            onAddressSelected={handleAddressSelected}
-            onCancel={() => {
-              setShowMapDialog(false);
-              setShowAddressModal(true);
-            }}
-          />
+          <div className="h-full overflow-hidden">
+            <MapAddressSelector 
+              onAddressSelected={handleAddressSelected}
+              onCancel={() => {
+                setShowMapDialog(false);
+                setShowAddressModal(true);
+              }}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={showMapErrorDialog} onOpenChange={setShowMapErrorDialog}>
+        <DialogContent className="bg-black border-gray-800 text-white max-w-md">
+          <DialogTitle className="text-red-400 flex items-center">
+            <AlertTriangle className="h-5 w-5 mr-2" />
+            Google Maps API Error
+          </DialogTitle>
+          <DialogDescription className="text-gray-300">
+            {mapError || "There was an error loading Google Maps. This affects address selection functionality."}
+          </DialogDescription>
+          
+          <div className="bg-red-950/30 border border-red-900/50 p-3 rounded-md text-sm text-gray-300">
+            <p>For this demo app, you need to enable billing for the Google Maps API key.</p>
+            <a 
+              href="https://developers.google.com/maps/documentation/javascript/error-messages#billing-errors" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="block mt-2 text-blue-400 underline"
+            >
+              Learn how to fix this
+            </a>
+          </div>
+          
+          <div className="flex justify-end">
+            <Button 
+              onClick={() => setShowMapErrorDialog(false)}
+            >
+              Close
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

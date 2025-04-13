@@ -2,6 +2,7 @@
 // Google Maps API loader utility
 const API_KEY = "AIzaSyDrLZWv6slQO7ejgLTD4FliIhS3t9v7uKo";
 let googleMapsPromise: Promise<void> | null = null;
+let mapLoadError: string | null = null;
 
 export const loadGoogleMapsAPI = (): Promise<void> => {
   if (googleMapsPromise) {
@@ -21,12 +22,26 @@ export const loadGoogleMapsAPI = (): Promise<void> => {
     };
     
     script.onerror = (error) => {
-      reject(new Error(`Google Maps API failed to load: ${error}`));
+      mapLoadError = "Google Maps API failed to load. Please check your internet connection and try again.";
+      console.error(`Google Maps API failed to load: ${error}`);
+      reject(new Error(mapLoadError));
     };
     
     // If the script loaded but callback wasn't triggered
     script.onload = () => {
-      resolve();
+      // Check if the Google Maps API loaded with errors
+      if (window.google && window.google.maps && window.google.maps.places) {
+        resolve();
+      } else {
+        // Use a more helpful message based on possible API key issues
+        if (document.querySelector('.gm-err-content')) {
+          mapLoadError = "Google Maps API key error. The API key may be invalid, restricted, or missing proper billing setup.";
+        } else {
+          mapLoadError = "Google Maps failed to initialize properly. Please try again later.";
+        }
+        console.error(mapLoadError);
+        reject(new Error(mapLoadError));
+      }
     };
     
     // Append script to document
@@ -44,9 +59,29 @@ export const getCurrentPosition = (options?: PositionOptions): Promise<Geolocati
       return;
     }
     
+    // Show more verbose messages for geolocation errors
+    const handlePositionError = (error: GeolocationPositionError) => {
+      let errorMessage = "Unknown error occurred when trying to get your location.";
+      
+      switch(error.code) {
+        case error.PERMISSION_DENIED:
+          errorMessage = "Location access was denied. Please enable location services in your browser settings.";
+          break;
+        case error.POSITION_UNAVAILABLE:
+          errorMessage = "Location information is unavailable. Please try again later.";
+          break;
+        case error.TIMEOUT:
+          errorMessage = "Location request timed out. Please check your connection and try again.";
+          break;
+      }
+      
+      console.error(`Geolocation error: ${errorMessage} (${error.message})`);
+      reject(new Error(errorMessage));
+    };
+    
     navigator.geolocation.getCurrentPosition(
       (position) => resolve(position),
-      (error) => reject(error),
+      handlePositionError,
       options || { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   });
@@ -57,14 +92,18 @@ export const geocodeAddress = async (address: string): Promise<google.maps.Geoco
   await loadGoogleMapsAPI();
   
   return new Promise((resolve, reject) => {
-    const geocoder = new google.maps.Geocoder();
-    geocoder.geocode({ address }, (results, status) => {
-      if (status === "OK" && results && results.length > 0) {
-        resolve(results[0]);
-      } else {
-        reject(new Error(`Geocoding failed: ${status}`));
-      }
-    });
+    try {
+      const geocoder = new google.maps.Geocoder();
+      geocoder.geocode({ address }, (results, status) => {
+        if (status === google.maps.GeocoderStatus.OK && results && results.length > 0) {
+          resolve(results[0]);
+        } else {
+          reject(new Error(`Geocoding failed: ${status}`));
+        }
+      });
+    } catch (error) {
+      reject(new Error(`Geocoding error: ${error}`));
+    }
   });
 };
 
@@ -76,16 +115,20 @@ export const reverseGeocode = async (
   await loadGoogleMapsAPI();
   
   return new Promise((resolve, reject) => {
-    const geocoder = new google.maps.Geocoder();
-    const latlng = { lat, lng };
-    
-    geocoder.geocode({ location: latlng }, (results, status) => {
-      if (status === "OK" && results && results.length > 0) {
-        resolve(results[0]);
-      } else {
-        reject(new Error(`Reverse geocoding failed: ${status}`));
-      }
-    });
+    try {
+      const geocoder = new google.maps.Geocoder();
+      const latlng = { lat, lng };
+      
+      geocoder.geocode({ location: latlng }, (results, status) => {
+        if (status === google.maps.GeocoderStatus.OK && results && results.length > 0) {
+          resolve(results[0]);
+        } else {
+          reject(new Error(`Reverse geocoding failed: ${status}`));
+        }
+      });
+    } catch (error) {
+      reject(new Error(`Reverse geocoding error: ${error}`));
+    }
   });
 };
 
@@ -134,7 +177,12 @@ export const parseAddressComponents = (
   return result;
 };
 
-// For backwards compatibility - add these exports
+// Get the current map loading error status
+export const getMapLoadError = (): string | null => {
+  return mapLoadError;
+};
+
+// For backwards compatibility
 export const getAddressFromCoordinates = reverseGeocode;
 export const initializeMap = async (): Promise<boolean> => {
   try {

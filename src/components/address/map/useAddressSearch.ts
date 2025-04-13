@@ -19,20 +19,31 @@ export const useAddressSearch = (
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [autocompleteService, setAutocompleteService] = useState<google.maps.places.AutocompleteService | null>(null);
+  const [placesAPIAvailable, setPlacesAPIAvailable] = useState(false);
   
   // Initialize autocomplete service
   useEffect(() => {
     const initAutocomplete = async () => {
       try {
         await loadGoogleMapsAPI();
+        
+        // Check if Google Maps Places API is available
         if (window.google && window.google.maps && window.google.maps.places) {
-          const service = new window.google.maps.places.AutocompleteService();
-          setAutocompleteService(service);
+          try {
+            const service = new window.google.maps.places.AutocompleteService();
+            setAutocompleteService(service);
+            setPlacesAPIAvailable(true);
+          } catch (error) {
+            console.error("Error creating AutocompleteService:", error);
+            setPlacesAPIAvailable(false);
+          }
         } else {
           console.error("Google Maps Places API not available");
+          setPlacesAPIAvailable(false);
         }
       } catch (error) {
         console.error("Error initializing autocomplete:", error);
+        setPlacesAPIAvailable(false);
       }
     };
     
@@ -40,13 +51,38 @@ export const useAddressSearch = (
   }, []);
   
   const handleSearch = useCallback(async (query: string) => {
-    if (!query || !autocompleteService) {
+    if (!query) {
       setSearchResults([]);
       return;
     }
     
     setIsSearching(true);
     
+    // If Places API is not available, fall back to Geocoding API
+    if (!autocompleteService || !placesAPIAvailable) {
+      try {
+        const result = await geocodeAddress(query);
+        if (result) {
+          const formattedResults: SearchResult[] = [{
+            id: result.place_id || 'geocode-result',
+            description: result.formatted_address || query,
+            placeId: result.place_id || 'geocode-result'
+          }];
+          setSearchResults(formattedResults);
+        } else {
+          setSearchResults([]);
+        }
+      } catch (error) {
+        console.error("Geocoding search error:", error);
+        setSearchResults([]);
+        toast.error("Search failed. Please try a different query.");
+      } finally {
+        setIsSearching(false);
+      }
+      return;
+    }
+    
+    // Use Places API if available
     try {
       const response = await new Promise<google.maps.places.AutocompletePrediction[]>((resolve, reject) => {
         autocompleteService.getPlacePredictions(
@@ -75,10 +111,25 @@ export const useAddressSearch = (
     } catch (error) {
       console.error("Search error:", error);
       setSearchResults([]);
+      
+      // Try fallback to geocoding API
+      try {
+        const result = await geocodeAddress(query);
+        if (result) {
+          const formattedResults: SearchResult[] = [{
+            id: result.place_id || 'geocode-result',
+            description: result.formatted_address || query,
+            placeId: result.place_id || 'geocode-result'
+          }];
+          setSearchResults(formattedResults);
+        }
+      } catch (secondError) {
+        console.error("Fallback geocoding failed:", secondError);
+      }
     } finally {
       setIsSearching(false);
     }
-  }, [autocompleteService]);
+  }, [autocompleteService, placesAPIAvailable]);
   
   const handleSearchResultClick = useCallback(async (result: SearchResult) => {
     if (!map || !marker) return;
@@ -106,6 +157,7 @@ export const useAddressSearch = (
     searchResults,
     isSearching,
     handleSearch,
-    handleSearchResultClick
+    handleSearchResultClick,
+    placesAPIAvailable
   };
 };
