@@ -1,185 +1,139 @@
 
-import { useState, useEffect, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { useAuth } from "@/contexts/AuthContext";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Button } from "@/components/ui/button";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft, CheckCircle } from "lucide-react";
+import { useBackNavigation } from '@/hooks/useBackNavigation';
 
-const PhoneVerification = () => {
-  const location = useLocation();
+const formSchema = z.object({
+  otp: z.string().min(6, {
+    message: "Your OTP must be 6 digits."
+  }).max(6)
+});
+
+const PhoneVerification: React.FC = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
-  const [otp, setOtp] = useState<string[]>(["", "", "", ""]);
-  const [countdown, setCountdown] = useState(30);
-  const [canResend, setCanResend] = useState(false);
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const phoneNumber = location.state?.phoneNumber || "";
+  const goBack = useBackNavigation();
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+  
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      otp: "",
+    },
+  });
 
-  useEffect(() => {
-    if (!phoneNumber) {
-      navigate("/login");
-    }
-  }, [phoneNumber, navigate]);
-
-  useEffect(() => {
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
-    } else {
-      setCanResend(true);
-    }
-  }, [countdown]);
-
-  const handleInputChange = (
-    index: number,
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const value = e.target.value;
-    if (isNaN(Number(value))) return;
-
-    const newOtp = [...otp];
-    newOtp[index] = value.substring(0, 1);
-    setOtp(newOtp);
-
-    // Auto focus next input
-    if (value && index < 3) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleKeyDown = (
-    index: number,
-    e: React.KeyboardEvent<HTMLInputElement>
-  ) => {
-    if (e.key === "Backspace") {
-      if (!otp[index] && index > 0) {
-        inputRefs.current[index - 1]?.focus();
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
+    setIsVerifying(true);
+    
+    // Simulate API verification
+    setTimeout(() => {
+      if (values.otp === "123456") {
+        setIsVerified(true);
+        toast.success("OTP verified successfully");
+        
+        // Navigate to dashboard after successful verification
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 1500);
+      } else {
+        toast.error("Invalid OTP. Please try again.");
+        form.setError("otp", { 
+          type: "manual", 
+          message: "Incorrect OTP. Please check and try again." 
+        });
       }
-    }
-  };
-
-  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData("text/plain").trim();
-    
-    if (!/^\d+$/.test(pastedData)) return;
-    
-    const otpArray = pastedData.split("").slice(0, 4);
-    const newOtp = [...otp];
-    
-    otpArray.forEach((digit, index) => {
-      if (index < 4) {
-        newOtp[index] = digit;
-      }
-    });
-    
-    setOtp(newOtp);
-    
-    if (otpArray.length > 0 && otpArray.length < 4) {
-      inputRefs.current[otpArray.length]?.focus();
-    }
-  };
-
-  const handleVerify = () => {
-    const otpValue = otp.join("");
-    if (otpValue.length === 4) {
-      // In a real app, this would verify the OTP against a service
-      // For demo, we'll just accept any 4-digit code
-      login(phoneNumber);
-      navigate("/dashboard");
-    }
-  };
-
-  const handleResendOtp = () => {
-    if (canResend) {
-      // In a real app, this would trigger an OTP resend
-      setCountdown(30);
-      setCanResend(false);
-      // Reset OTP fields
-      setOtp(["", "", "", ""]);
-    }
+      setIsVerifying(false);
+    }, 1500);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black to-[#0a0a1f] flex flex-col">
-      <div className="flex-1 flex flex-col justify-center px-6 py-12">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="sm:mx-auto sm:w-full sm:max-w-md text-center mb-8"
-        >
-          <h1 className="text-2xl font-bold text-white">Verify Phone Number</h1>
-          <p className="mt-2 text-gray-400">
-            We've sent a verification code to <br />
-            <span className="text-zepmeds-purple">+91 {phoneNumber}</span>
-          </p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
-          className="sm:mx-auto sm:w-full sm:max-w-md"
-        >
-          <div className="glass-morphism px-6 py-8 rounded-2xl shadow-xl">
-            <div className="mb-6">
-              <div className="flex justify-center space-x-4">
-                {otp.map((digit, index) => (
-                  <input
-                    key={index}
-                    ref={(el) => (inputRefs.current[index] = el)}
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => handleInputChange(index, e)}
-                    onKeyDown={(e) => handleKeyDown(index, e)}
-                    onPaste={index === 0 ? handlePaste : undefined}
-                    className="w-12 h-14 bg-black/20 border border-white/10 rounded-lg text-center text-xl font-bold text-white focus:border-zepmeds-purple focus:ring-1 focus:ring-zepmeds-purple outline-none"
-                  />
-                ))}
-              </div>
-            </div>
-
-            <Button
-              disabled={otp.some((digit) => !digit)}
-              className="w-full bg-zepmeds-purple hover:bg-zepmeds-purple-light transition-colors"
-              onClick={handleVerify}
-            >
-              Verify
-            </Button>
-
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-400">
-                Didn't receive the code?{" "}
-                {canResend ? (
-                  <button
-                    className="text-zepmeds-purple font-medium"
-                    onClick={handleResendOtp}
-                  >
-                    Resend
-                  </button>
-                ) : (
-                  <span className="text-gray-500">
-                    Resend in {countdown}s
-                  </span>
+    <div className="container mx-auto px-4 py-8 max-w-md">
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        className="mb-4 flex items-center gap-1"
+        onClick={goBack}
+      >
+        <ArrowLeft size={16} />
+        Back
+      </Button>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl">Verify Your Phone</CardTitle>
+          <CardDescription>
+            Enter the 6-digit code sent to your phone number.
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="otp"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <InputOTP 
+                        maxLength={6}
+                        {...field}
+                        disabled={isVerifying || isVerified}
+                      >
+                        <InputOTPGroup>
+                          <InputOTPSlot index={0} />
+                          <InputOTPSlot index={1} />
+                          <InputOTPSlot index={2} />
+                          <InputOTPSlot index={3} />
+                          <InputOTPSlot index={4} />
+                          <InputOTPSlot index={5} />
+                        </InputOTPGroup>
+                      </InputOTP>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              </p>
+              />
+              
+              {!isVerified && (
+                <Button 
+                  type="submit" 
+                  className="w-full"
+                  disabled={isVerifying || isVerified || !form.getValues().otp || form.getValues().otp.length < 6}
+                >
+                  {isVerifying ? "Verifying..." : "Verify"}
+                </Button>
+              )}
+            </form>
+          </Form>
+          
+          {isVerified && (
+            <div className="flex flex-col items-center justify-center mt-6 text-center">
+              <CheckCircle className="text-green-500 h-10 w-10 mb-2" />
+              <p className="text-green-600 font-medium">OTP Verified Successfully</p>
+              <p className="text-sm text-gray-500">Redirecting to dashboard...</p>
             </div>
-          </div>
-
-          <div className="mt-6 text-center">
-            <button
-              className="text-gray-400 text-sm"
-              onClick={() => navigate("/login")}
-            >
-              Change phone number
-            </button>
-          </div>
-        </motion.div>
-      </div>
+          )}
+        </CardContent>
+        
+        <CardFooter className="flex flex-col gap-4">
+          <p className="text-sm text-center text-gray-500">
+            Didn't receive a code? <Button variant="link" className="p-0 h-auto" onClick={() => toast.info("New code sent!")}>Resend OTP</Button>
+          </p>
+          <p className="text-xs text-center text-gray-400">
+            For demo purposes, use "123456" as the OTP code
+          </p>
+        </CardFooter>
+      </Card>
     </div>
   );
 };
