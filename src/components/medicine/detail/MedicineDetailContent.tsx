@@ -91,8 +91,8 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
         <div className="px-4 sm:px-5 pt-0 pb-4 flex-1 overflow-auto">
           {!inStock && (
             <div className="mb-4 bg-red-900/30 border border-red-800 rounded-md p-3 flex items-center">
-              <AlertTriangle className="h-5 w-5 text-red-500 mr-2 flex-shrink-0" />
-              <p className="text-red-300 text-sm">Not in stock right now, we will notify you</p>
+              <AlertTriangle className="h-5 w-5 text-red-400 mr-2 flex-shrink-0" />
+              <p className="text-red-200 text-sm font-medium">Not in stock right now, we will notify you</p>
             </div>
           )}
           

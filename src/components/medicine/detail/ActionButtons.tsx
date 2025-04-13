@@ -25,7 +25,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
         Cancel
       </Button>
       <Button 
-        className={`flex-1 ${inStock ? 'bg-zepmeds-purple hover:bg-zepmeds-purple/80' : 'bg-gray-700 hover:bg-gray-700 cursor-not-allowed'}`}
+        className={`flex-1 ${inStock ? 'bg-zepmeds-purple hover:bg-zepmeds-purple/80' : 'bg-red-600 hover:bg-red-700'}`}
         onClick={handleAddToCart}
         disabled={!inStock || disabled}
       >

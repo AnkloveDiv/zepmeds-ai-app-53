@@ -1,6 +1,7 @@
 
 import { motion } from "framer-motion";
 import ProductCard from "@/components/ProductCard";
+import { AlertTriangle } from "lucide-react";
 
 interface Product {
   id: string;
@@ -17,6 +18,7 @@ interface Product {
   dosage?: string;
   sideEffects?: string[];
   ingredients?: string[];
+  inStock?: boolean;
 }
 
 interface ProductGridProps {
@@ -48,8 +50,14 @@ const ProductGrid = ({ products, onAddToCart, onProductClick, filteredCategory }
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.05 + 0.1 }}
-          className="h-full"
+          className="h-full relative"
         >
+          {product.inStock === false && (
+            <div className="absolute top-2 right-2 z-10 bg-red-600 text-white text-xs py-1 px-2 rounded-full flex items-center">
+              <AlertTriangle className="h-3 w-3 mr-1" />
+              Out of Stock
+            </div>
+          )}
           <ProductCard
             name={product.name}
             image={product.image}
@@ -59,6 +67,7 @@ const ProductGrid = ({ products, onAddToCart, onProductClick, filteredCategory }
             description={product.description}
             onAddToCart={() => onAddToCart(product, 1)}
             onClick={() => onProductClick && onProductClick(product)}
+            disabled={product.inStock === false}
           />
         </motion.div>
       ))}
