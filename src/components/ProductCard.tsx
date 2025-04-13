@@ -12,6 +12,7 @@ interface ProductCardProps {
   rating: number;
   description?: string;
   inStock?: boolean;
+  disabled?: boolean;
   onClick?: () => void;
   onAddToCart?: (quantity: number) => void;
 }
@@ -51,6 +52,7 @@ const ProductCard = ({
   rating,
   description,
   inStock = true,
+  disabled = false,
   onClick,
   onAddToCart,
 }: ProductCardProps) => {
@@ -84,7 +86,7 @@ const ProductCard = ({
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
     
-    if (!inStock) {
+    if (!inStock || disabled) {
       toast({
         title: "Out of Stock",
         description: "This product is currently unavailable. We'll notify you when it's back in stock.",
@@ -122,10 +124,10 @@ const ProductCard = ({
     <>
       <style>{cartAnimationStyle}</style>
       <motion.div
-        className="glass-morphism rounded-xl overflow-hidden relative h-full flex flex-col cursor-pointer"
-        whileHover={{ scale: 1.03 }}
-        whileTap={{ scale: 0.98 }}
-        onClick={onClick}
+        className={`glass-morphism rounded-xl overflow-hidden relative h-full flex flex-col ${disabled ? 'opacity-80' : 'cursor-pointer'}`}
+        whileHover={{ scale: disabled ? 1 : 1.03 }}
+        whileTap={{ scale: disabled ? 1 : 0.98 }}
+        onClick={disabled ? undefined : onClick}
       >
         <div className="relative">
           <div className="w-full h-32 bg-gray-800/40 flex items-center justify-center overflow-hidden">
@@ -158,7 +160,7 @@ const ProductCard = ({
             {rating}
           </div>
           
-          {!inStock && (
+          {(!inStock || disabled) && (
             <div className="absolute top-2 right-2 bg-red-900/80 text-white text-xs px-2 py-1 rounded-full flex items-center">
               <AlertTriangle className="w-3 h-3 text-red-300 mr-1" />
               Out of Stock
@@ -173,7 +175,7 @@ const ProductCard = ({
             <p className="text-gray-400 text-xs mt-1 line-clamp-2">{description}</p>
           )}
           
-          {!inStock && (
+          {(!inStock || disabled) && (
             <p className="text-red-400 text-xs mt-1">
               Not in stock right now, we will notify you
             </p>
@@ -193,7 +195,7 @@ const ProductCard = ({
             
             <div className="relative">
               <motion.button
-                className={`p-2 rounded-full ${inStock ? 'bg-zepmeds-purple' : 'bg-gray-700'} ${isAnimating ? 'cart-animation' : ''}`}
+                className={`p-2 rounded-full ${(!inStock || disabled) ? 'bg-gray-700' : 'bg-zepmeds-purple'} ${isAnimating ? 'cart-animation' : ''}`}
                 onClick={handleAddToCart}
               >
                 <ShoppingCart className="w-4 h-4 text-white" />

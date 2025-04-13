@@ -67,6 +67,7 @@ const ProductGrid = ({ products, onAddToCart, onProductClick, filteredCategory }
             description={product.description}
             onAddToCart={() => onAddToCart(product, 1)}
             onClick={() => onProductClick && onProductClick(product)}
+            inStock={product.inStock}
             disabled={product.inStock === false}
           />
         </motion.div>
