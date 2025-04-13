@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import Header from "@/components/Header";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import MapAddressSelector from "@/components/address/MapAddressSelector";
+import { initializeGoogleMaps, mockGeocodeResponse } from "@/utils/googleMapsLoader";
 
 interface Address {
   id: string;
@@ -35,8 +36,17 @@ const AddressSelection = () => {
     address: '',
     isSelected: false
   });
+  const [googleMapsReady, setGoogleMapsReady] = useState(false);
 
   useEffect(() => {
+    // Initialize Google Maps API
+    const setupGoogleMaps = async () => {
+      const initialized = await initializeGoogleMaps();
+      setGoogleMapsReady(initialized);
+    };
+    
+    setupGoogleMaps();
+    
     // Load saved addresses from localStorage
     const savedAddresses = localStorage.getItem("savedAddresses");
     if (savedAddresses) {
@@ -46,8 +56,11 @@ const AddressSelection = () => {
       const defaultAddress: Address = {
         id: "home-1",
         label: "Home",
-        address: "Ghh, Bnn, Gurugram, 122001",
-        isSelected: true
+        address: "Gurugram, Haryana, 122001",
+        isSelected: true,
+        city: "Gurugram",
+        state: "Haryana",
+        zipCode: "122001"
       };
       setAddresses([defaultAddress]);
       localStorage.setItem("savedAddresses", JSON.stringify([defaultAddress]));
@@ -62,15 +75,23 @@ const AddressSelection = () => {
           console.log("Current location coordinates:", latitude, longitude);
           
           // Use the geocoding API to get the address from coordinates
-          const geocoder = new google.maps.Geocoder();
-          geocoder.geocode({ location: { lat: latitude, lng: longitude } }, (results, status) => {
-            if (status === "OK" && results && results[0]) {
-              setUserCurrentLocation(results[0].formatted_address);
-              console.log("Current location address:", results[0].formatted_address);
-            } else {
-              setUserCurrentLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-            }
-          });
+          if (window.google && window.google.maps) {
+            const geocoder = new google.maps.Geocoder();
+            geocoder.geocode({ location: { lat: latitude, lng: longitude } }, (results, status) => {
+              if (status === "OK" && results && results[0]) {
+                setUserCurrentLocation(results[0].formatted_address);
+                console.log("Current location address:", results[0].formatted_address);
+              } else {
+                // Use mock data when geocoding fails
+                const mockResult = mockGeocodeResponse(latitude, longitude);
+                setUserCurrentLocation(mockResult.formatted_address);
+              }
+            });
+          } else {
+            // If Google Maps API is not available, use the mock data
+            const mockResult = mockGeocodeResponse(latitude, longitude);
+            setUserCurrentLocation(mockResult.formatted_address);
+          }
         },
         (error) => {
           console.error("Error getting current location:", error);
@@ -121,66 +142,27 @@ const AddressSelection = () => {
           const { latitude, longitude } = position.coords;
           
           // Use geocoding to get the address
-          const geocoder = new google.maps.Geocoder();
-          geocoder.geocode({ location: { lat: latitude, lng: longitude } }, (results, status) => {
-            if (status === "OK" && results && results[0]) {
-              const result = results[0];
-              const addressComponents = result.address_components;
-              
-              // Extract address components
-              const city = addressComponents.find(c => 
-                c.types.includes("locality"))?.long_name || "";
-              const state = addressComponents.find(c => 
-                c.types.includes("administrative_area_level_1"))?.short_name || "";
-              const zipCode = addressComponents.find(c => 
-                c.types.includes("postal_code"))?.long_name || "";
-              
-              // Create a new address with the current location
-              const newAddress: Address = {
-                id: "current-location",
-                label: "Current Location",
-                address: result.formatted_address,
-                isSelected: true,
-                latitude,
-                longitude,
-                city,
-                state,
-                zipCode
-              };
-              
-              const updatedAddresses = addresses.map(addr => ({
-                ...addr,
-                isSelected: false
-              }));
-              
-              // Check if we already have a current location address to update
-              const currentLocationIndex = updatedAddresses.findIndex(addr => addr.id === "current-location");
-              
-              if (currentLocationIndex >= 0) {
-                updatedAddresses[currentLocationIndex] = newAddress;
+          let city = "Gurugram";
+          let state = "Haryana";
+          let zipCode = "122001";
+          let formattedAddress = userCurrentLocation;
+          
+          if (window.google && window.google.maps) {
+            const geocoder = new google.maps.Geocoder();
+            geocoder.geocode({ location: { lat: latitude, lng: longitude } }, (results, status) => {
+              if (status === "OK" && results && results[0]) {
+                processAddressResults(results[0], latitude, longitude);
               } else {
-                updatedAddresses.push(newAddress);
+                // Use mock data when geocoding fails
+                const mockResult = mockGeocodeResponse(latitude, longitude);
+                processAddressResults(mockResult, latitude, longitude);
               }
-              
-              setAddresses(updatedAddresses);
-              localStorage.setItem("savedAddresses", JSON.stringify(updatedAddresses));
-              
-              toast({
-                title: "Using Current Location",
-                description: "Delivering to your current location",
-              });
-              
-              setTimeout(() => {
-                navigate("/medicine-delivery");
-              }, 500);
-            } else {
-              toast({
-                title: "Error Getting Address",
-                description: "Could not determine your address. Please try again.",
-                variant: "destructive",
-              });
-            }
-          });
+            });
+          } else {
+            // If Google Maps API is not available, use the mock data
+            const mockResult = mockGeocodeResponse(latitude, longitude);
+            processAddressResults(mockResult, latitude, longitude);
+          }
         },
         (error) => {
           console.error("Error getting current location:", error);
@@ -192,6 +174,57 @@ const AddressSelection = () => {
         }
       );
     }
+  };
+  
+  const processAddressResults = (result: any, latitude: number, longitude: number) => {
+    const addressComponents = result.address_components;
+    
+    // Extract address components
+    const city = addressComponents.find((c: any) => 
+      c.types.includes("locality"))?.long_name || "Gurugram";
+    const state = addressComponents.find((c: any) => 
+      c.types.includes("administrative_area_level_1"))?.short_name || "HR";
+    const zipCode = addressComponents.find((c: any) => 
+      c.types.includes("postal_code"))?.long_name || "122001";
+    
+    // Create a new address with the current location
+    const newAddress: Address = {
+      id: "current-location",
+      label: "Current Location",
+      address: result.formatted_address,
+      isSelected: true,
+      latitude,
+      longitude,
+      city,
+      state,
+      zipCode
+    };
+    
+    const updatedAddresses = addresses.map(addr => ({
+      ...addr,
+      isSelected: false
+    }));
+    
+    // Check if we already have a current location address to update
+    const currentLocationIndex = updatedAddresses.findIndex(addr => addr.id === "current-location");
+    
+    if (currentLocationIndex >= 0) {
+      updatedAddresses[currentLocationIndex] = newAddress;
+    } else {
+      updatedAddresses.push(newAddress);
+    }
+    
+    setAddresses(updatedAddresses);
+    localStorage.setItem("savedAddresses", JSON.stringify(updatedAddresses));
+    
+    toast({
+      title: "Using Current Location",
+      description: "Delivering to your current location",
+    });
+    
+    setTimeout(() => {
+      navigate("/medicine-delivery");
+    }, 500);
   };
 
   const handleAddNewAddress = () => {

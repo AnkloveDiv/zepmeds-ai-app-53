@@ -33,6 +33,7 @@ const MedicineDelivery = () => {
   
   // Address state
   const [deliveryAddress, setDeliveryAddress] = useState("to Home Ghh, Bnn, Gurugram, 122001");
+  const [deliveryCoordinates, setDeliveryCoordinates] = useState<{lat: number, lng: number} | null>(null);
   
   // Weather state with API data
   const [weatherData, setWeatherData] = useState<WeatherData>({
@@ -53,11 +54,35 @@ const MedicineDelivery = () => {
     // Add event listener for storage changes (if cart is modified in another tab)
     window.addEventListener('storage', getCartCount);
     
+    // Check for selected address
+    const savedAddresses = localStorage.getItem("savedAddresses");
+    let selectedCoordinates = {lat: 28.4595, lng: 77.0266}; // Default to Gurugram
+    
+    if (savedAddresses) {
+      const addresses = JSON.parse(savedAddresses);
+      const selectedAddress = addresses.find((addr: any) => addr.isSelected);
+      if (selectedAddress) {
+        setDeliveryAddress(`to ${selectedAddress.label} ${selectedAddress.address}`);
+        
+        // If the selected address has coordinates, use them for weather
+        if (selectedAddress.latitude && selectedAddress.longitude) {
+          selectedCoordinates = {
+            lat: selectedAddress.latitude,
+            lng: selectedAddress.longitude
+          };
+          setDeliveryCoordinates(selectedCoordinates);
+        }
+      }
+    }
+    
     // Fetch weather data on component mount
     const fetchWeather = async () => {
       try {
-        // Using Gurugram coordinates based on the image
-        const weather = await fetchWeatherByCoordinates(28.4595, 77.0266);
+        // Using coordinates from the selected address
+        const weather = await fetchWeatherByCoordinates(
+          selectedCoordinates.lat, 
+          selectedCoordinates.lng
+        );
         setWeatherData(weather);
         console.log("Weather data:", weather);
       } catch (error) {
@@ -71,16 +96,6 @@ const MedicineDelivery = () => {
     };
     
     fetchWeather();
-    
-    // Check for selected address
-    const savedAddresses = localStorage.getItem("savedAddresses");
-    if (savedAddresses) {
-      const addresses = JSON.parse(savedAddresses);
-      const selectedAddress = addresses.find((addr: any) => addr.isSelected);
-      if (selectedAddress) {
-        setDeliveryAddress(`to ${selectedAddress.label} ${selectedAddress.address}`);
-      }
-    }
     
     return () => {
       window.removeEventListener('storage', getCartCount);
@@ -108,7 +123,7 @@ const MedicineDelivery = () => {
   };
 
   // Handle category click
-  const handleCategoryClick = (category) => {
+  const handleCategoryClick = (category: string) => {
     setActiveCategory(category);
     toast({
       title: `${category} selected`,
@@ -118,16 +133,16 @@ const MedicineDelivery = () => {
   };
 
   // Handle product click
-  const handleProductClick = (product) => {
+  const handleProductClick = (product: TrendingProduct) => {
     setSelectedMedicine(product);
     setIsModalOpen(true);
   };
 
   // Handle add to cart
-  const handleAddToCart = (product, quantity = 1) => {
+  const handleAddToCart = (product: TrendingProduct, quantity = 1) => {
     const existingCart = JSON.parse(localStorage.getItem("cart") || "[]");
     
-    const existingItemIndex = existingCart.findIndex(item => item.id === product.id);
+    const existingItemIndex = existingCart.findIndex((item: any) => item.id === product.id);
     
     if (existingItemIndex >= 0) {
       existingCart[existingItemIndex].quantity += quantity;
@@ -150,11 +165,11 @@ const MedicineDelivery = () => {
   };
 
   // Handle add to cart from modal
-  const handleModalAddToCart = (quantity, strips) => {
+  const handleModalAddToCart = (quantity: number, strips: number) => {
     if (selectedMedicine) {
       const existingCart = JSON.parse(localStorage.getItem("cart") || "[]");
       
-      const existingItemIndex = existingCart.findIndex(item => item.id === selectedMedicine.id);
+      const existingItemIndex = existingCart.findIndex((item: any) => item.id === selectedMedicine.id);
       
       if (existingItemIndex >= 0) {
         existingCart[existingItemIndex].quantity += quantity;
