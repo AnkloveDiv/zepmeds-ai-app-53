@@ -220,7 +220,42 @@ export const useBackNavigation = (homeRoute: string = "/dashboard") => {
     );
   };
 
-  return { ExitConfirmDialog };
+  // Add a goBack function to handle navigation
+  const goBack = () => {
+    // Special handling for checkout flow
+    if (isCheckoutFlow) {
+      const previousPage = getPreviousCheckoutPage();
+      navigate(previousPage);
+      return;
+    }
+    
+    // Get previous page from history
+    const updatedHistory = [...navigationHistory];
+    if (updatedHistory.length > 1) {
+      // Remove current page
+      updatedHistory.pop();
+      // Get previous page
+      const previousPage = updatedHistory[updatedHistory.length - 1];
+      
+      // Update history and navigate
+      setNavigationHistory(updatedHistory);
+      navigate(previousPage);
+    } else {
+      // If no history, show exit dialog or go to home
+      if (location.pathname === homeRoute) {
+        setShowExitDialog(true);
+      } else {
+        navigate(homeRoute);
+        toast({
+          title: "Navigated to Home",
+          description: "Press back again to exit the app",
+          duration: 3000,
+        });
+      }
+    }
+  };
+
+  return { ExitConfirmDialog, goBack };
 };
 
 export default useBackNavigation;

@@ -20,7 +20,8 @@ const formSchema = z.object({
 
 const PhoneVerification: React.FC = () => {
   const navigate = useNavigate();
-  const goBack = useBackNavigation();
+  // Call useBackNavigation and properly destructure what it returns
+  const { goBack } = useBackNavigation();
   const [isVerifying, setIsVerifying] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   
