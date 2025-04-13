@@ -10,6 +10,7 @@ import {
   ChevronUp 
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import ChatbotModal from "@/components/chat/ChatbotModal";
 
 interface OrderHelpProps {
   orderId: string;
@@ -18,6 +19,7 @@ interface OrderHelpProps {
 const OrderHelp = ({ orderId }: OrderHelpProps) => {
   const [showFAQ, setShowFAQ] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [showChatbot, setShowChatbot] = useState(false);
   const { toast } = useToast();
   
   const handleToggleFAQ = () => {
@@ -35,6 +37,14 @@ const OrderHelp = ({ orderId }: OrderHelpProps) => {
       title: "Message sent",
       description: "Our team will respond to your query soon.",
     });
+  };
+
+  const handleOpenChatbot = () => {
+    setShowChatbot(true);
+  };
+  
+  const handleCloseChatbot = () => {
+    setShowChatbot(false);
   };
   
   return (
@@ -81,16 +91,24 @@ const OrderHelp = ({ orderId }: OrderHelpProps) => {
               className="flex-1 bg-black/40 text-white rounded-lg px-3 py-2 border border-white/10 focus:outline-none focus:border-zepmeds-purple"
             />
             <Button 
-              onClick={handleSendMessage}
+              onClick={handleOpenChatbot}
               className="bg-zepmeds-purple hover:bg-zepmeds-purple-light"
             >
-              Send
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Start Chat
             </Button>
           </div>
         </div>
       )}
       
       <OrderActions orderId={orderId} />
+      
+      {/* Chatbot Modal */}
+      <ChatbotModal 
+        isOpen={showChatbot} 
+        onClose={handleCloseChatbot} 
+        orderId={orderId} 
+      />
     </div>
   );
 };

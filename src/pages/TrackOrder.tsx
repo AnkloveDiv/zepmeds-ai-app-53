@@ -14,6 +14,7 @@ import DeliveryStatus from "@/components/order/DeliveryStatus";
 import DeliveryPartner from "@/components/order/DeliveryPartner";
 import OrderItems from "@/components/order/OrderItems";
 import OrderHelp from "@/components/order/OrderHelp";
+import ChatbotModal from "@/components/chat/ChatbotModal";
 
 const TrackOrder = () => {
   const { orderId } = useParams();
@@ -23,6 +24,7 @@ const TrackOrder = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [showChatbot, setShowChatbot] = useState(false);
   const { ExitConfirmDialog } = useBackNavigation();
   
   useEffect(() => {
@@ -131,6 +133,14 @@ const TrackOrder = () => {
     }
   };
   
+  const handleOpenChatbot = () => {
+    setShowChatbot(true);
+  };
+  
+  const handleCloseChatbot = () => {
+    setShowChatbot(false);
+  };
+  
   if (loading) {
     return <OrderLoadingState />;
   }
@@ -189,6 +199,13 @@ const TrackOrder = () => {
       </main>
       
       <BottomNavigation />
+      
+      {/* Chatbot Modal */}
+      <ChatbotModal 
+        isOpen={showChatbot} 
+        onClose={handleCloseChatbot} 
+        orderId={orderId || ''} 
+      />
     </div>
   );
 };

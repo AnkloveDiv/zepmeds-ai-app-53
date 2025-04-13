@@ -6,9 +6,10 @@ import { useToast } from "@/components/ui/use-toast";
 interface OrderActionsProps {
   orderId: string;
   compact?: boolean;
+  onOpenChat?: () => void;
 }
 
-const OrderActions = ({ orderId, compact = false }: OrderActionsProps) => {
+const OrderActions = ({ orderId, compact = false, onOpenChat }: OrderActionsProps) => {
   const { toast } = useToast();
   
   const handleDownloadInvoice = () => {
@@ -116,6 +117,7 @@ Thank you for shopping with Zepmeds!
       <Button 
         variant="outline" 
         className="w-full justify-start text-blue-500 border-blue-500/30 hover:bg-blue-500/10"
+        onClick={onOpenChat}
       >
         <MessageSquare className="h-5 w-5 mr-2" />
         Chat with Support
