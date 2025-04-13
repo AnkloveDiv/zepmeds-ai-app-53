@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,11 +37,9 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
   const [locationRetries, setLocationRetries] = useState(0);
   const { toast } = useToast();
   
-  // For fallback map
   const [fallbackLatitude, setFallbackLatitude] = useState(28.6139);
   const [fallbackLongitude, setFallbackLongitude] = useState(77.2090);
   
-  // Store accuracy circle reference
   const [accuracyCircle, setAccuracyCircle] = useState<google.maps.Circle | null>(null);
   
   useEffect(() => {
@@ -50,12 +47,10 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     
     const loadMap = async () => {
       try {
-        // Initialize Google Maps API
         const mapsInitialized = await initializeMap();
         
         if (!isMounted) return;
         
-        // Check if Google Maps is available
         if (!window.google || !window.google.maps || !mapsInitialized) {
           console.error("Google Maps is not loaded after initialization");
           toast({
@@ -65,12 +60,10 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
           });
           setUsingMockData(true);
           setIsLoading(false);
-          // Show a fallback/static view with user's location if possible
           getUserLocation();
           return;
         }
         
-        // Get user's current location
         getUserLocation();
       } catch (error) {
         if (!isMounted) return;
@@ -83,7 +76,6 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
           description: "Using fallback view for location selection.",
           variant: "destructive",
         });
-        // Get user location for fallback view
         getUserLocation();
       }
     };
@@ -92,38 +84,32 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       setLoadingAddress(true);
       
       try {
-        // Try multiple times to get an accurate position
         let position;
         let attempt = 0;
         let bestAccuracy = Infinity;
         
-        // Keep trying until we get a reasonably accurate position or run out of attempts
         while (attempt < 10 && bestAccuracy > 100) {
           try {
             attempt++;
             console.log(`Getting location attempt ${attempt}`);
             
-            // Use enhanced getCurrentPosition function with shorter timeout for retries
             const currentPosition = await getCurrentPosition({
               timeout: attempt < 5 ? 3000 : 5000,
               maximumAge: 0,
               enableHighAccuracy: true
             });
             
-            // Keep the most accurate position we've seen
             if (currentPosition.coords.accuracy < bestAccuracy) {
               position = currentPosition;
               bestAccuracy = currentPosition.coords.accuracy;
               console.log(`New best accuracy: ${bestAccuracy} meters`);
               
-              // If the accuracy is good enough, we can stop trying
               if (bestAccuracy < 100) {
                 console.log("Good enough accuracy achieved, stopping attempts");
                 break;
               }
             }
             
-            // Brief pause between attempts
             if (attempt < 10) {
               await new Promise(r => setTimeout(r, 200));
             }
@@ -134,7 +120,6 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         
         if (!position) {
           if (locationRetries < 2) {
-            // Try one more series of attempts
             setLocationRetries(prev => prev + 1);
             toast({
               title: "Location accuracy poor",
@@ -153,14 +138,12 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         const { latitude, longitude, accuracy } = position.coords;
         console.log(`Final position selected with accuracy: ${accuracy} meters`);
         
-        // Use full precision for better accuracy
         setFallbackLatitude(latitude);
         setFallbackLongitude(longitude);
         
         if (!usingMockData && window.google && window.google.maps) {
           initializeGoogleMap(latitude, longitude, accuracy);
         } else {
-          // For fallback map
           setIsLoading(false);
           const addressResult = await getAddressFromCoordinates(latitude, longitude);
           if (isMounted) {
@@ -179,7 +162,6 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         });
         
         if (!usingMockData && window.google && window.google.maps) {
-          // Use Delhi as fallback - but we'll make it clear in the UI that it's not their actual location
           initializeGoogleMap(28.6139, 77.2090, 1000);
         } else {
           setIsLoading(false);
@@ -196,7 +178,6 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     
     return () => {
       isMounted = false;
-      // Clean up map instance if it exists
       if (marker) {
         marker.setMap(null);
       }
@@ -219,7 +200,6 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     try {
       console.log("Initializing Google Map with coordinates:", lat, lng);
       
-      // Create Google Map instance
       const mapOptions: google.maps.MapOptions = {
         center: { lat, lng },
         zoom: 17,
@@ -233,7 +213,6 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       const googleMap = new google.maps.Map(mapRef.current, mapOptions);
       setMap(googleMap);
       
-      // Add a marker for the location
       const markerIcon = {
         path: google.maps.SymbolPath.CIRCLE,
         fillColor: '#FF4500',
@@ -254,7 +233,6 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       setMarker(googleMarker);
       setIsLoading(false);
       
-      // Add circle to show accuracy
       const circle = new google.maps.Circle({
         map: googleMap,
         center: { lat, lng },
@@ -268,7 +246,6 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       
       setAccuracyCircle(circle);
       
-      // Listen for marker drag end event
       googleMarker.addListener('dragend', () => {
         const position = googleMarker.getPosition();
         if (position) {
@@ -288,7 +265,6 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         }
       });
       
-      // Listen for map click event
       googleMap.addListener('click', (e: google.maps.MouseEvent) => {
         const newLat = e.latLng.lat();
         const newLng = e.latLng.lng();
@@ -306,12 +282,18 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         });
       });
       
-      // Get initial address
-      setLoadingAddress(true);
+      const handleSearchResults = (searchLat: number, searchLng: number) => {
+        if (marker && circle) {
+          const newPosition = new google.maps.LatLng(searchLat, searchLng);
+          marker.setPosition(newPosition);
+          circle.setCenter(newPosition);
+          googleMap.panTo(newPosition);
+          googleMap.setZoom(17);
+        }
+      };
+      
       const addressResult = await getAddressFromCoordinates(lat, lng);
       handleGeocodeResult(addressResult, lat, lng);
-      setLoadingAddress(false);
-      
     } catch (error) {
       console.error("Error creating Google map:", error);
       setIsLoading(false);
@@ -330,24 +312,20 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
   const handleGeocodeResult = (result: any, lat: number, lng: number) => {
     console.log("Processing geocode result:", result);
     
-    // Extract address components
     let city = "Unknown City";
     let state = "Unknown State";
     let zipCode = "000000";
     
     if (result.address_components) {
       for (const component of result.address_components) {
-        // Extract city
         if (component.types.includes("locality")) {
           city = component.long_name;
         }
         
-        // Extract state
         if (component.types.includes("administrative_area_level_1")) {
           state = component.short_name;
         }
         
-        // Extract postal code
         if (component.types.includes("postal_code")) {
           zipCode = component.long_name;
         }
@@ -375,26 +353,20 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     console.log("Searching for address:", searchQuery);
     
     try {
-      // Use Google Maps API for geocoding
       const searchResult = await searchAddressWithGoogle(searchQuery);
       const { lat, lng, address } = searchResult;
       
-      // Update fallback coordinates in case we switch to fallback view
       setFallbackLatitude(lat);
       setFallbackLongitude(lng);
       
-      // Update marker and map if available
       if (map && marker && !usingMockData) {
         console.log("Updating map and marker to:", lat, lng);
         marker.setPosition({ lat, lng });
         map.panTo({ lat, lng });
         map.setZoom(17);
         
-        // Update accuracy circle if it exists
-        const circles = map.data?.getFeatureById('accuracyCircle');
-        if (circles) {
-          // Update circle center
-          circles.setProperty('center', { lat, lng });
+        if (accuracyCircle) {
+          accuracyCircle.setCenter({ lat, lng });
         }
       }
       
@@ -414,7 +386,6 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     setLoadingAddress(true);
     
     try {
-      // Try multiple times to get a good position
       let bestPosition = null;
       let bestAccuracy = Infinity;
       
@@ -431,11 +402,9 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
             bestAccuracy = position.coords.accuracy;
             console.log(`Current location attempt ${i+1}, accuracy: ${bestAccuracy} meters`);
             
-            // If we got a good accuracy, don't need more attempts
             if (bestAccuracy < 100) break;
           }
           
-          // Small delay between attempts
           await new Promise(r => setTimeout(r, 300));
         } catch (e) {
           console.warn(`Attempt ${i+1} to get location failed:`, e);
@@ -449,7 +418,6 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       const { latitude, longitude, accuracy } = bestPosition.coords;
       console.log("Current location:", latitude, longitude, "Accuracy:", accuracy);
       
-      // Update fallback coordinates
       setFallbackLatitude(latitude);
       setFallbackLongitude(longitude);
       
@@ -458,15 +426,14 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         marker.setPosition({ lat: latitude, lng: longitude });
         map.panTo({ lat: latitude, lng: longitude });
         
-        // Set appropriate zoom level based on accuracy
         if (accuracy > 500) {
-          map.setZoom(14); // Lower zoom for less accurate locations
+          map.setZoom(14);
         } else if (accuracy > 200) {
           map.setZoom(15);
         } else if (accuracy > 50) {
           map.setZoom(16);
         } else {
-          map.setZoom(17); // Higher zoom for more accurate locations
+          map.setZoom(17);
         }
       }
       

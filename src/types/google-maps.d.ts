@@ -10,6 +10,7 @@ declare namespace google {
       getCenter(): LatLng;
       addListener(eventName: string, handler: Function): MapsEventListener;
       fitBounds(bounds: LatLngBounds, padding?: number | Padding): void;
+      data?: Data; // Add data property to Map class
     }
 
     class Marker {
@@ -256,6 +257,102 @@ declare namespace google {
       push(elem: T): number;
       removeAt(i: number): T;
       setAt(i: number, elem: T): void;
+    }
+
+    // Add Data class definition for the data layer in Google Maps
+    class Data {
+      constructor(options?: DataOptions);
+      add(feature: Feature | FeatureOptions): Feature;
+      addGeoJson(geoJson: Object, options?: GeoJsonOptions): Feature[];
+      contains(feature: Feature): boolean;
+      forEach(callback: (feature: Feature) => void): void;
+      getControlPosition(): number;
+      getControls(): number[];
+      getDrawingMode(): string;
+      getFeatureById(id: string | number): Feature | null;
+      getMap(): Map;
+      getStyle(): Data.StylingFunction | Data.StyleOptions;
+      loadGeoJson(url: string, options?: GeoJsonOptions, callback?: (features: Feature[]) => void): void;
+      overrideStyle(feature: Feature, style: Data.StyleOptions): void;
+      remove(feature: Feature): void;
+      revertStyle(feature?: Feature): void;
+      setControlPosition(controlPosition: number): void;
+      setControls(controls: string[]): void;
+      setDrawingMode(drawingMode: string): void;
+      setMap(map: Map | null): void;
+      setStyle(style: Data.StylingFunction | Data.StyleOptions): void;
+      toGeoJson(callback: (obj: Object) => void): void;
+    }
+
+    namespace Data {
+      interface StylingFunction {
+        (feature: Feature): StyleOptions;
+      }
+
+      interface StyleOptions {
+        clickable?: boolean;
+        cursor?: string;
+        draggable?: boolean;
+        editable?: boolean;
+        fillColor?: string;
+        fillOpacity?: number;
+        icon?: string | Icon | Symbol;
+        shape?: MarkerShape;
+        strokeColor?: string;
+        strokeOpacity?: number;
+        strokeWeight?: number;
+        title?: string;
+        visible?: boolean;
+        zIndex?: number;
+      }
+    }
+
+    interface DataOptions {
+      controlPosition?: number;
+      controls?: string[];
+      drawingMode?: string;
+      featureFactory?: (geometry: Data.Geometry) => Feature;
+      map?: Map;
+      style?: Data.StylingFunction | Data.StyleOptions;
+    }
+
+    interface GeoJsonOptions {
+      idPropertyName?: string;
+    }
+
+    interface FeatureOptions {
+      geometry?: Data.Geometry | Data.GeometryOptions;
+      id?: string | number;
+      properties?: Object;
+    }
+
+    class Feature {
+      constructor(options?: FeatureOptions);
+      forEachProperty(callback: (value: any, name: string) => void): void;
+      getGeometry(): Data.Geometry;
+      getId(): string | number;
+      getProperty(name: string): any;
+      removeProperty(name: string): void;
+      setGeometry(newGeometry: Data.Geometry | Data.GeometryOptions | LatLng | LatLngLiteral): void;
+      setProperty(name: string, newValue: any): void;
+      toGeoJson(callback: (obj: Object) => void): void;
+    }
+
+    namespace Data {
+      interface GeometryOptions {
+        type: string;
+        coordinates: any;
+      }
+
+      class Geometry {
+        getType(): string;
+        forEachLatLng(callback: (latLng: LatLng) => void): void;
+      }
+    }
+
+    interface MarkerShape {
+      coords: number[];
+      type: string;
     }
 
     const Animation: {
