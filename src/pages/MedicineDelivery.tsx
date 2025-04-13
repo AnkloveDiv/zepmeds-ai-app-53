@@ -2,20 +2,34 @@
 import React, { useState, useEffect } from 'react';
 import SearchBar from '../components/SearchBar';
 import { Button } from "../components/ui/button";
-import { Upload } from 'lucide-react';
+import { Upload, ArrowLeft } from 'lucide-react';
+import { useToast } from "../components/ui/use-toast";
 import CategoriesNav from '../components/medicine/CategoriesNav';
 import ProductGrid from '../components/medicine/ProductGrid';
 import FloatingCartButton from '../components/medicine/FloatingCartButton';
 import AddressWithWeather from '../components/medicine/AddressWithWeather';
 import WeatherAnimation from '../components/medicine/WeatherAnimation';
-import LocationWeather from '../components/medicine/LocationWeather';
 import { useNavigate } from 'react-router-dom';
+import { useTrendingProducts } from '../hooks/useTrendingProducts';
+import { useBackNavigation } from '../hooks/useBackNavigation';
+import { fetchWeatherByCoordinates, WeatherData } from '../services/weatherService';
 
 const MedicineDelivery = () => {
-  // Mock weather condition - in a real app, this would come from an API
-  const weatherCondition: 'sunny' | 'rainy' | 'cloudy' = 'cloudy';
+  // Add navigation and toast
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const { ExitConfirmDialog } = useBackNavigation('/dashboard');
+  
+  // Get trending products
   const [cartItemsCount, setCartItemsCount] = useState(0);
+  const { products, handleAddToCart, handleProductClick } = useTrendingProducts(setCartItemsCount);
+  
+  // Weather state with API data
+  const [weatherData, setWeatherData] = useState<WeatherData>({
+    condition: 'cloudy',
+    temperature: '29°',
+    description: 'Cloudy'
+  });
   
   // Get cart items count from localStorage on component mount
   useEffect(() => {
@@ -29,6 +43,15 @@ const MedicineDelivery = () => {
     // Add event listener for storage changes (if cart is modified in another tab)
     window.addEventListener('storage', getCartCount);
     
+    // Fetch weather data on component mount
+    const fetchWeather = async () => {
+      // Using Gurugram coordinates based on the image
+      const weather = await fetchWeatherByCoordinates(28.4595, 77.0266);
+      setWeatherData(weather);
+    };
+    
+    fetchWeather();
+    
     return () => {
       window.removeEventListener('storage', getCartCount);
     };
@@ -39,16 +62,37 @@ const MedicineDelivery = () => {
     navigate('/cart');
   };
 
+  // Handle back button click
+  const handleBackClick = () => {
+    navigate('/dashboard');
+  };
+
+  // Handle prescription upload button click
+  const handleUploadClick = () => {
+    toast({
+      title: "Prescription Upload",
+      description: "Our AI will analyze your prescription and suggest medicines.",
+      duration: 3000,
+    });
+    navigate('/prescription-upload');
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-black relative">
-      <WeatherAnimation type={weatherCondition} />
+      <WeatherAnimation type={weatherData.condition} />
       
       {/* Address Bar with Weather */}
-      <AddressWithWeather />
+      <AddressWithWeather 
+        deliveryTime="11 minutes delivery"
+        address="to Home Ghh, Bnn, Gurugram, 122001"
+        weatherTemperature={weatherData.temperature}
+        weatherDescription={weatherData.description}
+        onBackClick={handleBackClick}
+      />
       
       {/* Search Section */}
       <div className="px-4 py-5 bg-gradient-to-b from-[#58684a] to-black z-10">
-        <SearchBar placeholder="Search &quot;Multi-Vitamin&quot;" />
+        <SearchBar placeholder="Search for medicines.." />
         
         {/* Upload Prescription */}
         <div className="mt-4 p-4 bg-[#1a1a1a] rounded-xl flex items-center justify-between">
@@ -60,11 +104,15 @@ const MedicineDelivery = () => {
               </svg>
             </div>
             <div>
-              <p className="text-white text-base font-medium">Add prescription and our</p>
-              <p className="text-white text-base font-medium">pharmacist will assist you!</p>
+              <p className="text-white text-sm font-medium truncate">Add prescription and our</p>
+              <p className="text-white text-sm font-medium truncate">pharmacist will assist you!</p>
             </div>
           </div>
-          <Button variant="default" className="bg-[#3b5cf5] hover:bg-blue-600 text-white px-6">
+          <Button 
+            variant="default" 
+            className="bg-[#3b5cf5] hover:bg-blue-600 text-white px-6"
+            onClick={handleUploadClick}
+          >
             Upload
           </Button>
         </div>
@@ -74,10 +122,23 @@ const MedicineDelivery = () => {
       <div className="flex-1 bg-black px-4 pt-6 pb-20">
         <h2 className="text-white text-2xl font-bold mb-4">Categories</h2>
         <CategoriesNav />
+        
+        {/* Products Grid */}
+        <div className="mt-6">
+          <h2 className="text-white text-xl font-bold mb-2">Featured Medicines</h2>
+          <ProductGrid 
+            products={products} 
+            onAddToCart={handleAddToCart}
+            onProductClick={handleProductClick}
+          />
+        </div>
       </div>
 
       {/* Floating Cart Button */}
       <FloatingCartButton itemsCount={cartItemsCount} onClick={handleCartClick} />
+      
+      {/* Exit confirmation dialog */}
+      <ExitConfirmDialog />
     </div>
   );
 };
