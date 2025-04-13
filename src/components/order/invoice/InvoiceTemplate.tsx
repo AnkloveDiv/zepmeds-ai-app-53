@@ -42,8 +42,13 @@ const InvoiceTemplate = ({
 }: InvoiceTemplateProps) => {
   return (
     <div 
-      className="bg-white text-black p-8 w-[800px]"
-      style={{ fontFamily: 'Arial, sans-serif' }}
+      className="bg-white text-black p-8 w-[800px] shadow-md"
+      style={{ 
+        fontFamily: 'Arial, sans-serif',
+        maxWidth: '800px',
+        margin: '0 auto',
+        boxSizing: 'border-box'
+      }}
     >
       <InvoiceHeader orderId={orderId} orderDate={orderDate} />
       <AddressSection customerName={customerName} customerAddress={customerAddress} />

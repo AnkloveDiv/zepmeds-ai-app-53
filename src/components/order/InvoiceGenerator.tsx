@@ -54,17 +54,20 @@ const InvoiceGenerator: React.FC<InvoiceGeneratorProps> = ({
       const canvas = await html2canvas(invoiceRef.current, {
         scale: 2,
         backgroundColor: '#ffffff',
-        logging: false
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+        foreignObjectRendering: false
       });
       
       // Convert to image and download
       const image = canvas.toDataURL('image/jpeg', 1.0);
-      const a = document.createElement('a');
-      a.href = image;
-      a.download = `zepmeds_invoice_${orderId}.jpg`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      const link = document.createElement('a');
+      link.href = image;
+      link.download = `zepmeds_invoice_${orderId}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       
       toast({
         title: "Invoice Downloaded",
@@ -83,7 +86,7 @@ const InvoiceGenerator: React.FC<InvoiceGeneratorProps> = ({
   return (
     <div className="relative">
       {/* Hidden invoice template for capturing */}
-      <div className="absolute left-[-9999px]">
+      <div className="absolute left-[-9999px]" style={{ width: "800px", height: "auto" }}>
         <div ref={invoiceRef}>
           <InvoiceTemplate
             orderId={orderId}
