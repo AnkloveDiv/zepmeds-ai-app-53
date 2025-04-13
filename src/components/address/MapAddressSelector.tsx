@@ -5,7 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader, MapPin, Navigation, Search, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { initializeGoogleMaps, mockGeocodeResponse } from "@/utils/googleMapsLoader";
+import { 
+  initializeMapplsMaps, 
+  mockGeocodeResponse, 
+  getAddressFromMapplsCoordinates,
+  searchAddressWithMappls
+} from "@/utils/googleMapsLoader";
 
 interface MapAddressSelectorProps {
   onAddressSelected: (address: AddressDetails) => void;
@@ -23,8 +28,8 @@ interface AddressDetails {
 
 const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [marker, setMarker] = useState<google.maps.Marker | null>(null);
+  const [map, setMap] = useState<any | null>(null);
+  const [marker, setMarker] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadingAddress, setLoadingAddress] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<AddressDetails | null>(null);
@@ -35,12 +40,12 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
   useEffect(() => {
     const loadMap = async () => {
       try {
-        // Initialize Google Maps API
-        const mapsInitialized = await initializeGoogleMaps();
+        // Initialize Mappls Maps API
+        const mapsInitialized = await initializeMapplsMaps();
         
-        // Check if Google Maps API is available
-        if (!window.google || !window.google.maps) {
-          console.error("Google Maps API is not loaded after initialization");
+        // Check if Mappls Maps API is available
+        if (!window.mappls) {
+          console.error("Mappls Maps API is not loaded after initialization");
           toast({
             title: "Maps API not available",
             description: "Using fallback map view. Full functionality may be limited.",
@@ -97,7 +102,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     loadMap();
   }, [toast]);
   
-  // Initialize a fallback static map when Google Maps fails
+  // Initialize a fallback static map when Mappls Maps fails
   const initializeFallbackMap = () => {
     setIsLoading(false);
     // Set a default location for fallback
@@ -109,7 +114,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
   };
   
   const initializeMap = (lat: number, lng: number) => {
-    if (!mapRef.current || !window.google || !window.google.maps) {
+    if (!mapRef.current || !window.mappls) {
       setIsLoading(false);
       setUsingMockData(true);
       getAddressFromCoordinates(lat, lng); // Use fallback data
@@ -118,58 +123,50 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     
     try {
       console.log("Initializing map with coordinates:", lat, lng);
-      const mapOptions: google.maps.MapOptions = {
+      
+      // Initialize Mappls map
+      const mapplsMap = new window.mappls.Map(mapRef.current, {
         center: { lat, lng },
         zoom: 15,
-        mapTypeControl: false,
-        fullscreenControl: false,
-        streetViewControl: false,
+        search: false,
+        location: false,
         zoomControl: true,
-        styles: [
-          {
-            featureType: "poi",
-            elementType: "labels",
-            stylers: [{ visibility: "off" }]
-          }
-        ]
-      };
+      });
       
-      const newMap = new google.maps.Map(mapRef.current, mapOptions);
-      setMap(newMap);
+      setMap(mapplsMap);
       
-      const newMarker = new google.maps.Marker({
+      // Add a marker at the initial location
+      const mapMarker = new window.mappls.Marker({
+        map: mapplsMap,
         position: { lat, lng },
-        map: newMap,
         draggable: true,
-        animation: google.maps.Animation.DROP,
+        fitbounds: true,
         icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 10,
-          fillColor: "#7D41E1",
-          fillOpacity: 1,
-          strokeColor: "#ffffff",
-          strokeWeight: 2,
+          url: 'https://apis.mapmyindia.com/map_v3/1.png',
+          width: 28,
+          height: 38
         }
       });
-      setMarker(newMarker);
+      
+      setMarker(mapMarker);
       
       // Get address for initial location
       getAddressFromCoordinates(lat, lng);
       
       // Add event listener for marker drag end
-      newMarker.addListener("dragend", () => {
-        const position = newMarker.getPosition();
+      mapMarker.addListener("dragend", () => {
+        const position = mapMarker.getPosition();
         if (position) {
-          getAddressFromCoordinates(position.lat(), position.lng());
+          getAddressFromCoordinates(position.lat, position.lng);
         }
       });
       
       // Add event listener for map click
-      newMap.addListener("click", (e: google.maps.MouseEvent) => {
-        const position = e.latLng;
-        if (position && newMarker) {
-          newMarker.setPosition(position);
-          getAddressFromCoordinates(position.lat(), position.lng());
+      mapplsMap.addListener("click", (e: any) => {
+        if (e.latlng && mapMarker) {
+          const { lat, lng } = e.latlng;
+          mapMarker.setPosition({ lat, lng });
+          getAddressFromCoordinates(lat, lng);
         }
       });
       
@@ -187,38 +184,27 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     }
   };
   
-  const getAddressFromCoordinates = (lat: number, lng: number) => {
+  const getAddressFromCoordinates = async (lat: number, lng: number) => {
     setLoadingAddress(true);
     console.log("Getting address for coordinates:", lat, lng);
     
-    // Check if we need to use mock data or if the Google Maps API is available
-    if (usingMockData || !window.google || !window.google.maps) {
-      const mockResponse = mockGeocodeResponse(lat, lng);
-      handleGeocodeResult(mockResponse, lat, lng);
-      setLoadingAddress(false);
-      return;
-    }
-    
-    const geocoder = new google.maps.Geocoder();
-    geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-      if (status === "OK" && results && results[0]) {
-        const result = results[0];
-        handleGeocodeResult(result, lat, lng);
-      } else {
-        console.error("Geocoding failed:", status);
-        toast({
-          title: "Geocoding failed",
-          description: "Using fallback address data for this location",
-          variant: "destructive",
-        });
-        
-        // Use mock data when geocoding fails
+    try {
+      // Check if we need to use mock data or if the Mappls API is available
+      if (usingMockData || !window.mappls) {
         const mockResponse = mockGeocodeResponse(lat, lng);
         handleGeocodeResult(mockResponse, lat, lng);
+      } else {
+        // Use Mappls reverse geocoding
+        const result = await getAddressFromMapplsCoordinates(lat, lng);
+        handleGeocodeResult(result, lat, lng);
       }
-      
-      setLoadingAddress(false);
-    });
+    } catch (error) {
+      console.error("Error in reverse geocoding:", error);
+      const mockResponse = mockGeocodeResponse(lat, lng);
+      handleGeocodeResult(mockResponse, lat, lng);
+    }
+    
+    setLoadingAddress(false);
   };
   
   const handleGeocodeResult = (result: any, lat: number, lng: number) => {
@@ -247,68 +233,57 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     setSelectedAddress(addressDetails);
   };
   
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (!searchQuery.trim()) return;
     
     setLoadingAddress(true);
     console.log("Searching for address:", searchQuery);
     
-    // Check if we need to use mock data
-    if (usingMockData || !window.google || !window.google.maps || !map) {
-      // Simulate a search delay
-      setTimeout(() => {
-        // Default coordinates - simulate finding the location
-        const lat = 28.6139;
-        const lng = 77.2090;
-        
-        const mockResponse = mockGeocodeResponse(lat, lng);
-        handleGeocodeResult(mockResponse, lat, lng);
-        
-        // If we have a map and marker, update them
-        if (map && marker) {
-          const location = new google.maps.LatLng(lat, lng);
-          marker.setPosition(location);
-          map.panTo(location);
-          map.setZoom(15);
-        }
-        
-        setLoadingAddress(false);
-      }, 1000);
-      return;
-    }
-    
-    const geocoder = new google.maps.Geocoder();
-    geocoder.geocode({ address: searchQuery }, (results, status) => {
-      if (status === "OK" && results && results[0] && results[0].geometry && results[0].geometry.location) {
-        const location = results[0].geometry.location;
-        const lat = location.lat();
-        const lng = location.lng();
-        
-        console.log("Found location:", lat, lng);
-        
-        if (marker) {
-          marker.setPosition(location);
-        }
-        
-        map.panTo(location);
-        map.setZoom(15);
-        getAddressFromCoordinates(lat, lng);
-      } else {
-        console.error("Place search failed:", status);
-        toast({
-          title: "Place not found",
-          description: "Using fallback location data",
-          variant: "destructive",
-        });
-        
-        // Use mock data when search fails
-        const lat = 28.6139;
-        const lng = 77.2090;
-        const mockResponse = mockGeocodeResponse(lat, lng);
-        handleGeocodeResult(mockResponse, lat, lng);
-        setLoadingAddress(false);
+    try {
+      // Check if we need to use mock data
+      if (usingMockData || !window.mappls) {
+        // Simulate a search delay
+        setTimeout(() => {
+          // Default coordinates - simulate finding the location
+          const lat = 28.6139;
+          const lng = 77.2090;
+          
+          const mockResponse = mockGeocodeResponse(lat, lng);
+          handleGeocodeResult(mockResponse, lat, lng);
+          
+          setLoadingAddress(false);
+        }, 1000);
+        return;
       }
-    });
+      
+      // Use Mappls API for geocoding
+      const searchResult = await searchAddressWithMappls(searchQuery);
+      const { lat, lng, address } = searchResult;
+      
+      // Update marker and map if available
+      if (map && marker) {
+        marker.setPosition({ lat, lng });
+        map.setCenter({ lat, lng });
+        map.setZoom(15);
+      }
+      
+      handleGeocodeResult(address, lat, lng);
+      setLoadingAddress(false);
+    } catch (error) {
+      console.error("Search error:", error);
+      toast({
+        title: "Search failed",
+        description: "Could not find the location. Using default location.",
+        variant: "destructive",
+      });
+      
+      // Use mock data when search fails
+      const lat = 28.6139;
+      const lng = 77.2090;
+      const mockResponse = mockGeocodeResponse(lat, lng);
+      handleGeocodeResult(mockResponse, lat, lng);
+      setLoadingAddress(false);
+    }
   };
   
   const handleCurrentLocation = () => {
@@ -319,10 +294,9 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
           const { latitude, longitude } = position.coords;
           console.log("Current location:", latitude, longitude);
           
-          if (map && marker && window.google && !usingMockData) {
-            const location = new google.maps.LatLng(latitude, longitude);
-            marker.setPosition(location);
-            map.panTo(location);
+          if (map && marker && window.mappls && !usingMockData) {
+            marker.setPosition({ lat: latitude, lng: longitude });
+            map.setCenter({ lat: latitude, lng: longitude });
             map.setZoom(15);
           }
           

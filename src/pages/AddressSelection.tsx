@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -8,7 +7,11 @@ import { Input } from "@/components/ui/input";
 import Header from "@/components/Header";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import MapAddressSelector from "@/components/address/MapAddressSelector";
-import { initializeGoogleMaps, mockGeocodeResponse } from "@/utils/googleMapsLoader";
+import { 
+  initializeMapplsMaps, 
+  mockGeocodeResponse, 
+  getAddressFromMapplsCoordinates 
+} from "@/utils/googleMapsLoader";
 
 interface Address {
   id: string;
@@ -36,16 +39,16 @@ const AddressSelection = () => {
     address: '',
     isSelected: false
   });
-  const [googleMapsReady, setGoogleMapsReady] = useState(false);
+  const [mapplsReady, setMapplsReady] = useState(false);
 
   useEffect(() => {
-    // Initialize Google Maps API
-    const setupGoogleMaps = async () => {
-      const initialized = await initializeGoogleMaps();
-      setGoogleMapsReady(initialized);
+    // Initialize Mappls API
+    const setupMapplsMaps = async () => {
+      const initialized = await initializeMapplsMaps();
+      setMapplsReady(initialized);
     };
     
-    setupGoogleMaps();
+    setupMapplsMaps();
     
     // Load saved addresses from localStorage
     const savedAddresses = localStorage.getItem("savedAddresses");
@@ -70,25 +73,18 @@ const AddressSelection = () => {
     if (navigator.geolocation) {
       setUserCurrentLocation("Getting your location...");
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        async (position) => {
           const { latitude, longitude } = position.coords;
           console.log("Current location coordinates:", latitude, longitude);
           
-          // Use the geocoding API to get the address from coordinates
-          if (window.google && window.google.maps) {
-            const geocoder = new google.maps.Geocoder();
-            geocoder.geocode({ location: { lat: latitude, lng: longitude } }, (results, status) => {
-              if (status === "OK" && results && results[0]) {
-                setUserCurrentLocation(results[0].formatted_address);
-                console.log("Current location address:", results[0].formatted_address);
-              } else {
-                // Use mock data when geocoding fails
-                const mockResult = mockGeocodeResponse(latitude, longitude);
-                setUserCurrentLocation(mockResult.formatted_address);
-              }
-            });
-          } else {
-            // If Google Maps API is not available, use the mock data
+          try {
+            // Use Mappls reverse geocoding
+            const addressData = await getAddressFromMapplsCoordinates(latitude, longitude);
+            setUserCurrentLocation(addressData.formatted_address);
+            console.log("Current location address:", addressData.formatted_address);
+          } catch (error) {
+            console.error("Error getting address:", error);
+            // Use mock data when reverse geocoding fails
             const mockResult = mockGeocodeResponse(latitude, longitude);
             setUserCurrentLocation(mockResult.formatted_address);
           }
@@ -138,28 +134,16 @@ const AddressSelection = () => {
     // Get the actual coordinates
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        async (position) => {
           const { latitude, longitude } = position.coords;
           
-          // Use geocoding to get the address
-          let city = "Gurugram";
-          let state = "Haryana";
-          let zipCode = "122001";
-          let formattedAddress = userCurrentLocation;
-          
-          if (window.google && window.google.maps) {
-            const geocoder = new google.maps.Geocoder();
-            geocoder.geocode({ location: { lat: latitude, lng: longitude } }, (results, status) => {
-              if (status === "OK" && results && results[0]) {
-                processAddressResults(results[0], latitude, longitude);
-              } else {
-                // Use mock data when geocoding fails
-                const mockResult = mockGeocodeResponse(latitude, longitude);
-                processAddressResults(mockResult, latitude, longitude);
-              }
-            });
-          } else {
-            // If Google Maps API is not available, use the mock data
+          try {
+            // Use Mappls reverse geocoding
+            const result = await getAddressFromMapplsCoordinates(latitude, longitude);
+            processAddressResults(result, latitude, longitude);
+          } catch (error) {
+            console.error("Error getting address:", error);
+            // Use mock data when reverse geocoding fails
             const mockResult = mockGeocodeResponse(latitude, longitude);
             processAddressResults(mockResult, latitude, longitude);
           }
