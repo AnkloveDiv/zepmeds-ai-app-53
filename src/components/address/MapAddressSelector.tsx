@@ -10,6 +10,7 @@ import {
   mockGeocodeResponse, 
   getAddressFromCoordinates,
   searchAddressWithGeoapify,
+  getCurrentPosition,
   GEOAPIFY_API_KEY
 } from "@/utils/googleMapsLoader";
 
@@ -44,6 +45,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
   
   useEffect(() => {
     let isMounted = true;
+    
     const loadMap = async () => {
       try {
         // Initialize Leaflet and Geoapify
@@ -84,62 +86,44 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       }
     };
     
-    const getUserLocation = () => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            if (!isMounted) return;
-            
-            const { latitude, longitude } = position.coords;
-            console.log("Got user location:", latitude, longitude);
-            
-            setFallbackLatitude(latitude);
-            setFallbackLongitude(longitude);
-            
-            if (!usingMockData && window.L) {
-              initializeLeafletMap(latitude, longitude);
-            } else {
-              // For fallback map
-              setIsLoading(false);
-              getAddressFromCoordinates(latitude, longitude).then(result => {
-                if (isMounted) {
-                  handleGeocodeResult(result, latitude, longitude);
-                }
-              });
-            }
-          },
-          (error) => {
-            if (!isMounted) return;
-            
-            console.error("Error getting location:", error);
-            // Default to a location if geolocation fails
-            toast({
-              title: "Location access denied",
-              description: "Using default location. Please enable location access for better results.",
-              variant: "destructive",
-            });
-            
-            if (!usingMockData && window.L) {
-              initializeLeafletMap(28.6139, 77.2090); // New Delhi coordinates as fallback
-            } else {
-              setIsLoading(false);
-              getAddressFromCoordinates(28.6139, 77.2090).then(result => {
-                if (isMounted) {
-                  handleGeocodeResult(result, 28.6139, 77.2090);
-                }
-              });
-            }
-          },
-          // Adding high accuracy option to improve location precision
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-        );
-      } else {
+    const getUserLocation = async () => {
+      setLoadingAddress(true);
+      
+      try {
+        // Use enhanced getCurrentPosition function
+        const position = await getCurrentPosition();
+        
         if (!isMounted) return;
         
-        console.error("Geolocation not supported by this browser");
+        const { latitude, longitude } = position.coords;
+        console.log("Got user location with accuracy:", position.coords.accuracy, "meters");
+        
+        // Round to 6 decimal places for better precision
+        const roundedLat = parseFloat(latitude.toFixed(6));
+        const roundedLng = parseFloat(longitude.toFixed(6));
+        
+        setFallbackLatitude(roundedLat);
+        setFallbackLongitude(roundedLng);
+        
+        if (!usingMockData && window.L) {
+          initializeLeafletMap(roundedLat, roundedLng);
+        } else {
+          // For fallback map
+          setIsLoading(false);
+          const addressResult = await getAddressFromCoordinates(roundedLat, roundedLng);
+          if (isMounted) {
+            handleGeocodeResult(addressResult, roundedLat, roundedLng);
+            setLoadingAddress(false);
+          }
+        }
+      } catch (error) {
+        if (!isMounted) return;
+        
+        console.error("Error getting location:", error);
+        // Default to a location if geolocation fails
         toast({
-          title: "Geolocation not supported",
-          description: "Your browser doesn't support geolocation. Using default location.",
+          title: "Location access denied",
+          description: "Using default location. Please enable location access for better results.",
           variant: "destructive",
         });
         
@@ -147,11 +131,11 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
           initializeLeafletMap(28.6139, 77.2090); // New Delhi coordinates as fallback
         } else {
           setIsLoading(false);
-          getAddressFromCoordinates(28.6139, 77.2090).then(result => {
-            if (isMounted) {
-              handleGeocodeResult(result, 28.6139, 77.2090);
-            }
-          });
+          const addressResult = await getAddressFromCoordinates(28.6139, 77.2090);
+          if (isMounted) {
+            handleGeocodeResult(addressResult, 28.6139, 77.2090);
+            setLoadingAddress(false);
+          }
         }
       }
     };
@@ -171,13 +155,13 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     };
   }, [toast, usingMockData]);
   
-  const initializeLeafletMap = (lat: number, lng: number) => {
+  const initializeLeafletMap = async (lat: number, lng: number) => {
     if (!mapRef.current || !window.L) {
       setIsLoading(false);
       setUsingMockData(true);
-      getAddressFromCoordinates(lat, lng).then(result => {
-        handleGeocodeResult(result, lat, lng);
-      });
+      const addressResult = await getAddressFromCoordinates(lat, lng);
+      handleGeocodeResult(addressResult, lat, lng);
+      setLoadingAddress(false);
       return;
     }
     
@@ -185,7 +169,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       console.log("Initializing Leaflet map with coordinates:", lat, lng);
       
       // Initialize Leaflet map
-      const leafletMap = window.L.map(mapRef.current).setView([lat, lng], 15);
+      const leafletMap = window.L.map(mapRef.current).setView([lat, lng], 17); // Increased zoom level for better precision
       
       // Add OpenStreetMap tile layer
       window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -200,10 +184,22 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         console.log("Leaflet map loaded successfully");
         setIsLoading(false);
         
+        // Create custom icon with better visibility
+        const customIcon = window.L.icon({
+          iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+          iconSize: [25, 41],
+          iconAnchor: [12, 41],
+          popupAnchor: [1, -34],
+          shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+          shadowSize: [41, 41],
+          shadowAnchor: [12, 41]
+        });
+        
         // Add marker for current location
         const mapMarker = window.L.marker([lat, lng], {
           draggable: true,
-          autoPan: true
+          autoPan: true,
+          icon: customIcon
         }).addTo(leafletMap);
         
         setMarker(mapMarker);
@@ -211,6 +207,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         // Get address for initial location
         getAddressFromCoordinates(lat, lng).then(result => {
           handleGeocodeResult(result, lat, lng);
+          setLoadingAddress(false);
         });
         
         // Add event listener for marker drag end
@@ -219,8 +216,11 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
           console.log("Marker dragged to:", position.lat, position.lng);
           if (position) {
             setLoadingAddress(true);
-            getAddressFromCoordinates(position.lat, position.lng).then(result => {
-              handleGeocodeResult(result, position.lat, position.lng);
+            const roundedLat = parseFloat(position.lat.toFixed(6));
+            const roundedLng = parseFloat(position.lng.toFixed(6));
+            getAddressFromCoordinates(roundedLat, roundedLng).then(result => {
+              handleGeocodeResult(result, roundedLat, roundedLng);
+              setLoadingAddress(false);
             });
           }
         });
@@ -228,13 +228,23 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         // Add event listener for map click
         leafletMap.on("click", (e: any) => {
           console.log("Map clicked at:", e.latlng.lat, e.latlng.lng);
-          const { lat, lng } = e.latlng;
-          mapMarker.setLatLng([lat, lng]);
+          const roundedLat = parseFloat(e.latlng.lat.toFixed(6));
+          const roundedLng = parseFloat(e.latlng.lng.toFixed(6));
+          mapMarker.setLatLng([roundedLat, roundedLng]);
           setLoadingAddress(true);
-          getAddressFromCoordinates(lat, lng).then(result => {
-            handleGeocodeResult(result, lat, lng);
+          getAddressFromCoordinates(roundedLat, roundedLng).then(result => {
+            handleGeocodeResult(result, roundedLat, roundedLng);
+            setLoadingAddress(false);
           });
         });
+        
+        // Add accuracy circle for location
+        window.L.circle([lat, lng], {
+          radius: 50, // 50 meters accuracy indicator
+          color: 'blue',
+          fillColor: '#3388ff',
+          fillOpacity: 0.2
+        }).addTo(leafletMap);
       });
       
       // Handle map errors
@@ -259,9 +269,9 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         description: "Using fallback view for location selection.",
         variant: "destructive",
       });
-      getAddressFromCoordinates(lat, lng).then(result => {
-        handleGeocodeResult(result, lat, lng);
-      });
+      const addressResult = await getAddressFromCoordinates(lat, lng);
+      handleGeocodeResult(addressResult, lat, lng);
+      setLoadingAddress(false);
     }
   };
   
@@ -311,7 +321,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       if (map && marker && !usingMockData) {
         console.log("Updating map and marker to:", lat, lng);
         marker.setLatLng([lat, lng]);
-        map.setView([lat, lng], 15);
+        map.setView([lat, lng], 17); // Higher zoom level for better precision
       }
       
       handleGeocodeResult(address, lat, lng);
@@ -328,48 +338,56 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       const lng = 77.2090;
       const mockResponse = mockGeocodeResponse(lat, lng);
       handleGeocodeResult(mockResponse, lat, lng);
+    } finally {
+      setLoadingAddress(false);
     }
   };
   
-  const handleCurrentLocation = () => {
-    if (navigator.geolocation) {
-      setLoadingAddress(true);
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          console.log("Current location:", latitude, longitude);
-          
-          // Update fallback coordinates
-          setFallbackLatitude(latitude);
-          setFallbackLongitude(longitude);
-          
-          if (map && marker && !usingMockData) {
-            console.log("Updating map and marker to current location:", latitude, longitude);
-            marker.setLatLng([latitude, longitude]);
-            map.setView([latitude, longitude], 15);
-          }
-          
-          getAddressFromCoordinates(latitude, longitude).then(result => {
-            handleGeocodeResult(result, latitude, longitude);
-          });
-        },
-        (error) => {
-          console.error("Error getting location:", error);
-          toast({
-            title: "Location error",
-            description: "Could not get your current location",
-            variant: "destructive",
-          });
-          setLoadingAddress(false);
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    } else {
+  const handleCurrentLocation = async () => {
+    setLoadingAddress(true);
+    
+    try {
+      const position = await getCurrentPosition();
+      const { latitude, longitude } = position.coords;
+      console.log("Current location:", latitude, longitude, "Accuracy:", position.coords.accuracy);
+      
+      // Round to 6 decimal places for better precision
+      const roundedLat = parseFloat(latitude.toFixed(6));
+      const roundedLng = parseFloat(longitude.toFixed(6));
+      
+      // Update fallback coordinates
+      setFallbackLatitude(roundedLat);
+      setFallbackLongitude(roundedLng);
+      
+      if (map && marker && !usingMockData) {
+        console.log("Updating map and marker to current location:", roundedLat, roundedLng);
+        marker.setLatLng([roundedLat, roundedLng]);
+        map.setView([roundedLat, roundedLng], 17); // Higher zoom for better precision
+        
+        // Add or update accuracy circle
+        if (map._accuracyCircle) {
+          map._accuracyCircle.setLatLng([roundedLat, roundedLng]);
+        } else {
+          map._accuracyCircle = window.L.circle([roundedLat, roundedLng], {
+            radius: position.coords.accuracy / 2, // Visual indicator of accuracy
+            color: 'blue',
+            fillColor: '#3388ff',
+            fillOpacity: 0.2
+          }).addTo(map);
+        }
+      }
+      
+      const result = await getAddressFromCoordinates(roundedLat, roundedLng);
+      handleGeocodeResult(result, roundedLat, roundedLng);
+    } catch (error) {
+      console.error("Error getting location:", error);
       toast({
-        title: "Geolocation not supported",
-        description: "Your browser doesn't support geolocation",
+        title: "Location error",
+        description: "Could not get your current location",
         variant: "destructive",
       });
+    } finally {
+      setLoadingAddress(false);
     }
   };
   
@@ -489,6 +507,9 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
                 <div className="text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded-full">
                   {selectedAddress.zipCode}
                 </div>
+              </div>
+              <div className="mt-2 text-xs text-gray-400">
+                Coordinates: {selectedAddress.latitude.toFixed(6)}, {selectedAddress.longitude.toFixed(6)}
               </div>
             </div>
           ) : (

@@ -10,7 +10,8 @@ import MapAddressSelector from "@/components/address/MapAddressSelector";
 import { 
   initializeMap, 
   mockGeocodeResponse, 
-  getAddressFromCoordinates 
+  getAddressFromCoordinates,
+  getCurrentPosition
 } from "@/utils/googleMapsLoader";
 
 interface Address {
@@ -66,33 +67,36 @@ const AddressSelection = () => {
       localStorage.setItem("savedAddresses", JSON.stringify([defaultAddress]));
     }
 
-    if (navigator.geolocation) {
-      setUserCurrentLocation("Getting your location...");
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
-          console.log("Current location coordinates:", latitude, longitude);
-          
-          try {
-            const addressData = await getAddressFromCoordinates(latitude, longitude);
-            setUserCurrentLocation(addressData.formatted_address);
-            console.log("Current location address:", addressData.formatted_address);
-          } catch (error) {
-            console.error("Error getting address:", error);
-            const mockResult = mockGeocodeResponse(latitude, longitude);
-            setUserCurrentLocation(mockResult.formatted_address);
-          }
-        },
-        (error) => {
-          console.error("Error getting current location:", error);
-          setUserCurrentLocation("Location access denied");
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    } else {
-      setUserCurrentLocation("Geolocation not supported by this browser");
-    }
+    loadUserCurrentLocation();
   }, []);
+
+  const loadUserCurrentLocation = async () => {
+    setUserCurrentLocation("Getting your location...");
+    
+    try {
+      const position = await getCurrentPosition();
+      const { latitude, longitude } = position.coords;
+      
+      const roundedLat = parseFloat(latitude.toFixed(6));
+      const roundedLng = parseFloat(longitude.toFixed(6));
+      
+      console.log("Current location coordinates:", roundedLat, roundedLng);
+      console.log("Location accuracy:", position.coords.accuracy, "meters");
+      
+      try {
+        const addressData = await getAddressFromCoordinates(roundedLat, roundedLng);
+        setUserCurrentLocation(addressData.formatted_address);
+        console.log("Current location address:", addressData.formatted_address);
+      } catch (error) {
+        console.error("Error getting address:", error);
+        const mockResult = mockGeocodeResponse(roundedLat, roundedLng);
+        setUserCurrentLocation(mockResult.formatted_address);
+      }
+    } catch (error) {
+      console.error("Error getting current location:", error);
+      setUserCurrentLocation("Location access denied");
+    }
+  };
 
   const handleClose = () => {
     navigate(-1);
@@ -116,7 +120,7 @@ const AddressSelection = () => {
     }, 500);
   };
 
-  const handleUseCurrentLocation = () => {
+  const handleUseCurrentLocation = async () => {
     if (!userCurrentLocation || userCurrentLocation.includes("denied") || userCurrentLocation.includes("not supported") || userCurrentLocation.includes("Getting")) {
       toast({
         title: "Location Unavailable",
@@ -126,34 +130,35 @@ const AddressSelection = () => {
       return;
     }
     
-    if (navigator.geolocation) {
-      setProcessingAddress(true);
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
-          console.log("Using current location:", latitude, longitude);
-          
-          try {
-            const result = await getAddressFromCoordinates(latitude, longitude);
-            processAddressResults(result, latitude, longitude);
-          } catch (error) {
-            console.error("Error getting address:", error);
-            const mockResult = mockGeocodeResponse(latitude, longitude);
-            processAddressResults(mockResult, latitude, longitude);
-          }
-          setProcessingAddress(false);
-        },
-        (error) => {
-          console.error("Error getting current location:", error);
-          toast({
-            title: "Location Error",
-            description: "Could not access your location. Please enable location services and try again.",
-            variant: "destructive",
-          });
-          setProcessingAddress(false);
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
+    setProcessingAddress(true);
+    
+    try {
+      const position = await getCurrentPosition();
+      const { latitude, longitude } = position.coords;
+      
+      const roundedLat = parseFloat(latitude.toFixed(6));
+      const roundedLng = parseFloat(longitude.toFixed(6));
+      
+      console.log("Using current location:", roundedLat, roundedLng);
+      console.log("Location accuracy:", position.coords.accuracy, "meters");
+      
+      try {
+        const result = await getAddressFromCoordinates(roundedLat, roundedLng);
+        processAddressResults(result, roundedLat, roundedLng);
+      } catch (error) {
+        console.error("Error getting address:", error);
+        const mockResult = mockGeocodeResponse(roundedLat, roundedLng);
+        processAddressResults(mockResult, roundedLat, roundedLng);
+      }
+    } catch (error) {
+      console.error("Error getting current location:", error);
+      toast({
+        title: "Location Error",
+        description: "Could not access your location. Please enable location services and try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingAddress(false);
     }
   };
   

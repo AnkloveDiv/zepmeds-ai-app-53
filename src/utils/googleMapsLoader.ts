@@ -99,6 +99,37 @@ export const initializeMap = async (): Promise<boolean> => {
   }
 };
 
+// Get current position with enhanced accuracy
+export const getCurrentPosition = (options = {}): Promise<GeolocationPosition> => {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Geolocation is not supported by this browser"));
+      return;
+    }
+
+    // Enhanced geolocation options with maximumAge reduced and timeout increased
+    const enhancedOptions = {
+      enableHighAccuracy: true,
+      timeout: 15000,         // Increased timeout to allow more time for accurate position
+      maximumAge: 0,          // Always get fresh position
+      ...options
+    };
+
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        console.log("Got precise location:", position.coords.latitude, position.coords.longitude, 
+                    "Accuracy:", position.coords.accuracy, "meters");
+        resolve(position);
+      },
+      error => {
+        console.error("Error getting precise location:", error.message, "Code:", error.code);
+        reject(error);
+      },
+      enhancedOptions
+    );
+  });
+};
+
 // Mock geocoding response for demonstration when API fails
 export const mockGeocodeResponse = (latitude: number, longitude: number) => {
   return {
@@ -124,9 +155,9 @@ export const mockGeocodeResponse = (latitude: number, longitude: number) => {
 export const getAddressFromCoordinates = async (lat: number, lng: number) => {
   try {
     console.log("Getting address for coordinates:", lat, lng);
-    // Using Geoapify Reverse Geocoding API
+    // Using Geoapify Reverse Geocoding API with improved precision parameters
     const response = await fetch(
-      `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&apiKey=${GEOAPIFY_API_KEY}`
+      `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&apiKey=${GEOAPIFY_API_KEY}&format=json&lang=en&type=street&limit=1`
     );
     
     if (!response.ok) {
@@ -217,7 +248,7 @@ export const searchAddressWithGeoapify = async (searchQuery: string) => {
   try {
     console.log("Searching for location:", searchQuery);
     const response = await fetch(
-      `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(searchQuery)}&apiKey=${GEOAPIFY_API_KEY}`
+      `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(searchQuery)}&apiKey=${GEOAPIFY_API_KEY}&format=json&limit=1`
     );
     
     if (!response.ok) {
