@@ -62,7 +62,7 @@ const AnimatedSearchInput = ({
           />
         ) : (
           <div className="flex items-center">
-            <span className="text-gray-400">Search for </span>
+            <span className="text-gray-400 whitespace-nowrap">Search for </span>
             <div className="h-6 ml-1 overflow-hidden">
               <AnimatePresence mode="wait">
                 <motion.span
