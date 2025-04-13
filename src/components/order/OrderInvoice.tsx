@@ -22,8 +22,8 @@ const OrderInvoice = ({ orderId, orderDate, items, totalAmount }: OrderInvoicePr
   const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const deliveryFee = Math.round(subtotal * 0.1); // Example: 10% of subtotal for delivery
   
-  // Example customer details
-  const customerName = "John Doe";
+  // Customer details - in a real app, these would come from the user's account
+  const customerName = "Rahul Sharma";
   const customerAddress = "123 Main St, Apartment 4B, Bengaluru, KA 560001";
   
   return (

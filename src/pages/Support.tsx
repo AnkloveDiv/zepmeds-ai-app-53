@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -33,6 +34,11 @@ const Support = () => {
   useEffect(() => {
     if (chatOpen && !agentConnected && !isConnecting) {
       setIsConnecting(true);
+      setChatHistory(prev => [...prev, {
+        message: "Connecting you to a support agent... Please wait.",
+        isUser: false,
+        timestamp: new Date()
+      }]);
       
       const timer = setTimeout(() => {
         const randomAgent = supportAgents[Math.floor(Math.random() * supportAgents.length)];
@@ -50,7 +56,7 @@ const Support = () => {
           setTimeout(() => {
             setAgentTyping(false);
             setChatHistory(prev => [...prev, {
-              message: `Hi there! I'm ${randomAgent.name}. How can I assist you today with ZepMeds services?`,
+              message: `Hi there! I'm ${randomAgent.name}, a real person from ZepMeds support team. How can I assist you today with your medicines or delivery?`,
               isUser: false,
               timestamp: new Date()
             }]);
@@ -104,7 +110,7 @@ const Support = () => {
       setTimeout(() => {
         setAgentTyping(false);
         setChatHistory(prev => [...prev, {
-          message: "Thank you for providing those details. Let me look into this for you. Is there anything else you'd like me to help you with today?",
+          message: "I understand your concern. As a real support agent, I'll personally look into this for you. Could you please provide a few more details so I can help you better?",
           isUser: false,
           timestamp: new Date()
         }]);
