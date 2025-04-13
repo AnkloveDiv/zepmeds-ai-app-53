@@ -95,7 +95,7 @@ export const geocodeAddress = async (address: string): Promise<google.maps.Geoco
     try {
       const geocoder = new google.maps.Geocoder();
       geocoder.geocode({ address }, (results, status) => {
-        if (status === google.maps.GeocoderStatus.OK && results && results.length > 0) {
+        if (status === "OK" && results && results.length > 0) {
           resolve(results[0]);
         } else {
           reject(new Error(`Geocoding failed: ${status}`));
@@ -120,7 +120,7 @@ export const reverseGeocode = async (
       const latlng = { lat, lng };
       
       geocoder.geocode({ location: latlng }, (results, status) => {
-        if (status === google.maps.GeocoderStatus.OK && results && results.length > 0) {
+        if (status === "OK" && results && results.length > 0) {
           resolve(results[0]);
         } else {
           reject(new Error(`Reverse geocoding failed: ${status}`));
