@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +41,9 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
   // For fallback map
   const [fallbackLatitude, setFallbackLatitude] = useState(28.6139);
   const [fallbackLongitude, setFallbackLongitude] = useState(77.2090);
+  
+  // Store accuracy circle reference
+  const [accuracyCircle, setAccuracyCircle] = useState<google.maps.Circle | null>(null);
   
   useEffect(() => {
     let isMounted = true;
@@ -196,6 +200,9 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       if (marker) {
         marker.setMap(null);
       }
+      if (accuracyCircle) {
+        accuracyCircle.setMap(null);
+      }
     };
   }, [toast, usingMockData, locationRetries]);
   
@@ -248,7 +255,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       setIsLoading(false);
       
       // Add circle to show accuracy
-      const accuracyCircle = new google.maps.Circle({
+      const circle = new google.maps.Circle({
         map: googleMap,
         center: { lat, lng },
         radius: Math.min(accuracyInMeters, 200),
@@ -259,6 +266,8 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         strokeWeight: 1
       });
       
+      setAccuracyCircle(circle);
+      
       // Listen for marker drag end event
       googleMarker.addListener('dragend', () => {
         const position = googleMarker.getPosition();
@@ -267,7 +276,9 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
           const newLng = position.lng();
           
           console.log("Marker dragged to:", newLat, newLng);
-          accuracyCircle.setCenter(position);
+          if (accuracyCircle) {
+            circle.setCenter(position);
+          }
           
           setLoadingAddress(true);
           getAddressFromCoordinates(newLat, newLng).then(result => {
@@ -284,7 +295,9 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         
         console.log("Map clicked at:", newLat, newLng);
         googleMarker.setPosition(e.latLng);
-        accuracyCircle.setCenter(e.latLng);
+        if (circle) {
+          circle.setCenter(e.latLng);
+        }
         
         setLoadingAddress(true);
         getAddressFromCoordinates(newLat, newLng).then(result => {

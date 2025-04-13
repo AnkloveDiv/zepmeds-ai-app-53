@@ -20,6 +20,8 @@ declare namespace google {
       addListener(eventName: string, handler: Function): MapsEventListener;
       setAnimation(animation: any): void;
       setIcon(icon: string | Icon | Symbol): void;
+      getIcon(): string | Icon | Symbol | undefined;
+      getTitle(): string | undefined;
     }
 
     class Geocoder {
@@ -159,15 +161,17 @@ declare namespace google {
       fillOpacity?: number;
       strokeColor?: string;
       strokeWeight?: number;
+      strokeOpacity?: number;
     }
 
     interface Symbol {
-      path: string | any;
+      path: string | number;
       scale: number;
       fillColor?: string;
       fillOpacity?: number;
       strokeColor?: string;
       strokeWeight?: number;
+      strokeOpacity?: number;
       rotation?: number;
     }
 
@@ -283,4 +287,3 @@ declare namespace google {
     };
   }
 }
-

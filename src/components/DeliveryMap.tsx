@@ -328,8 +328,25 @@ const DeliveryMap = ({ showRider = true, orderId }: DeliveryMapProps) => {
       
       riderMarker.setPosition({ lat, lng });
       
-      // Update marker title with ETA
-      riderMarker.setTitle(`${eta} min`);
+      // Instead of using setTitle, update the marker's title property directly
+      const newTitle = `${eta} min`;
+      if (riderMarker.getTitle() !== newTitle) {
+        // Create a new marker with updated title if needed
+        const position = riderMarker.getPosition();
+        if (position) {
+          const icon = riderMarker.getIcon();
+          riderMarker.setMap(null);
+          
+          const newRiderMarker = new google.maps.Marker({
+            position: position,
+            map: map,
+            icon: icon,
+            title: newTitle
+          });
+          
+          setRiderMarker(newRiderMarker);
+        }
+      }
     }, 5000); // Update every 5 seconds
     
     return () => clearInterval(animationInterval);
