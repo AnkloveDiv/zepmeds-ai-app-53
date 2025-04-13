@@ -13,21 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTrendingProducts } from '../hooks/useTrendingProducts';
 import { useBackNavigation } from '../hooks/useBackNavigation';
 import { fetchWeatherByCoordinates, WeatherData } from '../services/weatherService';
-
-// Add category to products
-const addCategoryToProducts = (products) => {
-  return products.map((product, index) => {
-    // Assign categories based on product properties or id
-    let category = "Popular";
-    
-    if (index % 4 === 0) category = "Skin Care";
-    else if (index % 4 === 1) category = "Supplements";
-    else if (index % 4 === 2) category = "Eye Care";
-    else if (index % 4 === 3) category = "Devices";
-    
-    return { ...product, category };
-  });
-};
+import { allProducts } from '../data/medicineData';
 
 const MedicineDelivery = () => {
   // Add navigation and toast
@@ -38,15 +24,10 @@ const MedicineDelivery = () => {
   // Get trending products
   const [cartItemsCount, setCartItemsCount] = useState(0);
   const [activeCategory, setActiveCategory] = useState("All");
-  const { products: originalProducts, handleAddToCart, handleProductClick } = useTrendingProducts(setCartItemsCount);
+  const { handleAddToCart, handleProductClick } = useTrendingProducts(setCartItemsCount);
   
-  // Add categories to products
-  const [products, setProducts] = useState([]);
-  
-  useEffect(() => {
-    // Add categories to the products
-    setProducts(addCategoryToProducts(originalProducts));
-  }, [originalProducts]);
+  // Use the preloaded products from medicineData
+  const [products, setProducts] = useState(allProducts);
   
   // Weather state with API data
   const [weatherData, setWeatherData] = useState<WeatherData>({

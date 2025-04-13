@@ -20,7 +20,6 @@ const CategoriesNav = ({
     { name: "Eye Care", icon: <Eye className="h-5 w-5" /> },
     { name: "Dental", icon: <Stethoscope className="h-5 w-5" /> },
     { name: "Pain Relief", icon: <Bone className="h-5 w-5" /> },
-    { name: "Brain", icon: <Brain className="h-5 w-5" /> },
     { name: "Summer Care", icon: <Sun className="h-5 w-5" /> },
     { name: "Pet Care", icon: <Dog className="h-5 w-5" /> },
     { name: "Devices", icon: <Thermometer className="h-5 w-5" /> }
