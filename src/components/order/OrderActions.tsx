@@ -40,10 +40,14 @@ Thank you for shopping with Zepmeds!
   };
   
   const handleGetSupport = () => {
-    toast({
-      title: "Support Request Sent",
-      description: "A support agent will contact you shortly.",
-    });
+    if (onOpenChat) {
+      onOpenChat();
+    } else {
+      toast({
+        title: "Support Request Sent",
+        description: "A support agent will contact you shortly.",
+      });
+    }
   };
   
   const handleRaiseIssue = () => {

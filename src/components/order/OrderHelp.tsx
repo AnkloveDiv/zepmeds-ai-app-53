@@ -32,13 +32,6 @@ const OrderHelp = ({ orderId }: OrderHelpProps) => {
     if (showFAQ) setShowFAQ(false);
   };
   
-  const handleSendMessage = () => {
-    toast({
-      title: "Message sent",
-      description: "Our team will respond to your query soon.",
-    });
-  };
-
   const handleOpenChatbot = () => {
     setShowChatbot(true);
   };
@@ -101,7 +94,10 @@ const OrderHelp = ({ orderId }: OrderHelpProps) => {
         </div>
       )}
       
-      <OrderActions orderId={orderId} />
+      <OrderActions 
+        orderId={orderId} 
+        onOpenChat={handleOpenChatbot}
+      />
       
       {/* Chatbot Modal */}
       <ChatbotModal 

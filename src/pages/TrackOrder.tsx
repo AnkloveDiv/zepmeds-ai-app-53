@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -109,28 +108,6 @@ const TrackOrder = () => {
       title: "Message sent to rider",
       description: "Your message has been sent to the rider",
     });
-  };
-  
-  const handleViewInvoice = () => {
-    navigate(`/orders/invoice/${orderId}`);
-  };
-  
-  const handleShareOrder = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: `Order #${orderId} from ZepMeds`,
-        text: `Track my medicine delivery from ZepMeds. Order #${orderId}`,
-        url: window.location.href
-      }).catch(err => {
-        console.error("Share failed:", err);
-      });
-    } else {
-      toast({
-        title: "Share not supported",
-        description: "Your browser does not support the Web Share API",
-        variant: "destructive"
-      });
-    }
   };
   
   const handleOpenChatbot = () => {

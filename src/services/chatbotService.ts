@@ -40,7 +40,7 @@ export const generateChatResponse = async (
     console.log("Generating response for messages:", messages);
     
     // Format messages for Gemini API
-    const formattedMessages = messages.map(msg => msg.content).join("\n");
+    const formattedMessages = messages.map(msg => `${msg.role}: ${msg.content}`).join("\n");
     const prompt = `
       Context: You are a support agent for ZepMeds pharmacy delivery service.
       Order ID: ${orderId}
@@ -50,6 +50,8 @@ export const generateChatResponse = async (
       
       Your response (keep it concise and helpful):
     `;
+
+    console.log("Sending request to Gemini API with prompt:", prompt);
 
     const response = await fetch(`${API_URL}?key=${API_KEY}`, {
       method: "POST",
@@ -75,14 +77,17 @@ export const generateChatResponse = async (
     });
 
     if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
+      const errorText = await response.text();
+      console.error("API Error response:", errorText);
+      throw new Error(`API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
     console.log("API response:", data);
     
     if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-      throw new Error("Invalid response format from API");
+      console.error("Invalid response format from API");
+      throw new Error("Invalid response format from Gemini API");
     }
 
     const textResponse = data.candidates[0].content.parts[0].text;
@@ -92,4 +97,3 @@ export const generateChatResponse = async (
     return "I'm having trouble connecting right now. Please try again or contact our customer service directly.";
   }
 };
-

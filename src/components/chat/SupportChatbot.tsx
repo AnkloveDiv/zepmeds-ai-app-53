@@ -8,8 +8,6 @@ import {
   Send, 
   Loader2, 
   Star, 
-  ThumbsUp, 
-  ThumbsDown, 
   X,
   ChevronRight
 } from "lucide-react";
@@ -97,7 +95,7 @@ const SupportChatbot = ({ orderId, onClose }: SupportChatbotProps) => {
         timestamp: new Date()
       });
       
-      // After 5 messages from the user, show rating
+      // After 3 messages from the user, show rating
       const userMessageCount = allMessages.filter(m => m.role === "user").length;
       if (userMessageCount >= 3 && !showRating) {
         setShowRating(true);
