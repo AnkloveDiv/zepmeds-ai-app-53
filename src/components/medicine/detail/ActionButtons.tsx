@@ -27,7 +27,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
       <Button 
         className={`flex-1 ${inStock ? 'bg-zepmeds-purple hover:bg-zepmeds-purple/80' : 'bg-gray-700 hover:bg-gray-700 cursor-not-allowed'}`}
         onClick={handleAddToCart}
-        disabled={disabled}
+        disabled={!inStock || disabled}
       >
         {inStock ? 'Add to Cart' : 'Out of Stock'}
       </Button>

@@ -31,18 +31,18 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
       
       <div className="flex gap-4">
         <div className="flex-1">
-          <div className="flex items-center justify-between bg-gray-900/50 border border-gray-800 rounded-md px-3 py-2">
+          <div className={`flex items-center justify-between ${disabled ? 'bg-gray-900/30' : 'bg-gray-900/50'} border ${disabled ? 'border-gray-900' : 'border-gray-800'} rounded-md px-3 py-2`}>
             <button 
-              className={`p-1 rounded-full ${disabled ? 'text-gray-600' : 'text-white'}`}
-              onClick={() => handleDecrement(setQuantity, quantity)}
+              className={`p-1 rounded-full ${disabled ? 'text-gray-600 cursor-not-allowed' : 'text-white'}`}
+              onClick={() => !disabled && handleDecrement(setQuantity, quantity)}
               disabled={disabled}
             >
               <Minus className="h-4 w-4" />
             </button>
-            <span className="text-white text-sm">{quantity}</span>
+            <span className={`${disabled ? 'text-gray-500' : 'text-white'} text-sm`}>{quantity}</span>
             <button 
-              className={`p-1 rounded-full ${disabled ? 'text-gray-600' : 'text-white'}`}
-              onClick={() => handleIncrement(setQuantity, quantity)}
+              className={`p-1 rounded-full ${disabled ? 'text-gray-600 cursor-not-allowed' : 'text-white'}`}
+              onClick={() => !disabled && handleIncrement(setQuantity, quantity)}
               disabled={disabled}
             >
               <Plus className="h-4 w-4" />
@@ -55,18 +55,18 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
       
         {!isLiquid && !isDevice && (
           <div className="flex-1">
-            <div className="flex items-center justify-between bg-gray-900/50 border border-gray-800 rounded-md px-3 py-2">
+            <div className={`flex items-center justify-between ${disabled ? 'bg-gray-900/30' : 'bg-gray-900/50'} border ${disabled ? 'border-gray-900' : 'border-gray-800'} rounded-md px-3 py-2`}>
               <button 
-                className={`p-1 rounded-full ${disabled ? 'text-gray-600' : 'text-white'}`}
-                onClick={() => handleDecrement(setStrips, strips)}
+                className={`p-1 rounded-full ${disabled ? 'text-gray-600 cursor-not-allowed' : 'text-white'}`}
+                onClick={() => !disabled && handleDecrement(setStrips, strips)}
                 disabled={disabled}
               >
                 <Minus className="h-4 w-4" />
               </button>
-              <span className="text-white text-sm">{strips}</span>
+              <span className={`${disabled ? 'text-gray-500' : 'text-white'} text-sm`}>{strips}</span>
               <button 
-                className={`p-1 rounded-full ${disabled ? 'text-gray-600' : 'text-white'}`}
-                onClick={() => handleIncrement(setStrips, strips)}
+                className={`p-1 rounded-full ${disabled ? 'text-gray-600 cursor-not-allowed' : 'text-white'}`}
+                onClick={() => !disabled && handleIncrement(setStrips, strips)}
                 disabled={disabled}
               >
                 <Plus className="h-4 w-4" />

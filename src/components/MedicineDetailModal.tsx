@@ -56,7 +56,7 @@ const MedicineDetailModal: React.FC<MedicineDetailModalProps> = ({
     <AnimatePresence>
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/80 z-50 px-4 py-3 overflow-hidden"
+          className="fixed inset-0 bg-black/80 z-50 px-4 py-3 overflow-hidden flex items-center justify-center"
           onClick={onClose}
         >
           <motion.div

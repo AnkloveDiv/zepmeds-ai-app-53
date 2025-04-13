@@ -24,6 +24,7 @@ export interface TrendingProduct {
   quickTips?: string[];
   faqs?: { question: string; answer: string }[];
   category?: string;
+  inStock?: boolean;
 }
 
 // Initial products data
@@ -59,7 +60,8 @@ const products: TrendingProduct[] = [
       }
     ],
     sideEffects: ["Nausea", "Stomach cramps", "Diarrhea in high doses"],
-    ingredients: ["Ascorbic Acid", "Zinc", "Rose Hip Extract"]
+    ingredients: ["Ascorbic Acid", "Zinc", "Rose Hip Extract"],
+    inStock: true
   },
   { 
     id: "prod2", 
@@ -88,7 +90,8 @@ const products: TrendingProduct[] = [
         question: "Can it be used for babies?",
         answer: "Yes, this thermometer is suitable for all ages including infants."
       }
-    ]
+    ],
+    inStock: false
   },
   { 
     id: "prod3", 
@@ -118,7 +121,8 @@ const products: TrendingProduct[] = [
         question: "How long does it take to feel relief?",
         answer: "Most users feel relief within 15-30 minutes after application."
       }
-    ]
+    ],
+    inStock: true
   },
   { 
     id: "prod4", 
@@ -150,7 +154,8 @@ const products: TrendingProduct[] = [
       }
     ],
     sideEffects: ["Mild stomach discomfort", "Change in urine color"],
-    ingredients: ["Vitamins A, B-complex, C, D, E, K", "Minerals (Calcium, Magnesium, Zinc, Iron)", "Antioxidants"]
+    ingredients: ["Vitamins A, B-complex, C, D, E, K", "Minerals (Calcium, Magnesium, Zinc, Iron)", "Antioxidants"],
+    inStock: false
   }
 ];
 

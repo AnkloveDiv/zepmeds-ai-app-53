@@ -21,9 +21,9 @@ const AnimatedSearchInput = ({
   const intervalRef = useRef<number | null>(null);
   
   useEffect(() => {
-    // Clear any existing interval when component mounts
+    // Clear any existing interval when component mounts or updates
     if (intervalRef.current) {
-      clearInterval(intervalRef.current);
+      window.clearInterval(intervalRef.current);
     }
     
     // Set up a new interval
@@ -34,7 +34,7 @@ const AnimatedSearchInput = ({
     // Clean up the interval when component unmounts
     return () => {
       if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+        window.clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
     };
@@ -76,7 +76,7 @@ const AnimatedSearchInput = ({
         ) : (
           <div className="flex items-center w-full">
             <span className="text-gray-400 whitespace-nowrap">Search for </span>
-            <div className="h-6 ml-1 overflow-hidden relative">
+            <div className="h-6 ml-1 overflow-hidden relative w-32">
               <AnimatePresence mode="wait" initial={false}>
                 <motion.span
                   key={searchPrompts[activePromptIndex]}
