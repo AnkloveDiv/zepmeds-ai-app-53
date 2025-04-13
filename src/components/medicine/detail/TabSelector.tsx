@@ -17,20 +17,21 @@ const TabSelector: React.FC<TabSelectorProps> = ({ activeTab, setActiveTab }) =>
   ];
 
   return (
-    <div className="flex overflow-x-auto scrollbar-none -mx-5 px-5 pb-4">
-      <div className="flex space-x-2">
+    <div className="flex overflow-x-auto scrollbar-none -mx-4 px-4 pb-4">
+      <div className="flex space-x-2 w-full">
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            className={`flex items-center rounded-full px-3 py-1.5 text-xs font-medium whitespace-nowrap ${
+            className={`flex items-center rounded-full px-2 py-1.5 text-xs font-medium whitespace-nowrap sm:px-3 ${
               activeTab === tab.id
                 ? "bg-zepmeds-purple text-white"
                 : "bg-black/20 text-gray-400 hover:bg-black/40 hover:text-gray-300"
             }`}
             onClick={() => setActiveTab(tab.id)}
           >
-            <span className="mr-1.5">{tab.icon}</span>
-            {tab.label}
+            <span className="mr-1 sm:mr-1.5">{tab.icon}</span>
+            <span className="hidden xs:inline">{tab.label}</span>
+            <span className="xs:hidden">{tab.label.substring(0, 3)}</span>
           </button>
         ))}
       </div>

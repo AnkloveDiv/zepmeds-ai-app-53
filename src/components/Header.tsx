@@ -1,3 +1,4 @@
+
 import { Link, useNavigate } from "react-router-dom";
 import { MapPin, Bell, ShoppingCart, Menu, ArrowLeft } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -29,6 +30,16 @@ const Header = ({ showBackButton, title, cartCount = 0 }: HeaderProps) => {
         setLocalCartCount(JSON.parse(savedCart).length);
       }
     }
+    
+    // Get saved address
+    const savedAddresses = localStorage.getItem("savedAddresses");
+    if (savedAddresses) {
+      const addresses = JSON.parse(savedAddresses);
+      const selectedAddress = addresses.find((addr: any) => addr.isSelected);
+      if (selectedAddress) {
+        setLocation(selectedAddress.label);
+      }
+    }
   }, [cartCount]);
 
   const getInitials = () => {
@@ -41,6 +52,10 @@ const Header = ({ showBackButton, title, cartCount = 0 }: HeaderProps) => {
   const handleBackClick = () => {
     // Use navigate instead of Link to ensure our back navigation hook works
     navigate("/dashboard");
+  };
+  
+  const handleLocationClick = () => {
+    navigate("/address-selection");
   };
 
   return (
@@ -72,7 +87,10 @@ const Header = ({ showBackButton, title, cartCount = 0 }: HeaderProps) => {
           ) : (
             <div>
               <div className="text-xs text-gray-400">Deliver to</div>
-              <div className="flex items-center text-sm font-medium text-white">
+              <button 
+                className="flex items-center text-sm font-medium text-white"
+                onClick={handleLocationClick}
+              >
                 <MapPin className="h-4 w-4 mr-1 text-zepmeds-purple" />
                 <span className="mr-1">{location}</span>
                 <svg
@@ -89,7 +107,7 @@ const Header = ({ showBackButton, title, cartCount = 0 }: HeaderProps) => {
                     d="M19 9l-7 7-7-7"
                   />
                 </svg>
-              </div>
+              </button>
             </div>
           )}
         </div>

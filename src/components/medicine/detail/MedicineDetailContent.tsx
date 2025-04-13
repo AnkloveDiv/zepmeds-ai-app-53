@@ -76,7 +76,7 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 50 }}
       transition={{ type: "spring", damping: 20 }}
-      className="bg-background border border-white/10 rounded-xl w-full max-w-lg max-h-[90vh] overflow-auto"
+      className="bg-background border border-white/10 rounded-xl w-full max-w-md mx-auto max-h-[90vh] overflow-auto"
       onClick={(e) => e.stopPropagation()}
     >
       <MedicineHeader 
@@ -85,7 +85,7 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
         onClose={onClose} 
       />
       
-      <div className="p-5 pt-0">
+      <div className="px-4 sm:px-5 pt-0 pb-4">
         <TabSelector 
           activeTab={activeTab} 
           setActiveTab={setActiveTab} 

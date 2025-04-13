@@ -31,6 +31,9 @@ const MedicineDelivery = () => {
   // Use the preloaded products from medicineData
   const [products, setProducts] = useState(allProducts);
   
+  // Address state
+  const [deliveryAddress, setDeliveryAddress] = useState("to Home Ghh, Bnn, Gurugram, 122001");
+  
   // Weather state with API data
   const [weatherData, setWeatherData] = useState<WeatherData>({
     condition: 'cloudy',
@@ -68,6 +71,16 @@ const MedicineDelivery = () => {
     };
     
     fetchWeather();
+    
+    // Check for selected address
+    const savedAddresses = localStorage.getItem("savedAddresses");
+    if (savedAddresses) {
+      const addresses = JSON.parse(savedAddresses);
+      const selectedAddress = addresses.find((addr: any) => addr.isSelected);
+      if (selectedAddress) {
+        setDeliveryAddress(`to ${selectedAddress.label} ${selectedAddress.address}`);
+      }
+    }
     
     return () => {
       window.removeEventListener('storage', getCartCount);
@@ -174,7 +187,7 @@ const MedicineDelivery = () => {
       {/* Address Bar with Weather */}
       <AddressWithWeather 
         deliveryTime="11 minutes delivery"
-        address="to Home Ghh, Bnn, Gurugram, 122001"
+        address={deliveryAddress}
         weatherTemperature={weatherData.temperature}
         weatherDescription={weatherData.description}
         onBackClick={handleBackClick}
