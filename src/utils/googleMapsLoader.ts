@@ -31,8 +31,19 @@ export const loadGoogleMapsAPI = (): Promise<void> => {
   return googleMapsPromise;
 };
 
+// Helper function to initialize a Google Map
+export const initializeMap = async (): Promise<boolean> => {
+  try {
+    await loadGoogleMapsAPI();
+    return true;
+  } catch (error) {
+    console.error("Failed to initialize Google Maps:", error);
+    return false;
+  }
+};
+
 // Helper function to get current position using the browser's geolocation API
-export const getCurrentPosition = (): Promise<GeolocationPosition> => {
+export const getCurrentPosition = (options?: PositionOptions): Promise<GeolocationPosition> => {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
       reject(new Error("Geolocation is not supported by your browser"));
@@ -42,7 +53,7 @@ export const getCurrentPosition = (): Promise<GeolocationPosition> => {
     navigator.geolocation.getCurrentPosition(
       (position) => resolve(position),
       (error) => reject(error),
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      options || { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   });
 };
@@ -63,11 +74,11 @@ export const geocodeAddress = async (address: string): Promise<google.maps.Geoco
   });
 };
 
-// Reverse geocode coordinates to get address
-export const reverseGeocode = async (
+// Get address details from coordinates
+export const getAddressFromCoordinates = async (
   lat: number, 
   lng: number
-): Promise<google.maps.GeocoderResult | null> => {
+): Promise<google.maps.GeocoderResult> => {
   await loadGoogleMapsAPI();
   
   return new Promise((resolve, reject) => {
@@ -82,6 +93,14 @@ export const reverseGeocode = async (
       }
     });
   });
+};
+
+// Reverse geocode coordinates to get address
+export const reverseGeocode = async (
+  lat: number, 
+  lng: number
+): Promise<google.maps.GeocoderResult | null> => {
+  return getAddressFromCoordinates(lat, lng);
 };
 
 // Parse address components to extract specific details

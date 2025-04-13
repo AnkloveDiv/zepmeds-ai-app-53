@@ -1,7 +1,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { initializeMap } from "@/utils/googleMapsLoader";
+import { loadGoogleMapsAPI } from "@/utils/googleMapsLoader";
 
 interface DeliveryMapProps {
   showRider?: boolean;
@@ -28,11 +28,11 @@ const DeliveryMap = ({ showRider = true, orderId }: DeliveryMapProps) => {
   useEffect(() => {
     // Initialize map when component mounts
     const setupMap = async () => {
-      await initializeMap();
+      await loadGoogleMapsAPI();
       
       if (mapRef.current && window.google && window.google.maps) {
         try {
-          // Create Go Map
+          // Create Google Map
           const googleMap = new google.maps.Map(mapRef.current, {
             center: initialRiderCoords,
             zoom: 14,
@@ -151,7 +151,7 @@ const DeliveryMap = ({ showRider = true, orderId }: DeliveryMapProps) => {
           renderFallbackMap();
         }
       } else {
-        console.error("Go Maps not available or map container not found");
+        console.error("Google Maps not available or map container not found");
         renderFallbackMap();
       }
     };

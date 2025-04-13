@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -9,9 +8,9 @@ import Header from "@/components/Header";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import MapAddressSelector from "@/components/address/MapAddressSelector";
 import { 
-  initializeMap, 
-  getAddressFromCoordinates,
-  getCurrentPosition
+  loadGoogleMapsAPI, 
+  getCurrentPosition,
+  reverseGeocode as getAddressFromCoordinates
 } from "@/utils/googleMapsLoader";
 
 interface Address {
@@ -46,8 +45,8 @@ const AddressSelection = () => {
 
   useEffect(() => {
     const setupMap = async () => {
-      const initialized = await initializeMap();
-      setMapplsReady(initialized);
+      const initialized = await loadGoogleMapsAPI();
+      setMapplsReady(!!initialized);
     };
     
     setupMap();
@@ -91,11 +90,7 @@ const AddressSelection = () => {
       for (let i = 0; i < 5; i++) {
         try {
           console.log(`Attempting to get user location, try ${i+1}`);
-          const position = await getCurrentPosition({ 
-            timeout: 5000,
-            maximumAge: 0,
-            enableHighAccuracy: true 
-          });
+          const position = await getCurrentPosition();
           
           if (position.coords.accuracy < bestAccuracy) {
             bestPosition = position;
@@ -193,11 +188,7 @@ const AddressSelection = () => {
         for (let i = 0; i < 3; i++) {
           try {
             console.log(`Getting current location for use, attempt ${i+1}`);
-            const position = await getCurrentPosition({ 
-              enableHighAccuracy: true,
-              timeout: 5000,
-              maximumAge: 0
-            });
+            const position = await getCurrentPosition();
             
             if (position.coords.accuracy < bestAccuracy) {
               bestPosition = position;

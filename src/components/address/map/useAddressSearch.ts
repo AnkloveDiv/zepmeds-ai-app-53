@@ -18,14 +18,18 @@ export const useAddressSearch = (
   const [searchValue, setSearchValue] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [autocompleteService, setAutocompleteService] = useState<google.maps.places.AutocompleteService | null>(null);
+  const [autocompleteService, setAutocompleteService] = useState<any>(null);
   
   // Initialize autocomplete service
   useEffect(() => {
     const initAutocomplete = async () => {
       try {
         await loadGoogleMapsAPI();
-        setAutocompleteService(new google.maps.places.AutocompleteService());
+        if (window.google && window.google.maps && window.google.maps.places) {
+          setAutocompleteService(new window.google.maps.places.AutocompleteService());
+        } else {
+          console.error("Google Maps Places API not available");
+        }
       } catch (error) {
         console.error("Error initializing autocomplete:", error);
       }
@@ -43,15 +47,15 @@ export const useAddressSearch = (
     setIsSearching(true);
     
     try {
-      const response = await new Promise<google.maps.places.AutocompletePrediction[]>((resolve, reject) => {
+      const response = await new Promise<any[]>((resolve, reject) => {
         autocompleteService.getPlacePredictions(
           {
             input: query,
             componentRestrictions: { country: 'in' }, // Limit to India
             types: ['geocode', 'establishment']
           },
-          (results, status) => {
-            if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+          (results: any, status: any) => {
+            if (status === 'OK' && results) {
               resolve(results);
             } else {
               reject(new Error(`Autocomplete failed: ${status}`));

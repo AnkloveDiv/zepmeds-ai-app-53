@@ -1,45 +1,33 @@
 
-import React from "react";
-import { MapPin, Navigation } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Navigation, Loader2 } from 'lucide-react';
 
 interface MapOverlaysProps {
-  usingMockData: boolean;
-  isLoading: boolean;
-  handleCurrentLocation: () => void;
-  showAccuracyWarning?: boolean;
+  isGettingLocation: boolean;
+  getMyLocation: () => void;
 }
 
-const MapOverlays: React.FC<MapOverlaysProps> = ({ 
-  usingMockData, 
-  isLoading, 
-  handleCurrentLocation,
-  showAccuracyWarning = false // Default to false to disable warnings
+const MapOverlays: React.FC<MapOverlaysProps> = ({
+  isGettingLocation,
+  getMyLocation
 }) => {
-  if (usingMockData || isLoading) {
-    return null;
-  }
-  
   return (
-    <>
-      <div className="absolute top-2 right-2 z-10">
-        <Button
-          size="sm"
-          variant="outline"
-          className="bg-black/70 text-white border-gray-700 hover:bg-black/90"
-          onClick={handleCurrentLocation}
-        >
-          <Navigation className="mr-2 h-4 w-4 text-green-500" />
-          My Location
-        </Button>
-      </div>
-      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 z-10">
-        <div className="bg-black/70 px-3 py-2 rounded-full text-white text-sm flex items-center shadow-lg">
-          <MapPin className="h-4 w-4 text-red-500 mr-2" />
-          <span>Drag marker or tap to select location</span>
-        </div>
-      </div>
-    </>
+    <div className="absolute right-4 bottom-4 z-10">
+      <Button
+        variant="outline"
+        size="icon"
+        className="bg-black/50 border-gray-700 hover:bg-black/70"
+        onClick={getMyLocation}
+        disabled={isGettingLocation}
+      >
+        {isGettingLocation ? (
+          <Loader2 className="h-5 w-5 text-blue-400 animate-spin" />
+        ) : (
+          <Navigation className="h-5 w-5 text-blue-400" />
+        )}
+      </Button>
+    </div>
   );
 };
 

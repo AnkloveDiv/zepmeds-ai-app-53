@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,15 +5,30 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { loadGoogleMapsAPI, getCurrentPosition, reverseGeocode, parseAddressComponents } from '@/utils/googleMapsLoader';
 import { useNavigate } from 'react-router-dom';
-import { AlertMessages } from './map/AlertMessages';
-import { MapOverlays } from './map/MapOverlays';
-import { AddressInfoDisplay } from './map/AddressInfoDisplay';
-import { SearchBar } from './map/SearchBar';
+import AlertMessages from './map/AlertMessages';
+import MapOverlays from './map/MapOverlays';
+import AddressInfoDisplay from './map/AddressInfoDisplay';
+import SearchBar from './map/SearchBar';
 import { toast } from 'sonner';
 import { useMapLocation } from './map/useMapLocation';
 import { useAddressSearch } from './map/useAddressSearch';
 
-const MapAddressSelector = () => {
+interface MapAddressSelectorProps {
+  onAddressSelected?: (addressDetails: {
+    fullAddress: string;
+    latitude: number;
+    longitude: number;
+    city: string;
+    state: string;
+    zipCode: string;
+  }) => void;
+  onCancel?: () => void;
+}
+
+const MapAddressSelector: React.FC<MapAddressSelectorProps> = ({ 
+  onAddressSelected,
+  onCancel
+}) => {
   const navigate = useNavigate();
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [map, setMap] = useState<google.maps.Map | null>(null);
@@ -64,9 +78,6 @@ const MapAddressSelector = () => {
           fullscreenControl: false,
           streetViewControl: false,
           zoomControl: true,
-          zoomControlOptions: {
-            position: google.maps.ControlPosition.RIGHT_CENTER,
-          },
         };
         
         const newMap = new google.maps.Map(mapElement, mapOptions);
@@ -159,7 +170,20 @@ const MapAddressSelector = () => {
       coords: location,
     };
     
-    // Save to localStorage (in a real app, this would be saved to a database)
+    // If using as a component with callback
+    if (onAddressSelected && location) {
+      onAddressSelected({
+        fullAddress: `${houseNumber} ${streetName}, ${area}, ${city}, ${state} ${pincode}`,
+        latitude: location.lat,
+        longitude: location.lng,
+        city,
+        state,
+        zipCode: pincode
+      });
+      return;
+    }
+    
+    // Otherwise, save to localStorage (in a real app, this would be saved to a database)
     const addresses = JSON.parse(localStorage.getItem('addresses') || '[]');
     addresses.push(addressObj);
     localStorage.setItem('addresses', JSON.stringify(addresses));
@@ -304,13 +328,22 @@ const MapAddressSelector = () => {
             </div>
           </div>
         </CardContent>
-        <CardFooter className="px-4 py-3 flex justify-end">
+        <CardFooter className="px-4 py-3 flex justify-end gap-3">
+          {onCancel && (
+            <Button
+              variant="outline"
+              onClick={onCancel}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+          )}
           <Button
             onClick={handleSaveAddress}
             disabled={!houseNumber || !streetName || !area || !city || !state || !pincode}
-            className="w-full"
+            className={onCancel ? "flex-1" : "w-full"}
           >
-            Save Address
+            {onAddressSelected ? "Select Location" : "Save Address"}
           </Button>
         </CardFooter>
       </Card>
