@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -6,12 +5,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { sendOTP } from "@/services/smsService";
+import { toast } from "sonner";
 
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isValid, setIsValid] = useState(false);
+  const [isSending, setIsSending] = useState(false);
 
   const validatePhone = (phone: string) => {
     const phoneRegex = /^\d{10}$/;
@@ -24,11 +26,32 @@ const Login = () => {
     setIsValid(validatePhone(value));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isValid) {
-      // In a real app, this would initiate an SMS verification
-      navigate("/verify", { state: { phoneNumber } });
+      setIsSending(true);
+      
+      try {
+        // Send OTP to the phone number
+        const result = await sendOTP(phoneNumber);
+        
+        if (result.success) {
+          toast.success("OTP sent to your phone number");
+          // Display OTP in development for testing
+          if (import.meta.env.DEV && result.otp) {
+            toast.info(`Development OTP: ${result.otp}`);
+          }
+          // Navigate to verification page with phone number as state
+          navigate("/verify", { state: { phoneNumber } });
+        } else {
+          toast.error("Failed to send OTP. Please try again.");
+        }
+      } catch (error) {
+        toast.error("An error occurred. Please try again.");
+        console.error("Error sending OTP:", error);
+      } finally {
+        setIsSending(false);
+      }
     }
   };
 
@@ -99,10 +122,10 @@ const Login = () => {
 
                   <Button
                     type="submit"
-                    disabled={!isValid}
+                    disabled={!isValid || isSending}
                     className="w-full bg-zepmeds-purple hover:bg-zepmeds-purple-light transition-colors mt-4"
                   >
-                    Continue
+                    {isSending ? "Sending OTP..." : "Continue"}
                   </Button>
                 </form>
               </TabsContent>
@@ -139,10 +162,10 @@ const Login = () => {
 
                   <Button
                     type="submit"
-                    disabled={!isValid}
+                    disabled={!isValid || isSending}
                     className="w-full bg-zepmeds-purple hover:bg-zepmeds-purple-light transition-colors mt-4"
                   >
-                    Create Account
+                    {isSending ? "Sending OTP..." : "Create Account"}
                   </Button>
                 </form>
               </TabsContent>

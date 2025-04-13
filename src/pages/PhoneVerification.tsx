@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
@@ -11,6 +11,8 @@ import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, CheckCircle } from "lucide-react";
 import { useBackNavigation } from '@/hooks/useBackNavigation';
+import { verifyOTP, sendOTP } from '@/services/smsService';
+import { useAuth } from '@/contexts/AuthContext';
 
 const formSchema = z.object({
   otp: z.string().min(6, {
@@ -20,10 +22,14 @@ const formSchema = z.object({
 
 const PhoneVerification: React.FC = () => {
   const navigate = useNavigate();
-  // Call useBackNavigation and properly destructure what it returns
+  const location = useLocation();
   const { goBack } = useBackNavigation();
+  const { login } = useAuth();
   const [isVerifying, setIsVerifying] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState<string>("");
+  const [resendDisabled, setResendDisabled] = useState(false);
+  const [countdown, setCountdown] = useState(30);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -32,14 +38,54 @@ const PhoneVerification: React.FC = () => {
     },
   });
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
+  useEffect(() => {
+    // Get phone number from location state
+    if (location.state?.phoneNumber) {
+      setPhoneNumber(location.state.phoneNumber);
+    } else {
+      // If no phone number in state, redirect back to login
+      toast.error("No phone number provided");
+      navigate("/login");
+    }
+  }, [location.state, navigate]);
+
+  useEffect(() => {
+    // Countdown timer for resend button
+    let timer: number | undefined;
+    
+    if (resendDisabled && countdown > 0) {
+      timer = window.setTimeout(() => {
+        setCountdown(prev => prev - 1);
+      }, 1000);
+    } else if (countdown === 0) {
+      setResendDisabled(false);
+      setCountdown(30);
+    }
+    
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [resendDisabled, countdown]);
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (!phoneNumber) {
+      toast.error("Phone number not found");
+      navigate("/login");
+      return;
+    }
+    
     setIsVerifying(true);
     
-    // Simulate API verification
-    setTimeout(() => {
-      if (values.otp === "123456") {
+    try {
+      // Verify OTP with the service
+      const isValid = await verifyOTP(phoneNumber, values.otp);
+      
+      if (isValid) {
         setIsVerified(true);
         toast.success("OTP verified successfully");
+        
+        // Login user with provided phone number
+        login(phoneNumber);
         
         // Navigate to dashboard after successful verification
         setTimeout(() => {
@@ -52,8 +98,39 @@ const PhoneVerification: React.FC = () => {
           message: "Incorrect OTP. Please check and try again." 
         });
       }
+    } catch (error) {
+      toast.error("Verification failed. Please try again.");
+      console.error("Error verifying OTP:", error);
+    } finally {
       setIsVerifying(false);
-    }, 1500);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    if (!phoneNumber || resendDisabled) return;
+    
+    try {
+      setResendDisabled(true);
+      
+      // Resend OTP
+      const result = await sendOTP(phoneNumber);
+      
+      if (result.success) {
+        toast.success("OTP resent successfully");
+        
+        // For development, show the OTP
+        if (import.meta.env.DEV && result.otp) {
+          toast.info(`Development OTP: ${result.otp}`);
+        }
+      } else {
+        toast.error("Failed to resend OTP");
+        setResendDisabled(false);
+      }
+    } catch (error) {
+      toast.error("An error occurred. Please try again.");
+      console.error("Error resending OTP:", error);
+      setResendDisabled(false);
+    }
   };
 
   return (
@@ -72,7 +149,13 @@ const PhoneVerification: React.FC = () => {
         <CardHeader>
           <CardTitle className="text-xl">Verify Your Phone</CardTitle>
           <CardDescription>
-            Enter the 6-digit code sent to your phone number.
+            {phoneNumber ? (
+              <>
+                Enter the 6-digit code sent to <span className="font-medium">+91 {phoneNumber}</span>
+              </>
+            ) : (
+              "Enter the 6-digit code sent to your phone number."
+            )}
           </CardDescription>
         </CardHeader>
         
@@ -128,11 +211,21 @@ const PhoneVerification: React.FC = () => {
         
         <CardFooter className="flex flex-col gap-4">
           <p className="text-sm text-center text-gray-500">
-            Didn't receive a code? <Button variant="link" className="p-0 h-auto" onClick={() => toast.info("New code sent!")}>Resend OTP</Button>
+            Didn't receive a code? {" "}
+            <Button 
+              variant="link" 
+              className="p-0 h-auto" 
+              onClick={handleResendOTP}
+              disabled={resendDisabled}
+            >
+              {resendDisabled ? `Resend in ${countdown}s` : "Resend OTP"}
+            </Button>
           </p>
-          <p className="text-xs text-center text-gray-400">
-            For demo purposes, use "123456" as the OTP code
-          </p>
+          {import.meta.env.DEV && (
+            <p className="text-xs text-center text-gray-400">
+              Development mode: Check console and toast notifications for the OTP
+            </p>
+          )}
         </CardFooter>
       </Card>
     </div>
