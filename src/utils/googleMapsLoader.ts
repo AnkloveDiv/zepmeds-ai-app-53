@@ -40,10 +40,11 @@ export const loadMapplsApi = (): Promise<void> => {
     }
 
     isLoadingMapplsApi = true;
+    window.mapplsInitialized = false;
 
     // Create script element
     const script = document.createElement("script");
-    script.src = `https://apis.mappls.com/advancedmaps/api/7ae3a6629a15b43aea0bb0637c3c11c4/map_sdk?v=3.0&callback=initMapplsCallback`;
+    script.src = `https://apis.mappls.com/advancedmaps/api/${MAPPLS_REST_API_KEY}/map_sdk?layer=vector&v=3.0&callback=initMapplsCallback`;
     script.async = true;
     script.defer = true;
     

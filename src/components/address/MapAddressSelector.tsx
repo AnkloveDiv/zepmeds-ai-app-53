@@ -124,53 +124,51 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     try {
       console.log("Initializing map with coordinates:", lat, lng);
       
-      // Initialize Mappls map
-      const mapplsMap = new window.mappls.Map(mapRef.current, {
+      // Initialize Mappls map with correct options
+      const mapplsMap = new window.mappls.Map({
+        container: mapRef.current,
         center: { lat, lng },
         zoom: 15,
-        search: false,
-        location: false,
-        zoomControl: true,
+        traffic: false,
+        location: false
       });
       
       setMap(mapplsMap);
       
-      // Add a marker at the initial location
-      const mapMarker = new window.mappls.Marker({
-        map: mapplsMap,
-        position: { lat, lng },
-        draggable: true,
-        fitbounds: true,
-        icon: {
-          url: 'https://apis.mapmyindia.com/map_v3/1.png',
-          width: 28,
-          height: 38
-        }
-      });
-      
-      setMarker(mapMarker);
-      
-      // Get address for initial location
-      getAddressFromCoordinates(lat, lng);
-      
-      // Add event listener for marker drag end
-      mapMarker.addListener("dragend", () => {
-        const position = mapMarker.getPosition();
-        if (position) {
-          getAddressFromCoordinates(position.lat, position.lng);
-        }
-      });
-      
-      // Add event listener for map click
-      mapplsMap.addListener("click", (e: any) => {
-        if (e.latlng && mapMarker) {
+      // Wait for the map to load
+      mapplsMap.on('load', () => {
+        console.log("Map loaded successfully");
+        
+        // Add a marker at the initial location
+        const mapMarker = new window.mappls.Marker({
+          position: { lat, lng },
+          map: mapplsMap,
+          draggable: true,
+          popupHtml: 'Drag me to adjust location'
+        });
+        
+        setMarker(mapMarker);
+        setIsLoading(false);
+        
+        // Get address for initial location
+        getAddressFromCoordinates(lat, lng);
+        
+        // Add event listener for marker drag end
+        mapMarker.on("dragend", () => {
+          const position = mapMarker.getPosition();
+          if (position) {
+            getAddressFromCoordinates(position.lat, position.lng);
+          }
+        });
+        
+        // Add event listener for map click
+        mapplsMap.on("click", (e: any) => {
           const { lat, lng } = e.latlng;
           mapMarker.setPosition({ lat, lng });
           getAddressFromCoordinates(lat, lng);
-        }
+        });
       });
       
-      setIsLoading(false);
     } catch (error) {
       console.error("Error creating map:", error);
       setIsLoading(false);
@@ -263,8 +261,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       // Update marker and map if available
       if (map && marker) {
         marker.setPosition({ lat, lng });
-        map.setCenter({ lat, lng });
-        map.setZoom(15);
+        map.flyTo({ center: { lat, lng }, zoom: 15 });
       }
       
       handleGeocodeResult(address, lat, lng);
@@ -296,8 +293,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
           
           if (map && marker && window.mappls && !usingMockData) {
             marker.setPosition({ lat: latitude, lng: longitude });
-            map.setCenter({ lat: latitude, lng: longitude });
-            map.setZoom(15);
+            map.flyTo({ center: { lat: latitude, lng: longitude }, zoom: 15 });
           }
           
           getAddressFromCoordinates(latitude, longitude);
@@ -383,7 +379,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
             </div>
             <div className="absolute inset-0 bg-black/20"></div>
             <img 
-              src="/lovable-uploads/84437780-633b-44bd-a488-f1dc157c50e5.png" 
+              src="/lovable-uploads/9e2b1e9d-5039-4c63-86a6-2dff8f9e8572.png" 
               alt="Map placeholder" 
               className="absolute inset-0 w-full h-full object-cover opacity-40" 
             />
@@ -392,6 +388,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
           <div 
             ref={mapRef} 
             className="w-full h-full" 
+            id="map-container"
           />
         )}
         <div className="absolute top-2 right-2 z-10">
