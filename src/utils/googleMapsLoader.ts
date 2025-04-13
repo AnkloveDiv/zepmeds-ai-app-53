@@ -8,7 +8,7 @@ import {
   parseAddressComponents,
   getMapLoadError,
   getCoordinatesFromClick,
-  Location
+  type Location
 } from './openLayersLoader';
 
 // For backwards compatibility with existing code
@@ -28,6 +28,8 @@ export {
   geocodeAddress,
   parseAddressComponents,
   getMapLoadError,
-  getCoordinatesFromClick,
-  Location
+  getCoordinatesFromClick
 };
+
+// Re-export the Location type properly with 'export type'
+export type { Location };
