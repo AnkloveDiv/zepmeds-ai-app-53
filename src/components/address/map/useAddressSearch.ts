@@ -1,101 +1,106 @@
 
-import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { 
-  searchAddressWithGoogle, 
-  getAddressFromCoordinates 
-} from "@/utils/googleMapsLoader";
-import { AddressDetails } from "./AddressInfoDisplay";
+import { useState, useCallback, useEffect } from 'react';
+import { loadGoogleMapsAPI, geocodeAddress } from '@/utils/googleMapsLoader';
+import { Location } from './useMapLocation';
+import { toast } from 'sonner';
 
-export function useAddressSearch() {
-  const [loadingAddress, setLoadingAddress] = useState(false);
-  const [selectedAddress, setSelectedAddress] = useState<AddressDetails | null>(null);
-  const { toast } = useToast();
+export interface SearchResult {
+  id: string;
+  description: string;
+  placeId: string;
+}
 
-  const handleSearch = async (searchQuery: string) => {
-    if (!searchQuery.trim()) return;
-    
-    setLoadingAddress(true);
-    console.log("Searching for address:", searchQuery);
-    
-    try {
-      const searchResult = await searchAddressWithGoogle(searchQuery);
-      const { lat, lng, address } = searchResult;
-      
-      handleGeocodeResult(address, lat, lng);
-      return { lat, lng };
-    } catch (error) {
-      console.error("Search error:", error);
-      toast({
-        title: "Search failed",
-        description: "Could not find the location. Please try a different search term.",
-        variant: "destructive",
-      });
-      setLoadingAddress(false);
-      return null;
-    }
-  };
-
-  const handleCoordinateChange = async (lat: number, lng: number) => {
-    setLoadingAddress(true);
-    try {
-      const result = await getAddressFromCoordinates(lat, lng);
-      handleGeocodeResult(result, lat, lng);
-    } catch (error) {
-      console.error("Error getting address:", error);
-      setLoadingAddress(false);
-      toast({
-        title: "Address lookup failed",
-        description: "Could not retrieve address details for this location.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleGeocodeResult = (result: any, lat: number, lng: number) => {
-    console.log("Processing geocode result:", result);
-    
-    let city = "Unknown City";
-    let state = "Unknown State";
-    let zipCode = "000000";
-    
-    if (result.address_components) {
-      for (const component of result.address_components) {
-        if (component.types.includes("locality")) {
-          city = component.long_name;
-        }
-        
-        if (component.types.includes("administrative_area_level_1")) {
-          state = component.short_name;
-        }
-        
-        if (component.types.includes("postal_code")) {
-          zipCode = component.long_name;
-        }
+export const useAddressSearch = (
+  map: google.maps.Map | null,
+  marker: google.maps.Marker | null,
+  setLocation: (location: Location) => void
+) => {
+  const [searchValue, setSearchValue] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [autocompleteService, setAutocompleteService] = useState<google.maps.places.AutocompleteService | null>(null);
+  
+  // Initialize autocomplete service
+  useEffect(() => {
+    const initAutocomplete = async () => {
+      try {
+        await loadGoogleMapsAPI();
+        setAutocompleteService(new google.maps.places.AutocompleteService());
+      } catch (error) {
+        console.error("Error initializing autocomplete:", error);
       }
-    }
-    
-    const addressDetails: AddressDetails = {
-      fullAddress: result.formatted_address || `Location at ${lat.toFixed(6)}, ${lng.toFixed(6)}`,
-      latitude: lat,
-      longitude: lng,
-      city,
-      state,
-      zipCode
     };
     
-    console.log("Address details:", addressDetails);
-    setSelectedAddress(addressDetails);
-    setLoadingAddress(false);
-  };
-
+    initAutocomplete();
+  }, []);
+  
+  const handleSearch = useCallback(async (query: string) => {
+    if (!query || !autocompleteService) {
+      setSearchResults([]);
+      return;
+    }
+    
+    setIsSearching(true);
+    
+    try {
+      const response = await new Promise<google.maps.places.AutocompletePrediction[]>((resolve, reject) => {
+        autocompleteService.getPlacePredictions(
+          {
+            input: query,
+            componentRestrictions: { country: 'in' }, // Limit to India
+            types: ['geocode', 'establishment']
+          },
+          (results, status) => {
+            if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+              resolve(results);
+            } else {
+              reject(new Error(`Autocomplete failed: ${status}`));
+            }
+          }
+        );
+      });
+      
+      const formattedResults: SearchResult[] = response.map((result) => ({
+        id: result.place_id,
+        description: result.description,
+        placeId: result.place_id
+      }));
+      
+      setSearchResults(formattedResults);
+    } catch (error) {
+      console.error("Search error:", error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, [autocompleteService]);
+  
+  const handleSearchResultClick = useCallback(async (result: SearchResult) => {
+    if (!map || !marker) return;
+    
+    setSearchValue(result.description);
+    setSearchResults([]);
+    
+    try {
+      const geocodeResult = await geocodeAddress(result.description);
+      if (geocodeResult && geocodeResult.geometry && geocodeResult.geometry.location) {
+        const lat = geocodeResult.geometry.location.lat();
+        const lng = geocodeResult.geometry.location.lng();
+        
+        setLocation({ lat, lng });
+      }
+    } catch (error) {
+      console.error("Error getting location for place:", error);
+      toast.error("Couldn't get location details. Please try another address.");
+    }
+  }, [map, marker, setLocation]);
+  
   return {
-    loadingAddress,
-    setLoadingAddress,
-    selectedAddress,
-    setSelectedAddress,
+    searchValue,
+    setSearchValue,
+    searchResults,
+    isSearching,
     handleSearch,
-    handleCoordinateChange,
-    handleGeocodeResult
+    handleSearchResultClick
   };
-}
+};
