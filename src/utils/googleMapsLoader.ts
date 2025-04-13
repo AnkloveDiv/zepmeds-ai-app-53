@@ -20,7 +20,7 @@ let isLoadingMapApi = false;
 export const loadMapTilerApi = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     // Check if the API is already loaded
-    if (window.maptilersdk) {
+    if (window.maptilersdk && window.maplibregl) {
       console.log("MapTiler API already loaded");
       window.mapInitialized = true;
       resolve();
@@ -43,17 +43,7 @@ export const loadMapTilerApi = (): Promise<void> => {
     isLoadingMapApi = true;
     window.mapInitialized = false;
 
-    // Create MapTiler script element
-    const mapLibreScript = document.createElement("script");
-    mapLibreScript.src = "https://cdn.maptiler.com/maplibre-gl-js/v3.3.1/maplibre-gl.js";
-    mapLibreScript.async = true;
-    
-    // Create MapTiler SDK script
-    const maptilerScript = document.createElement("script");
-    maptilerScript.src = "https://cdn.maptiler.com/maptiler-sdk-js/v1.2.0/maptiler-sdk.umd.min.js";
-    maptilerScript.async = true;
-    
-    // Create MapTiler CSS
+    // Create CSS elements first to ensure styles are loaded before scripts
     const mapLibreCss = document.createElement("link");
     mapLibreCss.rel = "stylesheet";
     mapLibreCss.href = "https://cdn.maptiler.com/maplibre-gl-js/v3.3.1/maplibre-gl.css";
@@ -61,6 +51,10 @@ export const loadMapTilerApi = (): Promise<void> => {
     const maptilerCss = document.createElement("link");
     maptilerCss.rel = "stylesheet";
     maptilerCss.href = "https://cdn.maptiler.com/maptiler-sdk-js/v1.2.0/maptiler-sdk.css";
+    
+    // Add CSS to document head
+    document.head.appendChild(mapLibreCss);
+    document.head.appendChild(maptilerCss);
     
     // Setup callback for when API is loaded
     window.initMapCallback = () => {
@@ -70,29 +64,36 @@ export const loadMapTilerApi = (): Promise<void> => {
       if (window.maptilersdk) {
         window.maptilersdk.config.apiKey = MAPTILER_API_KEY;
         console.log("MapTiler SDK initialized with API key");
+        window.mapInitialized = true;
+        isLoadingMapApi = false;
+        resolve();
       } else {
-        console.error("MapTiler SDK not found");
+        console.error("MapTiler SDK not found after loading");
+        isLoadingMapApi = false;
+        reject(new Error("MapTiler SDK not found after loading"));
       }
-      
-      window.mapInitialized = true;
-      isLoadingMapApi = false;
-      resolve();
     };
     
-    // Add CSS to document head
-    document.head.appendChild(mapLibreCss);
-    document.head.appendChild(maptilerCss);
+    // Create script elements 
+    const mapLibreScript = document.createElement("script");
+    mapLibreScript.src = "https://cdn.maptiler.com/maplibre-gl-js/v3.3.1/maplibre-gl.js";
+    mapLibreScript.crossOrigin = "anonymous";
     
-    // Add scripts to document
-    document.head.appendChild(mapLibreScript);
+    const maptilerScript = document.createElement("script");
+    maptilerScript.src = "https://cdn.maptiler.com/maptiler-sdk-js/v1.2.0/maptiler-sdk.umd.min.js";
+    maptilerScript.crossOrigin = "anonymous";
     
-    // Handle MapLibre loaded, then load MapTiler SDK
+    // Handle loading and errors
     mapLibreScript.onload = () => {
+      console.log("MapLibre GL loaded successfully");
       document.head.appendChild(maptilerScript);
-      maptilerScript.onload = window.initMapCallback;
     };
     
-    // Handle errors
+    maptilerScript.onload = () => {
+      console.log("MapTiler SDK loaded successfully");
+      window.initMapCallback();
+    };
+    
     mapLibreScript.onerror = () => {
       console.error("Error loading MapLibre GL");
       isLoadingMapApi = false;
@@ -104,6 +105,9 @@ export const loadMapTilerApi = (): Promise<void> => {
       isLoadingMapApi = false;
       reject(new Error("Failed to load MapTiler SDK"));
     };
+    
+    // Start loading MapLibre GL first
+    document.head.appendChild(mapLibreScript);
   });
 };
 

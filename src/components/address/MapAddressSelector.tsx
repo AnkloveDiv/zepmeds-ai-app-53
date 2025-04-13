@@ -9,7 +9,8 @@ import {
   initializeMap, 
   mockGeocodeResponse, 
   getAddressFromCoordinates,
-  searchAddressWithMapTiler
+  searchAddressWithMapTiler,
+  MAPTILER_API_KEY
 } from "@/utils/googleMapsLoader";
 
 interface MapAddressSelectorProps {
@@ -37,14 +38,21 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
   const [usingMockData, setUsingMockData] = useState(false);
   const { toast } = useToast();
   
+  // For fallback map
+  const [fallbackLatitude, setFallbackLatitude] = useState(28.6139);
+  const [fallbackLongitude, setFallbackLongitude] = useState(77.2090);
+  
   useEffect(() => {
+    let isMounted = true;
     const loadMap = async () => {
       try {
         // Initialize MapTiler SDK
         const mapsInitialized = await initializeMap();
         
+        if (!isMounted) return;
+        
         // Check if MapTiler SDK is available
-        if (!window.maptilersdk) {
+        if (!window.maptilersdk || !mapsInitialized) {
           console.error("MapTiler SDK is not loaded after initialization");
           toast({
             title: "Maps API not available",
@@ -53,40 +61,16 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
           });
           setUsingMockData(true);
           setIsLoading(false);
-          // Show a fallback/static view
-          initializeFallbackMap();
+          // Show a fallback/static view with user's location if possible
+          getUserLocation();
           return;
         }
         
         // Get user's current location
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              const { latitude, longitude } = position.coords;
-              console.log("Got user location:", latitude, longitude);
-              initializeMapTiler(latitude, longitude);
-            },
-            (error) => {
-              console.error("Error getting location:", error);
-              // Default to a location if geolocation fails
-              toast({
-                title: "Location access denied",
-                description: "Using default location. Please enable location access for better results.",
-                variant: "destructive",
-              });
-              initializeMapTiler(28.6139, 77.2090); // New Delhi coordinates as fallback
-            }
-          );
-        } else {
-          console.error("Geolocation not supported by this browser");
-          toast({
-            title: "Geolocation not supported",
-            description: "Your browser doesn't support geolocation. Using default location.",
-            variant: "destructive",
-          });
-          initializeMapTiler(28.6139, 77.2090); // New Delhi coordinates as fallback
-        }
+        getUserLocation();
       } catch (error) {
+        if (!isMounted) return;
+        
         console.error("Error during map initialization:", error);
         setIsLoading(false);
         setUsingMockData(true);
@@ -95,25 +79,95 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
           description: "Using fallback view for location selection.",
           variant: "destructive",
         });
-        initializeFallbackMap();
+        // Get user location for fallback view
+        getUserLocation();
+      }
+    };
+    
+    const getUserLocation = () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            if (!isMounted) return;
+            
+            const { latitude, longitude } = position.coords;
+            console.log("Got user location:", latitude, longitude);
+            
+            setFallbackLatitude(latitude);
+            setFallbackLongitude(longitude);
+            
+            if (!usingMockData && window.maptilersdk) {
+              initializeMapTiler(latitude, longitude);
+            } else {
+              // For fallback map
+              setIsLoading(false);
+              getAddressFromCoordinates(latitude, longitude).then(result => {
+                if (isMounted) {
+                  handleGeocodeResult(result, latitude, longitude);
+                }
+              });
+            }
+          },
+          (error) => {
+            if (!isMounted) return;
+            
+            console.error("Error getting location:", error);
+            // Default to a location if geolocation fails
+            toast({
+              title: "Location access denied",
+              description: "Using default location. Please enable location access for better results.",
+              variant: "destructive",
+            });
+            
+            if (!usingMockData && window.maptilersdk) {
+              initializeMapTiler(28.6139, 77.2090); // New Delhi coordinates as fallback
+            } else {
+              setIsLoading(false);
+              getAddressFromCoordinates(28.6139, 77.2090).then(result => {
+                if (isMounted) {
+                  handleGeocodeResult(result, 28.6139, 77.2090);
+                }
+              });
+            }
+          }
+        );
+      } else {
+        if (!isMounted) return;
+        
+        console.error("Geolocation not supported by this browser");
+        toast({
+          title: "Geolocation not supported",
+          description: "Your browser doesn't support geolocation. Using default location.",
+          variant: "destructive",
+        });
+        
+        if (!usingMockData && window.maptilersdk) {
+          initializeMapTiler(28.6139, 77.2090); // New Delhi coordinates as fallback
+        } else {
+          setIsLoading(false);
+          getAddressFromCoordinates(28.6139, 77.2090).then(result => {
+            if (isMounted) {
+              handleGeocodeResult(result, 28.6139, 77.2090);
+            }
+          });
+        }
       }
     };
     
     loadMap();
-  }, [toast]);
-  
-  // Initialize a fallback static map when MapTiler fails
-  const initializeFallbackMap = () => {
-    setIsLoading(false);
-    // Set a default location for fallback
-    const defaultLat = 28.6139;
-    const defaultLng = 77.2090;
     
-    // Use mock data for address
-    getAddressFromCoordinates(defaultLat, defaultLng).then(result => {
-      handleGeocodeResult(result, defaultLat, defaultLng);
-    });
-  };
+    return () => {
+      isMounted = false;
+      // Clean up map instance if it exists
+      if (map) {
+        try {
+          map.remove();
+        } catch (e) {
+          console.error("Error cleaning up map:", e);
+        }
+      }
+    };
+  }, [toast, usingMockData]);
   
   const initializeMapTiler = (lat: number, lng: number) => {
     if (!mapRef.current || !window.maptilersdk) {
@@ -121,7 +175,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       setUsingMockData(true);
       getAddressFromCoordinates(lat, lng).then(result => {
         handleGeocodeResult(result, lat, lng);
-      }); // Use fallback data
+      });
       return;
     }
     
@@ -141,33 +195,25 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       // Wait for the map to load
       maptilerMap.on('load', () => {
         console.log("Map loaded successfully");
+        setIsLoading(false);
         
-        // Check if maplibregl is available for marker
-        if (!window.maplibregl) {
-          console.error("maplibregl not found");
-          setIsLoading(false);
-          return;
-        }
+        // Create a DOM element for the marker
+        const el = document.createElement('div');
+        el.className = 'marker';
+        el.style.backgroundImage = 'url(https://docs.maptiler.com/sdk-js/assets/marker-icon.png)';
+        el.style.width = '25px';
+        el.style.height = '41px';
+        el.style.backgroundSize = 'cover';
         
-        // Create marker element
-        const markerElement = document.createElement('div');
-        markerElement.className = 'custom-marker';
-        markerElement.style.width = '25px';
-        markerElement.style.height = '41px';
-        markerElement.style.backgroundImage = 'url(https://docs.maptiler.com/sdk-js/assets/marker-icon.png)';
-        markerElement.style.backgroundSize = 'cover';
-        markerElement.style.cursor = 'pointer';
-        
-        // Add a marker at the initial location
-        const mapMarker = new window.maplibregl.Marker({
-          element: markerElement,
-          draggable: true
+        // Add marker
+        const mapMarker = new window.maptilersdk.Marker({
+          element: el,
+          draggable: true,
         })
           .setLngLat([lng, lat])
           .addTo(maptilerMap);
         
         setMarker(mapMarker);
-        setIsLoading(false);
         
         // Get address for initial location
         getAddressFromCoordinates(lat, lng).then(result => {
@@ -194,6 +240,19 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         });
       });
       
+      // Handle map errors
+      maptilerMap.on('error', (e: any) => {
+        console.error("Map error:", e);
+        if (!usingMockData) {
+          setUsingMockData(true);
+          toast({
+            title: "Map error occurred",
+            description: "Switched to fallback view. Some features may be limited.",
+            variant: "destructive",
+          });
+        }
+      });
+      
     } catch (error) {
       console.error("Error creating map:", error);
       setIsLoading(false);
@@ -205,7 +264,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       });
       getAddressFromCoordinates(lat, lng).then(result => {
         handleGeocodeResult(result, lat, lng);
-      }); // Use fallback data
+      });
     }
   };
   
@@ -243,26 +302,16 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     console.log("Searching for address:", searchQuery);
     
     try {
-      // Check if we need to use mock data
-      if (usingMockData || !window.maptilersdk) {
-        // Simulate a search delay
-        setTimeout(() => {
-          // Default coordinates - simulate finding the location
-          const lat = 28.6139;
-          const lng = 77.2090;
-          
-          const mockResponse = mockGeocodeResponse(lat, lng);
-          handleGeocodeResult(mockResponse, lat, lng);
-        }, 1000);
-        return;
-      }
-      
       // Use MapTiler API for geocoding
       const searchResult = await searchAddressWithMapTiler(searchQuery);
       const { lat, lng, address } = searchResult;
       
+      // Update fallback coordinates in case we switch to fallback view
+      setFallbackLatitude(lat);
+      setFallbackLongitude(lng);
+      
       // Update marker and map if available
-      if (map && marker) {
+      if (map && marker && !usingMockData) {
         marker.setLngLat([lng, lat]);
         map.flyTo({center: [lng, lat], zoom: 15});
       }
@@ -292,7 +341,11 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
           const { latitude, longitude } = position.coords;
           console.log("Current location:", latitude, longitude);
           
-          if (map && marker && window.maptilersdk && !usingMockData) {
+          // Update fallback coordinates
+          setFallbackLatitude(latitude);
+          setFallbackLongitude(longitude);
+          
+          if (map && marker && !usingMockData) {
             marker.setLngLat([longitude, latitude]);
             map.flyTo({center: [longitude, latitude], zoom: 15});
           }
@@ -382,7 +435,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
             </div>
             <div className="absolute inset-0 bg-black/20"></div>
             <img 
-              src="/lovable-uploads/9e2b1e9d-5039-4c63-86a6-2dff8f9e8572.png" 
+              src="/lovable-uploads/e4b9e4de-da09-47a5-8942-e28c08e1e69e.png" 
               alt="Map placeholder" 
               className="absolute inset-0 w-full h-full object-cover opacity-40" 
             />
@@ -426,7 +479,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
           ) : selectedAddress ? (
             <div className="mt-1">
               <p className="text-white">{selectedAddress.fullAddress}</p>
-              <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
                 <div className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full">
                   {selectedAddress.city}
                 </div>
