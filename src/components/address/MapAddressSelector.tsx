@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Navigation, CheckCircle2 } from "lucide-react";
@@ -24,13 +25,14 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
   const [marker, setMarker] = useState<google.maps.Marker | null>(null);
   const [accuracyCircle, setAccuracyCircle] = useState<google.maps.Circle | null>(null);
   const [disableAccuracyWarnings, setDisableAccuracyWarnings] = useState(true);
+  const [mapRetryCount, setMapRetryCount] = useState(0);
 
   const { 
     locationState, 
     setLocationState,
     getUserLocation, 
     handleCurrentLocation 
-  } = useMapLocation();
+  } = useMapLocation(true); // true to disable warnings
   
   const {
     loadingAddress,
@@ -68,6 +70,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
   };
 
   const handleLocationButtonClick = async () => {
+    setMapRetryCount(prev => prev + 1);
     const position = await handleCurrentLocation();
     if (position && map && marker && !usingMockData) {
       const { latitude, longitude, accuracy } = position;
@@ -91,6 +94,28 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       }
       
       handleCoordinateChange(latitude, longitude);
+    } else if (usingMockData) {
+      // Force location detection even in mock mode
+      toast({
+        title: "Using current location",
+        description: "Getting your current location",
+      });
+      
+      try {
+        const position = await getUserLocation();
+        if (position) {
+          const { latitude, longitude } = position;
+          const addressResult = await getAddressFromCoordinates(latitude, longitude);
+          handleGeocodeResult(addressResult, latitude, longitude);
+        }
+      } catch (error) {
+        console.error("Error getting location:", error);
+        toast({
+          title: "Location error",
+          description: "Could not get your location. Please enter an address manually.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -128,7 +153,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       if (marker) marker.setMap(null);
       if (accuracyCircle) accuracyCircle.setMap(null);
     };
-  }, []);
+  }, [mapRetryCount]);
 
   return (
     <div className="flex flex-col h-[70vh]">

@@ -1,9 +1,10 @@
 
 import React, { useEffect, useRef, useState } from "react";
-import { Loader } from "lucide-react";
+import { Loader, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { initializeMap } from "@/utils/googleMapsLoader";
 import { LocationState } from "./useMapLocation";
+import { Button } from "@/components/ui/button";
 
 interface GoogleMapProps {
   locationState: LocationState;
@@ -31,7 +32,25 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
   setAccuracyCircle
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
+  const [mapLoadError, setMapLoadError] = useState(false);
   const { toast } = useToast();
+
+  const handleMapRetry = () => {
+    setMapLoadError(false);
+    setIsLoading(true);
+    setUsingMockData(false);
+    
+    // Force reload the map
+    if (locationState.latitude && locationState.longitude) {
+      initializeMap().then(success => {
+        if (!success) {
+          setMapLoadError(true);
+          setUsingMockData(true);
+          setIsLoading(false);
+        }
+      });
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -40,11 +59,12 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
       if (!mapRef.current || !window.google || !window.google.maps) {
         setIsLoading(false);
         setUsingMockData(true);
+        setMapLoadError(true);
         return;
       }
       
       try {
-        console.log("Initializing Go Map with coordinates:", lat, lng);
+        console.log("Initializing Google Map with coordinates:", lat, lng);
         
         const mapOptions: google.maps.MapOptions = {
           center: { lat, lng },
@@ -92,16 +112,6 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
         
         setAccuracyCircle(circle);
         
-        const infoDiv = document.createElement('div');
-        infoDiv.className = 'accuracy-info';
-        infoDiv.innerHTML = `
-          <div style="background-color: rgba(0,0,0,0.7); color: white; padding: 6px 10px; border-radius: 4px; font-size: 12px; display: flex; align-items: center;">
-            <span style="display: inline-block; width: 10px; height: 10px; background-color: #4285F4; border-radius: 50%; margin-right: 6px;"></span>
-            Location accuracy: ${Math.round(accuracyInMeters)} meters
-          </div>
-        `;
-        googleMap.controls[google.maps.ControlPosition.BOTTOM_CENTER].push(infoDiv);
-        
         googleMarker.addListener('dragend', () => {
           const position = googleMarker.getPosition();
           if (position) {
@@ -130,9 +140,10 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
           onMapClick(newLat, newLng);
         });
       } catch (error) {
-        console.error("Error creating Go map:", error);
+        console.error("Error creating Google map:", error);
         setIsLoading(false);
         setUsingMockData(true);
+        setMapLoadError(true);
         toast({
           title: "Map creation failed",
           description: "Using fallback view for location selection.",
@@ -148,7 +159,8 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
         if (!isMounted) return;
         
         if (!window.google || !window.google.maps || !mapsInitialized) {
-          console.error("Go Maps is not loaded after initialization");
+          console.error("Google Maps is not loaded after initialization");
+          setMapLoadError(true);
           toast({
             title: "Maps API not available",
             description: "Using fallback map view. Full functionality may be limited.",
@@ -170,6 +182,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
         console.error("Error during map initialization:", error);
         setIsLoading(false);
         setUsingMockData(true);
+        setMapLoadError(true);
         toast({
           title: "Map initialization failed",
           description: "Using fallback view for location selection.",
@@ -190,13 +203,30 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
   if (usingMockData) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-gray-800 relative">
-        {/* Fallback map UI */}
         <div className="absolute inset-0 bg-black/20"></div>
         <img 
           src="/lovable-uploads/92febc6f-53c5-4316-8532-8912db81a86e.png" 
           alt="Map placeholder" 
           className="absolute inset-0 w-full h-full object-cover opacity-40" 
         />
+        
+        {mapLoadError && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 z-10">
+            <div className="bg-black/70 p-6 rounded-xl max-w-[80%] text-center">
+              <MapPin className="h-8 w-8 text-red-500 mx-auto mb-2" />
+              <h3 className="text-lg font-semibold text-white mb-2">Map loading failed</h3>
+              <p className="text-gray-300 mb-4">
+                We couldn't load the Google Maps. This could be due to network issues or an invalid API key.
+              </p>
+              <Button 
+                onClick={handleMapRetry} 
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Try Again
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -205,7 +235,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
     <div className="w-full h-full relative">
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-900/50 z-10">
-          <Loader className="h-8 w-8 text-zepmeds-purple animate-spin" />
+          <Loader className="h-8 w-8 text-white animate-spin" />
         </div>
       )}
       <div 
