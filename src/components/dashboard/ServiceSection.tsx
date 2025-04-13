@@ -1,8 +1,7 @@
-
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import ServiceCard from "@/components/ServiceCard";
-import { Pill, FileUp, MessageSquareText, Stethoscope, Dog, Package, Thermometer } from "lucide-react";
+import { Pill, FileUp, MessageSquareText, Stethoscope, Dog, Package, Thermometer, AlertTriangle } from "lucide-react";
 
 const ServiceSection = () => {
   const navigate = useNavigate();
@@ -56,6 +55,13 @@ const ServiceSection = () => {
       icon: <Thermometer className="h-6 w-6 text-white" />,
       color: "bg-gradient-to-br from-blue-600 to-blue-400",
       onClick: () => navigate("/medical-devices")
+    },
+    {
+      title: "Emergency Services",
+      description: "Urgent medical assistance",
+      icon: <AlertTriangle className="h-6 w-6 text-white" />,
+      color: "bg-gradient-to-br from-red-600 to-red-400",
+      onClick: () => navigate("/emergency")
     }
   ];
 
