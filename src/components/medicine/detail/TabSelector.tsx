@@ -1,64 +1,39 @@
 
 import React from "react";
+import { Info, ScrollText, Pill, ArrowRight, CircleHelp } from "lucide-react";
 
 interface TabSelectorProps {
   activeTab: string;
-  setActiveTab: (tab: string) => void;
+  setActiveTab: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const TabSelector: React.FC<TabSelectorProps> = ({ activeTab, setActiveTab }) => {
+  const tabs = [
+    { id: "description", label: "Description", icon: <Info className="h-4 w-4" /> },
+    { id: "directions", label: "Directions", icon: <ScrollText className="h-4 w-4" /> },
+    { id: "howItWorks", label: "How it Works", icon: <Pill className="h-4 w-4" /> },
+    { id: "quickTips", label: "Quick Tips", icon: <ArrowRight className="h-4 w-4" /> },
+    { id: "faqs", label: "FAQs", icon: <CircleHelp className="h-4 w-4" /> },
+  ];
+
   return (
-    <div className="flex overflow-x-auto gap-2 pb-2 mb-4 scrollbar-none">
-      <button
-        className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium ${
-          activeTab === "description"
-            ? "bg-zepmeds-purple text-white"
-            : "bg-gray-800 text-gray-400"
-        }`}
-        onClick={() => setActiveTab("description")}
-      >
-        Description
-      </button>
-      <button
-        className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium ${
-          activeTab === "directions"
-            ? "bg-zepmeds-purple text-white"
-            : "bg-gray-800 text-gray-400"
-        }`}
-        onClick={() => setActiveTab("directions")}
-      >
-        Directions
-      </button>
-      <button
-        className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium ${
-          activeTab === "howItWorks"
-            ? "bg-zepmeds-purple text-white"
-            : "bg-gray-800 text-gray-400"
-        }`}
-        onClick={() => setActiveTab("howItWorks")}
-      >
-        How it Works
-      </button>
-      <button
-        className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium ${
-          activeTab === "quickTips"
-            ? "bg-zepmeds-purple text-white"
-            : "bg-gray-800 text-gray-400"
-        }`}
-        onClick={() => setActiveTab("quickTips")}
-      >
-        Quick Tips
-      </button>
-      <button
-        className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium ${
-          activeTab === "faqs"
-            ? "bg-zepmeds-purple text-white"
-            : "bg-gray-800 text-gray-400"
-        }`}
-        onClick={() => setActiveTab("faqs")}
-      >
-        FAQs
-      </button>
+    <div className="flex overflow-x-auto scrollbar-none -mx-5 px-5 pb-4">
+      <div className="flex space-x-2">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            className={`flex items-center rounded-full px-3 py-1.5 text-xs font-medium whitespace-nowrap ${
+              activeTab === tab.id
+                ? "bg-zepmeds-purple text-white"
+                : "bg-black/20 text-gray-400 hover:bg-black/40 hover:text-gray-300"
+            }`}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            <span className="mr-1.5">{tab.icon}</span>
+            {tab.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 };

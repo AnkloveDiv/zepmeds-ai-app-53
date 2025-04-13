@@ -9,8 +9,9 @@ import ProductGrid from '../components/medicine/ProductGrid';
 import FloatingCartButton from '../components/medicine/FloatingCartButton';
 import AddressWithWeather from '../components/medicine/AddressWithWeather';
 import WeatherAnimation from '../components/medicine/WeatherAnimation';
+import MedicineDetailModal from '../components/MedicineDetailModal';
 import { useNavigate } from 'react-router-dom';
-import { useTrendingProducts } from '../hooks/useTrendingProducts';
+import { useTrendingProducts, TrendingProduct } from '../hooks/useTrendingProducts';
 import { useBackNavigation } from '../hooks/useBackNavigation';
 import { fetchWeatherByCoordinates, WeatherData } from '../services/weatherService';
 import { allProducts } from '../data/medicineData';
@@ -24,7 +25,8 @@ const MedicineDelivery = () => {
   // Get trending products
   const [cartItemsCount, setCartItemsCount] = useState(0);
   const [activeCategory, setActiveCategory] = useState("All");
-  const { handleAddToCart, handleProductClick } = useTrendingProducts(setCartItemsCount);
+  const [selectedMedicine, setSelectedMedicine] = useState<TrendingProduct | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
   // Use the preloaded products from medicineData
   const [products, setProducts] = useState(allProducts);
@@ -102,6 +104,69 @@ const MedicineDelivery = () => {
     });
   };
 
+  // Handle product click
+  const handleProductClick = (product) => {
+    setSelectedMedicine(product);
+    setIsModalOpen(true);
+  };
+
+  // Handle add to cart
+  const handleAddToCart = (product, quantity = 1) => {
+    const existingCart = JSON.parse(localStorage.getItem("cart") || "[]");
+    
+    const existingItemIndex = existingCart.findIndex(item => item.id === product.id);
+    
+    if (existingItemIndex >= 0) {
+      existingCart[existingItemIndex].quantity += quantity;
+    } else {
+      existingCart.push({
+        ...product,
+        quantity: quantity,
+        stripQuantity: 1
+      });
+    }
+    
+    localStorage.setItem("cart", JSON.stringify(existingCart));
+    setCartItemsCount(existingCart.length);
+    
+    toast({
+      title: "Added to cart",
+      description: `${product.name} has been added to your cart.`,
+      duration: 2000,
+    });
+  };
+
+  // Handle add to cart from modal
+  const handleModalAddToCart = (quantity, strips) => {
+    if (selectedMedicine) {
+      const existingCart = JSON.parse(localStorage.getItem("cart") || "[]");
+      
+      const existingItemIndex = existingCart.findIndex(item => item.id === selectedMedicine.id);
+      
+      if (existingItemIndex >= 0) {
+        existingCart[existingItemIndex].quantity += quantity;
+        existingCart[existingItemIndex].stripQuantity = strips;
+      } else {
+        existingCart.push({
+          ...selectedMedicine,
+          quantity: quantity,
+          stripQuantity: strips
+        });
+      }
+      
+      localStorage.setItem("cart", JSON.stringify(existingCart));
+      setCartItemsCount(existingCart.length);
+      
+      toast({
+        title: "Added to cart",
+        description: `${selectedMedicine.name} has been added to your cart.`,
+        duration: 2000,
+      });
+      
+      setIsModalOpen(false);
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-black relative">
       <WeatherAnimation type={weatherData.condition} />
@@ -164,6 +229,14 @@ const MedicineDelivery = () => {
           />
         </div>
       </div>
+
+      {/* Medicine Detail Modal */}
+      <MedicineDetailModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        medicine={selectedMedicine}
+        onAddToCart={handleModalAddToCart}
+      />
 
       {/* Floating Cart Button */}
       <FloatingCartButton itemsCount={cartItemsCount} onClick={handleCartClick} />
