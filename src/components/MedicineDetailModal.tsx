@@ -73,27 +73,28 @@ const MedicineDetailModal: React.FC<MedicineDetailModalProps> = ({
     <AnimatePresence>
       {isOpen && (
         <motion.div 
-          className="fixed inset-0 bg-black/80 z-50 px-4 py-3 overflow-hidden flex items-center justify-center"
-          onClick={onClose}
+          className="fixed inset-0 bg-black/80 z-50 overflow-y-auto flex items-center justify-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
         >
-          <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className="w-full h-full flex items-center justify-center"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <MedicineDetailContent 
-              medicine={medicine}
-              onClose={onClose}
-              onAddToCart={onAddToCart}
-            />
-          </motion.div>
+          <div className="min-h-screen py-10 px-4 flex items-center justify-center w-full" onClick={onClose}>
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.95 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="w-full max-w-md mx-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MedicineDetailContent 
+                medicine={medicine}
+                onClose={onClose}
+                onAddToCart={onAddToCart}
+              />
+            </motion.div>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>

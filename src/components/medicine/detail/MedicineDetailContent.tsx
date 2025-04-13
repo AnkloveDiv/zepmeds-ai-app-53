@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from "framer-motion";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Building, Calendar, Truck, ShieldCheck } from "lucide-react";
 import MedicineHeader from "./MedicineHeader";
 import TabSelector from "./TabSelector";
 import TabContent from "./TabContent";
@@ -87,7 +87,7 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
   useEffect(() => {
     const updateContentHeight = () => {
       const vh = window.innerHeight;
-      const maxHeight = vh * 0.6; // 60% of viewport height for content
+      const maxHeight = vh * 0.45; // 45% of viewport height for content
       setContentHeight(`${maxHeight}px`);
     };
 
@@ -123,63 +123,91 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
 
   return (
     <motion.div
-      className="bg-[#1a1a2e] border border-gray-800 rounded-xl w-full max-w-md mx-auto overflow-hidden"
+      className="bg-[#1a1a2e] border border-gray-800 rounded-xl w-full max-w-md mx-auto overflow-hidden shadow-xl"
       onClick={(e) => e.stopPropagation()}
-      style={{ maxHeight: '90vh' }}
     >
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col max-h-[90vh]">
         <MedicineHeader 
           medicine={medicine} 
           discount={discount} 
           onClose={onClose} 
         />
         
-        <div className="px-4 sm:px-5 pt-0 pb-4 flex-1 overflow-auto">
-          {!inStock && (
-            <div className="mb-4 bg-red-900/30 border border-red-800 rounded-md p-3 flex items-center">
-              <AlertTriangle className="h-5 w-5 text-red-400 mr-2 flex-shrink-0" />
-              <p className="text-red-200 text-sm font-medium">Not in stock right now, we will notify you</p>
+        {/* Additional Medicine Info */}
+        <div className="px-4 py-3 bg-gray-900/60 grid grid-cols-2 gap-3">
+          {medicine.manufacturer && (
+            <div className="flex items-center text-xs text-gray-300">
+              <Building className="h-3.5 w-3.5 text-blue-400 mr-1.5" />
+              <span>{medicine.manufacturer}</span>
             </div>
           )}
           
-          <TabSelector 
-            activeTab={activeTab} 
-            setActiveTab={setActiveTab} 
-          />
+          {medicine.expiryDate && (
+            <div className="flex items-center text-xs text-gray-300">
+              <Calendar className="h-3.5 w-3.5 text-orange-400 mr-1.5" />
+              <span>{medicine.expiryDate}</span>
+            </div>
+          )}
           
-          <div 
-            className="border border-gray-800 rounded-lg p-4 mb-6 bg-black/30 overflow-y-auto" 
-            style={{ maxHeight: contentHeight }}
-          >
-            <TabContent 
-              activeTab={activeTab} 
-              medicine={medicine} 
-            />
+          <div className="flex items-center text-xs text-gray-300">
+            <Truck className="h-3.5 w-3.5 text-green-400 mr-1.5" />
+            <span>Free Delivery</span>
           </div>
           
-          <div className="border-t border-gray-700 my-5"></div>
-          
-          <QuantitySelector 
-            quantity={quantity}
-            setQuantity={setQuantity}
-            strips={strips}
-            setStrips={setStrips}
-            isLiquid={isLiquid}
-            isDevice={isDevice}
-            handleDecrement={handleDecrement}
-            handleIncrement={handleIncrement}
-            disabled={!inStock}
-            medicineType={medicineType}
-            unitsPerStrip={unitsPerStrip}
-            totalQuantity={totalUnits}
-          />
-          
-          <ActionButtons 
-            onClose={onClose} 
-            handleAddToCart={handleAddToCart}
-            disabled={!inStock}
-            inStock={inStock}
-          />
+          <div className="flex items-center text-xs text-gray-300">
+            <ShieldCheck className="h-3.5 w-3.5 text-purple-400 mr-1.5" />
+            <span>100% Genuine</span>
+          </div>
+        </div>
+        
+        <div className="flex-1 overflow-auto">
+          <div className="px-4 sm:px-5 pt-4 pb-4">
+            {!inStock && (
+              <div className="mb-4 bg-red-900/30 border border-red-800 rounded-md p-3 flex items-center">
+                <AlertTriangle className="h-5 w-5 text-red-400 mr-2 flex-shrink-0" />
+                <p className="text-red-200 text-sm font-medium">Not in stock right now, we will notify you</p>
+              </div>
+            )}
+            
+            <TabSelector 
+              activeTab={activeTab} 
+              setActiveTab={setActiveTab} 
+            />
+            
+            <div 
+              className="border border-gray-800 rounded-lg p-4 mb-6 bg-black/30 overflow-y-auto" 
+              style={{ maxHeight: contentHeight }}
+            >
+              <TabContent 
+                activeTab={activeTab} 
+                medicine={medicine} 
+              />
+            </div>
+            
+            <div className="border-t border-gray-700 my-5"></div>
+            
+            <QuantitySelector 
+              quantity={quantity}
+              setQuantity={setQuantity}
+              strips={strips}
+              setStrips={setStrips}
+              isLiquid={isLiquid}
+              isDevice={isDevice}
+              handleDecrement={handleDecrement}
+              handleIncrement={handleIncrement}
+              disabled={!inStock}
+              medicineType={medicineType}
+              unitsPerStrip={unitsPerStrip}
+              totalQuantity={totalUnits}
+            />
+            
+            <ActionButtons 
+              onClose={onClose} 
+              handleAddToCart={handleAddToCart}
+              disabled={!inStock}
+              inStock={inStock}
+            />
+          </div>
         </div>
       </div>
     </motion.div>

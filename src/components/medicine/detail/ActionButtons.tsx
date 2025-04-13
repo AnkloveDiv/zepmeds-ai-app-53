@@ -16,7 +16,7 @@ const ActionButtons = ({
   inStock = true
 }: ActionButtonsProps) => {
   return (
-    <div className="flex gap-3">
+    <div className="flex gap-3 mt-4">
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
