@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -43,6 +42,7 @@ const AddressSelection = () => {
   });
   const [mapplsReady, setMapplsReady] = useState(false);
   const [currentCoordinates, setCurrentCoordinates] = useState<{lat: number, lng: number} | null>(null);
+  const [locationRetryCount, setLocationRetryCount] = useState(0);
 
   useEffect(() => {
     const setupMap = async () => {
@@ -52,7 +52,6 @@ const AddressSelection = () => {
     
     setupMap();
     
-    // Load saved addresses from localStorage
     const savedAddresses = localStorage.getItem("savedAddresses");
     if (savedAddresses) {
       try {
@@ -65,9 +64,8 @@ const AddressSelection = () => {
       setDefaultAddress();
     }
 
-    // Load user's current location
     loadUserCurrentLocation();
-  }, []);
+  }, [locationRetryCount]);
   
   const setDefaultAddress = () => {
     const defaultAddress: Address = {
@@ -87,11 +85,10 @@ const AddressSelection = () => {
     setUserCurrentLocation("Getting your location...");
     
     try {
-      // Try multiple times to get a good position
       let bestPosition = null;
       let bestAccuracy = Infinity;
       
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 5; i++) {
         try {
           console.log(`Attempting to get user location, try ${i+1}`);
           const position = await getCurrentPosition({ 
@@ -105,18 +102,24 @@ const AddressSelection = () => {
             bestAccuracy = position.coords.accuracy;
             console.log(`Got position with accuracy: ${bestAccuracy} meters`);
             
-            // If we got a good reading, stop trying
             if (bestAccuracy < 100) break;
           }
           
-          // Small delay between attempts
-          if (i < 2) await new Promise(r => setTimeout(r, 300));
+          if (i < 4) await new Promise(r => setTimeout(r, 300));
         } catch (e) {
           console.warn(`Attempt ${i+1} failed:`, e);
         }
       }
       
       if (!bestPosition) {
+        if (locationRetryCount < 1) {
+          toast({
+            title: "Location accuracy poor",
+            description: "Trying again to get your location...",
+          });
+          setLocationRetryCount(prev => prev + 1);
+          return;
+        }
         throw new Error("Could not get accurate position");
       }
       
@@ -135,8 +138,7 @@ const AddressSelection = () => {
         console.log("Current location address:", addressData.formatted_address);
       } catch (error) {
         console.error("Error getting address:", error);
-        const mockResult = mockGeocodeResponse(roundedLat, roundedLng);
-        setUserCurrentLocation(mockResult.formatted_address);
+        setUserCurrentLocation(`Location at ${roundedLat.toFixed(4)}, ${roundedLng.toFixed(4)}`);
       }
     } catch (error) {
       console.error("Error getting current location:", error);
@@ -179,21 +181,42 @@ const AddressSelection = () => {
     setProcessingAddress(true);
     
     try {
-      // If we already have coordinates, use them
       let roundedLat, roundedLng;
       
       if (currentCoordinates) {
         roundedLat = currentCoordinates.lat;
         roundedLng = currentCoordinates.lng;
       } else {
-        // Try to get a fresh position with good accuracy
-        const position = await getCurrentPosition({ 
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
-        });
+        let bestPosition = null;
+        let bestAccuracy = Infinity;
         
-        const { latitude, longitude } = position.coords;
+        for (let i = 0; i < 3; i++) {
+          try {
+            console.log(`Getting current location for use, attempt ${i+1}`);
+            const position = await getCurrentPosition({ 
+              enableHighAccuracy: true,
+              timeout: 5000,
+              maximumAge: 0
+            });
+            
+            if (position.coords.accuracy < bestAccuracy) {
+              bestPosition = position;
+              bestAccuracy = position.coords.accuracy;
+              
+              if (bestAccuracy < 100) break;
+            }
+            
+            await new Promise(r => setTimeout(r, 300));
+          } catch (e) {
+            console.warn(`Attempt ${i+1} failed:`, e);
+          }
+        }
+        
+        if (!bestPosition) {
+          throw new Error("Could not get accurate position for current location");
+        }
+        
+        const { latitude, longitude } = bestPosition.coords;
         roundedLat = parseFloat(latitude.toFixed(6));
         roundedLng = parseFloat(longitude.toFixed(6));
       }
@@ -205,8 +228,23 @@ const AddressSelection = () => {
         processAddressResults(result, roundedLat, roundedLng);
       } catch (error) {
         console.error("Error getting address:", error);
-        const mockResult = mockGeocodeResponse(roundedLat, roundedLng);
-        processAddressResults(mockResult, roundedLat, roundedLng);
+        const fallbackAddress = {
+          address_components: [
+            { long_name: "Unknown Location", short_name: "Unknown Location", types: ["route"] },
+            { long_name: "Unknown City", short_name: "Unknown City", types: ["locality"] },
+            { long_name: "Unknown State", short_name: "Unknown", types: ["administrative_area_level_1"] },
+            { long_name: "Unknown Country", short_name: "Unknown", types: ["country"] },
+            { long_name: "000000", short_name: "000000", types: ["postal_code"] }
+          ],
+          formatted_address: `Location at ${roundedLat.toFixed(6)}, ${roundedLng.toFixed(6)}`,
+          geometry: {
+            location: {
+              lat: () => roundedLat,
+              lng: () => roundedLng
+            }
+          }
+        };
+        processAddressResults(fallbackAddress, roundedLat, roundedLng);
       }
     } catch (error) {
       console.error("Error getting current location:", error);

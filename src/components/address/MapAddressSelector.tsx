@@ -6,7 +6,6 @@ import { Loader, MapPin, Navigation, Search, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { 
   initializeMap, 
-  mockGeocodeResponse, 
   getAddressFromCoordinates,
   searchAddressWithGeoapify,
   getCurrentPosition,
@@ -36,6 +35,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
   const [selectedAddress, setSelectedAddress] = useState<AddressDetails | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [usingMockData, setUsingMockData] = useState(false);
+  const [locationRetries, setLocationRetries] = useState(0);
   const { toast } = useToast();
   
   // For fallback map
@@ -89,19 +89,22 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       setLoadingAddress(true);
       
       try {
-        // Try up to 3 times to get an accurate position
+        // Try multiple times to get an accurate position
         let position;
         let attempt = 0;
         let bestAccuracy = Infinity;
         
-        while (attempt < 3 && bestAccuracy > 100) {
+        // Keep trying until we get a reasonably accurate position or run out of attempts
+        while (attempt < 5 && bestAccuracy > 100) {
           try {
             attempt++;
             console.log(`Getting location attempt ${attempt}`);
             
             // Use enhanced getCurrentPosition function with shorter timeout for retries
             const currentPosition = await getCurrentPosition({
-              timeout: attempt < 3 ? 5000 : 10000
+              timeout: attempt < 3 ? 5000 : 10000,
+              maximumAge: 0,
+              enableHighAccuracy: true
             });
             
             // Keep the most accurate position we've seen
@@ -109,20 +112,35 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
               position = currentPosition;
               bestAccuracy = currentPosition.coords.accuracy;
               console.log(`New best accuracy: ${bestAccuracy} meters`);
+              
+              if (bestAccuracy < 100) {
+                break; // Good enough accuracy, stop trying
+              }
             }
             
-            // If accuracy is good enough, stop trying
-            if (bestAccuracy < 100) break;
-            
             // Brief pause between attempts
-            await new Promise(r => setTimeout(r, 500));
+            if (attempt < 5) {
+              await new Promise(r => setTimeout(r, 200));
+            }
           } catch (err) {
             console.warn(`Attempt ${attempt} failed:`, err);
           }
         }
         
         if (!position) {
-          throw new Error("Could not get sufficiently accurate position after multiple attempts");
+          if (locationRetries < 1) {
+            // Try one more series of attempts
+            setLocationRetries(prev => prev + 1);
+            toast({
+              title: "Location accuracy poor",
+              description: "Trying again to get a more accurate position...",
+            });
+            await new Promise(r => setTimeout(r, 500));
+            getUserLocation();
+            return;
+          } else {
+            throw new Error("Could not get sufficiently accurate position after multiple attempts");
+          }
         }
         
         if (!isMounted) return;
@@ -138,7 +156,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         setFallbackLongitude(roundedLng);
         
         if (!usingMockData && window.L) {
-          initializeLeafletMap(roundedLat, roundedLng);
+          initializeLeafletMap(roundedLat, roundedLng, accuracy);
         } else {
           // For fallback map
           setIsLoading(false);
@@ -155,12 +173,12 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         // Default to a location if geolocation fails
         toast({
           title: "Location access denied",
-          description: "Using default location. Please enable location access for better results.",
+          description: "Please enable location access for better results.",
           variant: "destructive",
         });
         
         if (!usingMockData && window.L) {
-          initializeLeafletMap(28.6139, 77.2090); // New Delhi coordinates as fallback
+          initializeLeafletMap(28.6139, 77.2090, 500); // New Delhi coordinates as fallback with 500m accuracy
         } else {
           setIsLoading(false);
           const addressResult = await getAddressFromCoordinates(28.6139, 77.2090);
@@ -185,9 +203,9 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         }
       }
     };
-  }, [toast, usingMockData]);
+  }, [toast, usingMockData, locationRetries]);
   
-  const initializeLeafletMap = async (lat: number, lng: number) => {
+  const initializeLeafletMap = async (lat: number, lng: number, accuracyInMeters: number = 100) => {
     if (!mapRef.current || !window.L) {
       setIsLoading(false);
       setUsingMockData(true);
@@ -204,21 +222,13 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       const leafletMap = window.L.map(mapRef.current, {
         attributionControl: false,  // Remove attribution control (watermark)
         zoomControl: true
-      }).setView([lat, lng], 17); // Increased zoom level for better precision
+      }).setView([lat, lng], 16); // Increased zoom level for better precision
       
       // Add OpenStreetMap tile layer without attribution
       window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '' // Empty attribution to remove watermark
       }).addTo(leafletMap);
-      
-      // Add our own minimalistic attribution that doesn't get in the way
-      const customAttribution = window.L.control.attribution({
-        position: 'bottomright',
-        prefix: false
-      });
-      customAttribution.addTo(leafletMap);
-      customAttribution.setPrefix('');
       
       setMap(leafletMap);
       
@@ -282,15 +292,26 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         });
         
         // Add accuracy circle for location
+        const radius = Math.min(accuracyInMeters, 1000); // Cap at 1000 meters for visibility
         const accuracyCircle = window.L.circle([lat, lng], {
-          radius: 50, // 50 meters accuracy indicator
+          radius: radius,
           color: 'blue',
           fillColor: '#3388ff',
-          fillOpacity: 0.2
+          fillOpacity: 0.2,
+          weight: 2
         }).addTo(leafletMap);
         
         // Store the accuracy circle for future reference
         leafletMap._accuracyCircle = accuracyCircle;
+        
+        // Set appropriate zoom level based on accuracy
+        if (radius > 500) {
+          leafletMap.setZoom(14); // Lower zoom for less accurate locations
+        } else if (radius > 200) {
+          leafletMap.setZoom(15);
+        } else {
+          leafletMap.setZoom(16); // Higher zoom for more accurate locations
+        }
       });
       
       // Handle map errors
@@ -367,11 +388,12 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       if (map && marker && !usingMockData) {
         console.log("Updating map and marker to:", lat, lng);
         marker.setLatLng([lat, lng]);
-        map.setView([lat, lng], 17); // Higher zoom level for better precision
+        map.setView([lat, lng], 16); // Higher zoom level for better precision
         
         // Update accuracy circle
         if (map._accuracyCircle) {
           map._accuracyCircle.setLatLng([lat, lng]);
+          map._accuracyCircle.setRadius(100); // Default 100m for searched locations
         }
       }
       
@@ -380,16 +402,9 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       console.error("Search error:", error);
       toast({
         title: "Search failed",
-        description: "Could not find the location. Using default location.",
+        description: "Could not find the location. Please try a different search term.",
         variant: "destructive",
       });
-      
-      // Use mock data when search fails
-      const lat = 28.6139;
-      const lng = 77.2090;
-      const mockResponse = mockGeocodeResponse(lat, lng);
-      handleGeocodeResult(mockResponse, lat, lng);
-    } finally {
       setLoadingAddress(false);
     }
   };
@@ -444,19 +459,29 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       if (map && marker && !usingMockData) {
         console.log("Updating map and marker to current location:", roundedLat, roundedLng);
         marker.setLatLng([roundedLat, roundedLng]);
-        map.setView([roundedLat, roundedLng], 17); // Higher zoom for better precision
+        map.setView([roundedLat, roundedLng], 16); // Higher zoom for better precision
         
         // Add or update accuracy circle - visual indicator of GPS accuracy
         if (map._accuracyCircle) {
           map._accuracyCircle.setLatLng([roundedLat, roundedLng]);
-          map._accuracyCircle.setRadius(Math.min(accuracy / 2, 200)); // Cap at 200m for visibility
+          map._accuracyCircle.setRadius(Math.min(accuracy, 1000)); // Cap at 1000m for visibility
         } else {
           map._accuracyCircle = window.L.circle([roundedLat, roundedLng], {
-            radius: Math.min(accuracy / 2, 200),
+            radius: Math.min(accuracy, 1000),
             color: 'blue',
             fillColor: '#3388ff',
-            fillOpacity: 0.2
+            fillOpacity: 0.2,
+            weight: 2
           }).addTo(map);
+        }
+        
+        // Set appropriate zoom level based on accuracy
+        if (accuracy > 500) {
+          map.setZoom(14); // Lower zoom for less accurate locations
+        } else if (accuracy > 200) {
+          map.setZoom(15);
+        } else {
+          map.setZoom(16); // Higher zoom for more accurate locations
         }
       }
       
@@ -466,10 +491,9 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       console.error("Error getting location:", error);
       toast({
         title: "Location error",
-        description: "Could not get your current location",
+        description: "Could not get your current location. Please check your location settings.",
         variant: "destructive",
       });
-    } finally {
       setLoadingAddress(false);
     }
   };

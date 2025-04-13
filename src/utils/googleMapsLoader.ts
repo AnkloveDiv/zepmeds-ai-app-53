@@ -164,7 +164,7 @@ export const getAddressFromCoordinates = async (lat: number, lng: number) => {
     
     // Using Geoapify Reverse Geocoding API with precise parameters
     const response = await fetch(
-      `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&apiKey=${GEOAPIFY_API_KEY}&format=json&lang=en&type=street&limit=1`
+      `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&apiKey=${GEOAPIFY_API_KEY}&format=json&lang=en&limit=1`
     );
     
     if (!response.ok) {
@@ -176,7 +176,7 @@ export const getAddressFromCoordinates = async (lat: number, lng: number) => {
     
     if (data.results && data.results.length > 0) {
       const result = data.results[0];
-      const properties = result.properties;
+      const properties = result;
       
       // Extract address components from result
       const address_components = [];
@@ -186,6 +186,18 @@ export const getAddressFromCoordinates = async (lat: number, lng: number) => {
         address_components.push({ 
           long_name: properties.street, 
           short_name: properties.street, 
+          types: ["route"] 
+        });
+      } else if (properties.name) {
+        address_components.push({ 
+          long_name: properties.name, 
+          short_name: properties.name, 
+          types: ["route"] 
+        });
+      } else {
+        address_components.push({ 
+          long_name: "Unnamed Road", 
+          short_name: "Unnamed Road", 
           types: ["route"] 
         });
       }
@@ -234,7 +246,7 @@ export const getAddressFromCoordinates = async (lat: number, lng: number) => {
       
       // Create formatted address from properties
       const formatted_address = properties.formatted || 
-        `${properties.street || ''}, ${properties.city || properties.county || ''}, ${properties.state || ''} ${properties.postcode || ''}`;
+        `${properties.street || properties.name || 'Unnamed Road'}, ${properties.city || properties.county || ''}, ${properties.state || ''} ${properties.postcode || ''}`;
       
       return {
         formatted_address,
@@ -248,11 +260,45 @@ export const getAddressFromCoordinates = async (lat: number, lng: number) => {
       };
     }
     
-    // Fallback to mock data if no results
-    return mockGeocodeResponse(lat, lng);
+    // Return error-resistant response based on the coordinates - avoid mockup
+    return {
+      address_components: [
+        { long_name: "Unknown Location", short_name: "Unknown Location", types: ["route"] },
+        { long_name: "Unknown City", short_name: "Unknown City", types: ["locality"] },
+        { long_name: "Unknown State", short_name: "Unknown", types: ["administrative_area_level_1"] },
+        { long_name: "Unknown Country", short_name: "Unknown", types: ["country"] },
+        { long_name: "000000", short_name: "000000", types: ["postal_code"] }
+      ],
+      formatted_address: `Unknown Location (${lat.toFixed(6)}, ${lng.toFixed(6)})`,
+      geometry: {
+        location: {
+          lat: () => lat,
+          lng: () => lng
+        }
+      },
+      place_id: "unknown"
+    };
   } catch (error) {
     console.error("Error getting address from Geoapify:", error);
-    return mockGeocodeResponse(lat, lng);
+    
+    // Return error-resistant response based on the coordinates - avoid mockup
+    return {
+      address_components: [
+        { long_name: "Unknown Location", short_name: "Unknown Location", types: ["route"] },
+        { long_name: "Unknown City", short_name: "Unknown City", types: ["locality"] },
+        { long_name: "Unknown State", short_name: "Unknown", types: ["administrative_area_level_1"] },
+        { long_name: "Unknown Country", short_name: "Unknown", types: ["country"] },
+        { long_name: "000000", short_name: "000000", types: ["postal_code"] }
+      ],
+      formatted_address: `Unknown Location (${lat.toFixed(6)}, ${lng.toFixed(6)})`,
+      geometry: {
+        location: {
+          lat: () => lat,
+          lng: () => lng
+        }
+      },
+      place_id: "unknown"
+    };
   }
 };
 
@@ -273,9 +319,8 @@ export const searchAddressWithGeoapify = async (searchQuery: string) => {
     
     if (data.results && data.results.length > 0) {
       const result = data.results[0];
-      const coordinates = [result.lon, result.lat];
-      const lng = coordinates[0];
-      const lat = coordinates[1];
+      const lat = result.lat;
+      const lng = result.lon;
       
       console.log("Found coordinates:", lat, lng);
       
@@ -289,19 +334,9 @@ export const searchAddressWithGeoapify = async (searchQuery: string) => {
       };
     }
     
-    // Return default location if no results
-    console.warn("No locations found, using default location");
-    return {
-      lat: 28.6139,
-      lng: 77.2090,
-      address: mockGeocodeResponse(28.6139, 77.2090)
-    };
+    throw new Error("No locations found");
   } catch (error) {
     console.error("Error searching with Geoapify:", error);
-    return {
-      lat: 28.6139,
-      lng: 77.2090,
-      address: mockGeocodeResponse(28.6139, 77.2090)
-    };
+    throw error;
   }
 };
