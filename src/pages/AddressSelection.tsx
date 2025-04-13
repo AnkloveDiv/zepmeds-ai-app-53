@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -9,7 +10,6 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import MapAddressSelector from "@/components/address/MapAddressSelector";
 import { 
   initializeMap, 
-  mockGeocodeResponse, 
   getAddressFromCoordinates,
   getCurrentPosition
 } from "@/utils/googleMapsLoader";

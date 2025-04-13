@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import SearchBar from '../components/SearchBar';
 import { Button } from "../components/ui/button";
@@ -16,7 +17,6 @@ import { fetchWeatherByCoordinates, WeatherData } from '../services/weatherServi
 import { allProducts } from '../data/medicineData';
 import { 
   initializeMap, 
-  mockGeocodeResponse, 
   getAddressFromCoordinates 
 } from '@/utils/googleMapsLoader';
 
