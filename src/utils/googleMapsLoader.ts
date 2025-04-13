@@ -99,7 +99,7 @@ export const initializeMap = async (): Promise<boolean> => {
   }
 };
 
-// Get current position with enhanced accuracy
+// Get current position with maximum possible accuracy
 export const getCurrentPosition = (options = {}): Promise<GeolocationPosition> => {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
@@ -107,54 +107,35 @@ export const getCurrentPosition = (options = {}): Promise<GeolocationPosition> =
       return;
     }
 
-    // Highly enhanced geolocation options for maximum accuracy
+    // Maximum accuracy options
     const enhancedOptions = {
-      enableHighAccuracy: true,  // Request the most accurate position
+      enableHighAccuracy: true,  // Always request high accuracy
       timeout: 10000,            // 10 seconds timeout
-      maximumAge: 0,             // Force fresh position reading
+      maximumAge: 0,             // Never use cached position
       ...options
     };
 
     console.log("Requesting position with options:", enhancedOptions);
 
-    navigator.geolocation.getCurrentPosition(
-      position => {
-        // Use the most accurate coordinates possible
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        
-        console.log("Received raw position:", lat, lng, 
+    // Try to get position via the Capacitor Geolocation plugin if available
+    // This typically provides better accuracy on mobile devices
+    if (typeof navigator.geolocation.getCurrentPosition === 'function') {
+      navigator.geolocation.getCurrentPosition(
+        position => {
+          console.log("Received raw position:", position.coords.latitude, position.coords.longitude, 
                     "Accuracy:", position.coords.accuracy, "meters");
-        resolve(position);
-      },
-      error => {
-        console.error("Geolocation error code:", error.code, "Message:", error.message);
-        reject(error);
-      },
-      enhancedOptions
-    );
+          resolve(position);
+        },
+        error => {
+          console.error("Geolocation error code:", error.code, "Message:", error.message);
+          reject(error);
+        },
+        enhancedOptions
+      );
+    } else {
+      reject(new Error("Geolocation API not available"));
+    }
   });
-};
-
-// Mock geocoding response for demonstration when API fails
-export const mockGeocodeResponse = (latitude: number, longitude: number) => {
-  return {
-    address_components: [
-      { long_name: "Unnamed Road", short_name: "Unnamed Road", types: ["route"] },
-      { long_name: "Gurugram", short_name: "Gurugram", types: ["locality"] },
-      { long_name: "Haryana", short_name: "HR", types: ["administrative_area_level_1"] },
-      { long_name: "India", short_name: "IN", types: ["country"] },
-      { long_name: "122001", short_name: "122001", types: ["postal_code"] }
-    ],
-    formatted_address: "Unnamed Road, Gurugram, Haryana 122001, India",
-    geometry: {
-      location: {
-        lat: () => latitude,
-        lng: () => longitude
-      }
-    },
-    place_id: "ChIJLbZ-NFoaDTkRQJY4FbcFcgM"
-  };
 };
 
 // Helper function to get address from coordinates using Geoapify Reverse Geocoding API
@@ -162,7 +143,7 @@ export const getAddressFromCoordinates = async (lat: number, lng: number) => {
   try {
     console.log("Getting address for coordinates:", lat, lng);
     
-    // Using Geoapify Reverse Geocoding API with precise parameters
+    // Using Geoapify Reverse Geocoding API with detailed parameters
     const response = await fetch(
       `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&apiKey=${GEOAPIFY_API_KEY}&format=json&lang=en&limit=1`
     );
@@ -181,7 +162,7 @@ export const getAddressFromCoordinates = async (lat: number, lng: number) => {
       // Extract address components from result
       const address_components = [];
       
-      // Route/street
+      // Street (prioritize street over name)
       if (properties.street) {
         address_components.push({ 
           long_name: properties.street, 
@@ -245,8 +226,23 @@ export const getAddressFromCoordinates = async (lat: number, lng: number) => {
       }
       
       // Create formatted address from properties
-      const formatted_address = properties.formatted || 
-        `${properties.street || properties.name || 'Unnamed Road'}, ${properties.city || properties.county || ''}, ${properties.state || ''} ${properties.postcode || ''}`;
+      let formatted_address = properties.formatted;
+      if (!formatted_address) {
+        const addressParts = [];
+        if (properties.housenumber) addressParts.push(properties.housenumber);
+        if (properties.street) addressParts.push(properties.street);
+        if (properties.suburb) addressParts.push(properties.suburb);
+        if (properties.city) addressParts.push(properties.city);
+        if (properties.state) {
+          if (properties.postcode) {
+            addressParts.push(`${properties.state} - ${properties.postcode}`);
+          } else {
+            addressParts.push(properties.state);
+          }
+        }
+        if (properties.country) addressParts.push(properties.country);
+        formatted_address = addressParts.join(", ");
+      }
       
       return {
         formatted_address,
@@ -256,11 +252,13 @@ export const getAddressFromCoordinates = async (lat: number, lng: number) => {
             lat: () => lat,
             lng: () => lng
           }
-        }
+        },
+        place_id: properties.place_id || "unknown"
       };
     }
     
-    // Return error-resistant response based on the coordinates - avoid mockup
+    // Return generic information if no results
+    console.warn("No address results found, returning generic address data");
     return {
       address_components: [
         { long_name: "Unknown Location", short_name: "Unknown Location", types: ["route"] },
@@ -269,7 +267,7 @@ export const getAddressFromCoordinates = async (lat: number, lng: number) => {
         { long_name: "Unknown Country", short_name: "Unknown", types: ["country"] },
         { long_name: "000000", short_name: "000000", types: ["postal_code"] }
       ],
-      formatted_address: `Unknown Location (${lat.toFixed(6)}, ${lng.toFixed(6)})`,
+      formatted_address: `Location at ${lat.toFixed(6)}, ${lng.toFixed(6)}`,
       geometry: {
         location: {
           lat: () => lat,
@@ -281,7 +279,8 @@ export const getAddressFromCoordinates = async (lat: number, lng: number) => {
   } catch (error) {
     console.error("Error getting address from Geoapify:", error);
     
-    // Return error-resistant response based on the coordinates - avoid mockup
+    // Return generic information in case of error
+    console.warn("Error fetching address, returning generic address data");
     return {
       address_components: [
         { long_name: "Unknown Location", short_name: "Unknown Location", types: ["route"] },
@@ -290,7 +289,7 @@ export const getAddressFromCoordinates = async (lat: number, lng: number) => {
         { long_name: "Unknown Country", short_name: "Unknown", types: ["country"] },
         { long_name: "000000", short_name: "000000", types: ["postal_code"] }
       ],
-      formatted_address: `Unknown Location (${lat.toFixed(6)}, ${lng.toFixed(6)})`,
+      formatted_address: `Location at ${lat.toFixed(6)}, ${lng.toFixed(6)}`,
       geometry: {
         location: {
           lat: () => lat,

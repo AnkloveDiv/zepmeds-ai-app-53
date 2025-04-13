@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { initializeMap } from "@/utils/googleMapsLoader";
@@ -31,12 +30,14 @@ const DeliveryMap = ({ showRider = true, orderId }: DeliveryMapProps) => {
       
       if (mapRef.current && window.L) {
         try {
-          // Create Leaflet map
-          const leafletMap = window.L.map(mapRef.current).setView([initialRiderCoords.lat, initialRiderCoords.lng], 14);
+          // Create Leaflet map with attribution control disabled
+          const leafletMap = window.L.map(mapRef.current, {
+            attributionControl: false // Disable attribution control (removes watermark)
+          }).setView([initialRiderCoords.lat, initialRiderCoords.lng], 14);
           
-          // Add OpenStreetMap tile layer
+          // Add OpenStreetMap tile layer with empty attribution
           window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
+            attribution: '', // Empty string removes watermark
             maxZoom: 19
           }).addTo(leafletMap);
           
