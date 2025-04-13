@@ -1,6 +1,7 @@
 
 import { useState, useCallback } from 'react';
-import { getCurrentPosition, reverseGeocode } from '@/utils/googleMapsLoader';
+import { getCurrentPosition, reverseGeocode, setMapMarker } from '@/utils/openLayersLoader';
+import { Map } from 'ol';
 import { toast } from 'sonner';
 
 export interface Location {
@@ -9,25 +10,21 @@ export interface Location {
 }
 
 export const useMapLocation = (
-  map: google.maps.Map | null,
-  marker: google.maps.Marker | null,
+  map: Map | null,
   setError: (error: string | null) => void
 ) => {
   const [location, setLocation] = useState<Location | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
 
   const updateMapAndMarker = useCallback((newLocation: Location) => {
-    if (!map || !marker) return;
+    if (!map) return;
     
-    const latLng = new google.maps.LatLng(newLocation.lat, newLocation.lng);
-    map.setCenter(latLng);
-    map.setZoom(16);
-    marker.setPosition(latLng);
+    setMapMarker(newLocation);
     setLocation(newLocation);
-  }, [map, marker]);
+  }, [map]);
 
   const getMyLocation = useCallback(async () => {
-    if (!map || !marker) {
+    if (!map) {
       setError("Map is not ready yet. Please try again in a moment.");
       return;
     }
@@ -78,7 +75,7 @@ export const useMapLocation = (
     } finally {
       setIsGettingLocation(false);
     }
-  }, [map, marker, setError, updateMapAndMarker]);
+  }, [map, setError, updateMapAndMarker]);
 
   return {
     location,

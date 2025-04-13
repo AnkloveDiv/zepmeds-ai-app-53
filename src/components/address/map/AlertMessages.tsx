@@ -35,18 +35,6 @@ const AlertMessages: React.FC<AlertMessagesProps> = ({ error }) => {
           {error}
         </div>
       </div>
-      
-      {error.includes('API key') && (
-        <div className="mt-2 text-sm text-white/80">
-          <p>Note: For this demo app, you'll need to enable billing for the Google Maps API key.</p>
-          <a href="https://developers.google.com/maps/documentation/javascript/error-messages#billing-errors" 
-             target="_blank" 
-             rel="noopener noreferrer"
-             className="block mt-1 underline text-blue-300">
-            Learn how to fix this
-          </a>
-        </div>
-      )}
     </div>
   );
 };

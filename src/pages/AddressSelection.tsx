@@ -8,11 +8,10 @@ import Header from "@/components/Header";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import MapAddressSelector from "@/components/address/MapAddressSelector";
 import { 
-  loadGoogleMapsAPI, 
   getCurrentPosition,
   reverseGeocode as getAddressFromCoordinates,
   getMapLoadError
-} from "@/utils/googleMapsLoader";
+} from "@/utils/openLayersLoader";
 
 interface Address {
   id: string;
@@ -49,8 +48,6 @@ const AddressSelection = () => {
   useEffect(() => {
     const setupMap = async () => {
       try {
-        await loadGoogleMapsAPI();
-        
         const error = getMapLoadError();
         if (error) {
           setMapError(error);
@@ -60,8 +57,8 @@ const AddressSelection = () => {
         
         setMapplsReady(true);
       } catch (error) {
-        console.error("Error loading Google Maps API:", error);
-        setMapError("Google Maps API could not be loaded. Please check your internet connection and try again.");
+        console.error("Error initializing map:", error);
+        setMapError("Map could not be loaded. Please check your internet connection and try again.");
         setMapplsReady(false);
       }
     };
@@ -533,20 +530,9 @@ const AddressSelection = () => {
           <div className="mt-4 p-4 bg-red-900/30 border border-red-700/50 rounded-xl">
             <div className="flex items-center mb-2">
               <AlertTriangle className="h-5 w-5 text-red-400 mr-2" />
-              <h3 className="text-red-400 font-medium">Google Maps Error</h3>
+              <h3 className="text-red-400 font-medium">Map Error</h3>
             </div>
             <p className="text-sm text-gray-300">{mapError}</p>
-            <p className="text-xs text-gray-400 mt-2">
-              Note: For this demo app, you need to enable billing for the Google Maps API key.
-              <a 
-                href="https://developers.google.com/maps/documentation/javascript/error-messages#billing-errors" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="block mt-1 text-blue-400 underline"
-              >
-                Learn how to fix this
-              </a>
-            </p>
           </div>
         ) : null}
 

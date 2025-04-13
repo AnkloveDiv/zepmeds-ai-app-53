@@ -1,18 +1,26 @@
-
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { loadGoogleMapsAPI, getCurrentPosition, reverseGeocode, parseAddressComponents, getMapLoadError } from '@/utils/googleMapsLoader';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import AlertMessages from './map/AlertMessages';
 import MapOverlays from './map/MapOverlays';
 import AddressInfoDisplay from './map/AddressInfoDisplay';
 import SearchBar from './map/SearchBar';
-import { toast } from 'sonner';
 import { useMapLocation } from './map/useMapLocation';
 import { useAddressSearch } from './map/useAddressSearch';
+import { 
+  initializeMap, 
+  reverseGeocode, 
+  parseAddressComponents, 
+  getMapLoadError
+} from '@/utils/openLayersLoader';
+
+// Import OpenLayers CSS
+import 'ol/ol.css';
+import { Map } from 'ol';
 
 interface MapAddressSelectorProps {
   onAddressSelected?: (addressDetails: {
@@ -32,9 +40,9 @@ const MapAddressSelector: React.FC<MapAddressSelectorProps> = ({
 }) => {
   const navigate = useNavigate();
   const [isMapLoaded, setIsMapLoaded] = useState(false);
-  const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [marker, setMarker] = useState<google.maps.Marker | null>(null);
+  const [map, setMap] = useState<Map | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const mapRef = useRef<HTMLDivElement>(null);
 
   // Form state
   const [houseNumber, setHouseNumber] = useState('');
@@ -51,7 +59,7 @@ const MapAddressSelector: React.FC<MapAddressSelectorProps> = ({
     setLocation,
     isGettingLocation,
     getMyLocation 
-  } = useMapLocation(map, marker, setError);
+  } = useMapLocation(map, setError);
 
   const { 
     searchValue,
@@ -60,83 +68,59 @@ const MapAddressSelector: React.FC<MapAddressSelectorProps> = ({
     isSearching,
     handleSearch,
     handleSearchResultClick
-  } = useAddressSearch(map, marker, setLocation);
+  } = useAddressSearch(map, setLocation);
 
-  // Initialize Google Maps
+  // Initialize OpenLayers Map
   useEffect(() => {
-    const initMap = async () => {
-      try {
-        await loadGoogleMapsAPI();
-        
-        // Check if there's a map loading error from the utility
-        const mapError = getMapLoadError();
-        if (mapError) {
-          setError(mapError);
-          return;
-        }
-        
-        // Create the map
-        const mapElement = document.getElementById('map');
-        if (!mapElement) return;
-        
-        const mapOptions: google.maps.MapOptions = {
-          center: { lat: 20.5937, lng: 78.9629 }, // Default to India
-          zoom: 5,
-          mapTypeControl: false,
-          fullscreenControl: false,
-          streetViewControl: false,
-          zoomControl: true,
-        };
-        
-        const newMap = new google.maps.Map(mapElement, mapOptions);
-        
-        // Create the marker
-        const newMarker = new google.maps.Marker({
-          map: newMap,
-          draggable: true,
-          animation: google.maps.Animation.DROP,
-        });
-        
-        // Add event listeners
-        newMarker.addListener('dragend', async () => {
-          const position = newMarker.getPosition();
-          if (position) {
-            const lat = position.lat();
-            const lng = position.lng();
-            setLocation({ lat, lng });
-            
-            try {
-              const result = await reverseGeocode(lat, lng);
-              if (result && result.address_components) {
-                const addressData = parseAddressComponents(result.address_components);
-                
-                setHouseNumber(addressData.street_number);
-                setStreetName(addressData.route);
-                setArea(addressData.locality);
-                setCity(addressData.city);
-                setState(addressData.state);
-                setPincode(addressData.postal_code);
-              }
-            } catch (error) {
-              console.error("Error reverse geocoding:", error);
-              toast.error("Couldn't fetch address details. Please fill manually.");
-            }
-          }
-        });
-        
-        setMap(newMap);
-        setMarker(newMarker);
-        setIsMapLoaded(true);
-        
-        // Try to get user's current location
-        getMyLocation();
-      } catch (error) {
-        console.error("Error initializing map:", error);
-        setError("Failed to load Google Maps. Please check your internet connection or API key settings.");
-      }
-    };
+    if (!mapRef.current) return;
     
-    initMap();
+    try {
+      const newMap = initializeMap(mapRef.current);
+      
+      // Check if there's a map loading error
+      const mapError = getMapLoadError();
+      if (mapError) {
+        setError(mapError);
+        return;
+      }
+      
+      // Set up click handler to update location when map is clicked
+      newMap.on('click', (event) => {
+        const clickCoord = newMap.getEventCoordinate(event.originalEvent);
+        const lonLat = ol.proj.toLonLat(clickCoord);
+        const newLocation = { lng: lonLat[0], lat: lonLat[1] };
+        
+        setLocation(newLocation);
+        
+        // Get address information
+        reverseGeocode(newLocation.lat, newLocation.lng)
+          .then(result => {
+            if (result && result.address_components) {
+              const addressData = parseAddressComponents(result.address_components);
+              
+              setHouseNumber(addressData.street_number);
+              setStreetName(addressData.route);
+              setArea(addressData.locality);
+              setCity(addressData.city);
+              setState(addressData.state);
+              setPincode(addressData.postal_code);
+            }
+          })
+          .catch(error => {
+            console.error("Error reverse geocoding:", error);
+            toast.error("Couldn't fetch address details. Please fill manually.");
+          });
+      });
+      
+      setMap(newMap);
+      setIsMapLoaded(true);
+      
+      // Try to get user's current location
+      getMyLocation();
+    } catch (error) {
+      console.error("Error initializing map:", error);
+      setError("Failed to load map. Please check your internet connection.");
+    }
   }, []);
 
   // Update address fields when location changes
@@ -209,7 +193,7 @@ const MapAddressSelector: React.FC<MapAddressSelectorProps> = ({
       <div className="relative flex-shrink-0 w-full h-2/5 min-h-[200px]">
         {error && <AlertMessages error={error} />}
         
-        <div id="map" className="w-full h-full"></div>
+        <div ref={mapRef} className="w-full h-full"></div>
         
         <MapOverlays 
           isGettingLocation={isGettingLocation}
