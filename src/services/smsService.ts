@@ -31,6 +31,8 @@ export const verifyOTP = async (phoneNumber: string, otp: string): Promise<boole
     // Get the stored OTP from sessionStorage
     const storedOTP = sessionStorage.getItem(`otp_${phoneNumber}`);
     
+    console.log("Verifying OTP:", otp, "against stored OTP:", storedOTP);
+    
     // Check if OTP matches
     const isValid = storedOTP === otp;
     

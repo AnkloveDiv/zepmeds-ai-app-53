@@ -77,6 +77,7 @@ const PhoneVerification: React.FC = () => {
     setIsVerifying(true);
     
     try {
+      console.log("Verifying OTP:", values.otp, "for phone:", phoneNumber);
       // Verify OTP with the service
       const isValid = await verifyOTP(phoneNumber, values.otp);
       
@@ -192,7 +193,7 @@ const PhoneVerification: React.FC = () => {
                 <Button 
                   type="submit" 
                   className="w-full"
-                  disabled={isVerifying || isVerified || !form.getValues().otp || form.getValues().otp.length < 6}
+                  disabled={isVerifying || isVerified || form.getValues().otp?.length < 6}
                 >
                   {isVerifying ? "Verifying..." : "Verify"}
                 </Button>
