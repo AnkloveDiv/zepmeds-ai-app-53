@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -41,6 +42,7 @@ const AddressSelection = () => {
     isSelected: false
   });
   const [mapplsReady, setMapplsReady] = useState(false);
+  const [currentCoordinates, setCurrentCoordinates] = useState<{lat: number, lng: number} | null>(null);
 
   useEffect(() => {
     const setupMap = async () => {
@@ -50,38 +52,82 @@ const AddressSelection = () => {
     
     setupMap();
     
+    // Load saved addresses from localStorage
     const savedAddresses = localStorage.getItem("savedAddresses");
     if (savedAddresses) {
-      setAddresses(JSON.parse(savedAddresses));
+      try {
+        setAddresses(JSON.parse(savedAddresses));
+      } catch (e) {
+        console.error("Error parsing saved addresses:", e);
+        setDefaultAddress();
+      }
     } else {
-      const defaultAddress: Address = {
-        id: "home-1",
-        label: "Home",
-        address: "Gurugram, Haryana, 122001",
-        isSelected: true,
-        city: "Gurugram",
-        state: "Haryana",
-        zipCode: "122001"
-      };
-      setAddresses([defaultAddress]);
-      localStorage.setItem("savedAddresses", JSON.stringify([defaultAddress]));
+      setDefaultAddress();
     }
 
+    // Load user's current location
     loadUserCurrentLocation();
   }, []);
+  
+  const setDefaultAddress = () => {
+    const defaultAddress: Address = {
+      id: "home-1",
+      label: "Home",
+      address: "Gurugram, Haryana, 122001",
+      isSelected: true,
+      city: "Gurugram",
+      state: "Haryana",
+      zipCode: "122001"
+    };
+    setAddresses([defaultAddress]);
+    localStorage.setItem("savedAddresses", JSON.stringify([defaultAddress]));
+  };
 
   const loadUserCurrentLocation = async () => {
     setUserCurrentLocation("Getting your location...");
     
     try {
-      const position = await getCurrentPosition();
-      const { latitude, longitude } = position.coords;
+      // Try multiple times to get a good position
+      let bestPosition = null;
+      let bestAccuracy = Infinity;
+      
+      for (let i = 0; i < 3; i++) {
+        try {
+          console.log(`Attempting to get user location, try ${i+1}`);
+          const position = await getCurrentPosition({ 
+            timeout: 5000,
+            maximumAge: 0,
+            enableHighAccuracy: true 
+          });
+          
+          if (position.coords.accuracy < bestAccuracy) {
+            bestPosition = position;
+            bestAccuracy = position.coords.accuracy;
+            console.log(`Got position with accuracy: ${bestAccuracy} meters`);
+            
+            // If we got a good reading, stop trying
+            if (bestAccuracy < 100) break;
+          }
+          
+          // Small delay between attempts
+          if (i < 2) await new Promise(r => setTimeout(r, 300));
+        } catch (e) {
+          console.warn(`Attempt ${i+1} failed:`, e);
+        }
+      }
+      
+      if (!bestPosition) {
+        throw new Error("Could not get accurate position");
+      }
+      
+      const { latitude, longitude, accuracy } = bestPosition.coords;
       
       const roundedLat = parseFloat(latitude.toFixed(6));
       const roundedLng = parseFloat(longitude.toFixed(6));
       
+      setCurrentCoordinates({ lat: roundedLat, lng: roundedLng });
       console.log("Current location coordinates:", roundedLat, roundedLng);
-      console.log("Location accuracy:", position.coords.accuracy, "meters");
+      console.log("Location accuracy:", accuracy, "meters");
       
       try {
         const addressData = await getAddressFromCoordinates(roundedLat, roundedLng);
@@ -133,14 +179,26 @@ const AddressSelection = () => {
     setProcessingAddress(true);
     
     try {
-      const position = await getCurrentPosition();
-      const { latitude, longitude } = position.coords;
+      // If we already have coordinates, use them
+      let roundedLat, roundedLng;
       
-      const roundedLat = parseFloat(latitude.toFixed(6));
-      const roundedLng = parseFloat(longitude.toFixed(6));
+      if (currentCoordinates) {
+        roundedLat = currentCoordinates.lat;
+        roundedLng = currentCoordinates.lng;
+      } else {
+        // Try to get a fresh position with good accuracy
+        const position = await getCurrentPosition({ 
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        });
+        
+        const { latitude, longitude } = position.coords;
+        roundedLat = parseFloat(latitude.toFixed(6));
+        roundedLng = parseFloat(longitude.toFixed(6));
+      }
       
       console.log("Using current location:", roundedLat, roundedLng);
-      console.log("Location accuracy:", position.coords.accuracy, "meters");
       
       try {
         const result = await getAddressFromCoordinates(roundedLat, roundedLng);

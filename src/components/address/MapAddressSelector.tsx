@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -90,13 +89,46 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       setLoadingAddress(true);
       
       try {
-        // Use enhanced getCurrentPosition function
-        const position = await getCurrentPosition();
+        // Try up to 3 times to get an accurate position
+        let position;
+        let attempt = 0;
+        let bestAccuracy = Infinity;
+        
+        while (attempt < 3 && bestAccuracy > 100) {
+          try {
+            attempt++;
+            console.log(`Getting location attempt ${attempt}`);
+            
+            // Use enhanced getCurrentPosition function with shorter timeout for retries
+            const currentPosition = await getCurrentPosition({
+              timeout: attempt < 3 ? 5000 : 10000
+            });
+            
+            // Keep the most accurate position we've seen
+            if (currentPosition.coords.accuracy < bestAccuracy) {
+              position = currentPosition;
+              bestAccuracy = currentPosition.coords.accuracy;
+              console.log(`New best accuracy: ${bestAccuracy} meters`);
+            }
+            
+            // If accuracy is good enough, stop trying
+            if (bestAccuracy < 100) break;
+            
+            // Brief pause between attempts
+            await new Promise(r => setTimeout(r, 500));
+          } catch (err) {
+            console.warn(`Attempt ${attempt} failed:`, err);
+          }
+        }
+        
+        if (!position) {
+          throw new Error("Could not get sufficiently accurate position after multiple attempts");
+        }
         
         if (!isMounted) return;
         
-        const { latitude, longitude } = position.coords;
-        console.log("Got user location with accuracy:", position.coords.accuracy, "meters");
+        const { latitude, longitude, accuracy } = position.coords;
+        console.log(`Final position selected with accuracy: ${accuracy} meters`);
         
         // Round to 6 decimal places for better precision
         const roundedLat = parseFloat(latitude.toFixed(6));
@@ -169,13 +201,24 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       console.log("Initializing Leaflet map with coordinates:", lat, lng);
       
       // Initialize Leaflet map
-      const leafletMap = window.L.map(mapRef.current).setView([lat, lng], 17); // Increased zoom level for better precision
+      const leafletMap = window.L.map(mapRef.current, {
+        attributionControl: false,  // Remove attribution control (watermark)
+        zoomControl: true
+      }).setView([lat, lng], 17); // Increased zoom level for better precision
       
-      // Add OpenStreetMap tile layer
+      // Add OpenStreetMap tile layer without attribution
       window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19
+        maxZoom: 19,
+        attribution: '' // Empty attribution to remove watermark
       }).addTo(leafletMap);
+      
+      // Add our own minimalistic attribution that doesn't get in the way
+      const customAttribution = window.L.control.attribution({
+        position: 'bottomright',
+        prefix: false
+      });
+      customAttribution.addTo(leafletMap);
+      customAttribution.setPrefix('');
       
       setMap(leafletMap);
       
@@ -187,9 +230,9 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         // Create custom icon with better visibility
         const customIcon = window.L.icon({
           iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-          iconSize: [25, 41],
-          iconAnchor: [12, 41],
-          popupAnchor: [1, -34],
+          iconSize: [30, 45],  // Larger size for better visibility
+          iconAnchor: [15, 45], // Center bottom of icon is anchor point
+          popupAnchor: [0, -45],
           shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
           shadowSize: [41, 41],
           shadowAnchor: [12, 41]
@@ -239,12 +282,15 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         });
         
         // Add accuracy circle for location
-        window.L.circle([lat, lng], {
+        const accuracyCircle = window.L.circle([lat, lng], {
           radius: 50, // 50 meters accuracy indicator
           color: 'blue',
           fillColor: '#3388ff',
           fillOpacity: 0.2
         }).addTo(leafletMap);
+        
+        // Store the accuracy circle for future reference
+        leafletMap._accuracyCircle = accuracyCircle;
       });
       
       // Handle map errors
@@ -322,6 +368,11 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         console.log("Updating map and marker to:", lat, lng);
         marker.setLatLng([lat, lng]);
         map.setView([lat, lng], 17); // Higher zoom level for better precision
+        
+        // Update accuracy circle
+        if (map._accuracyCircle) {
+          map._accuracyCircle.setLatLng([lat, lng]);
+        }
       }
       
       handleGeocodeResult(address, lat, lng);
@@ -347,9 +398,40 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     setLoadingAddress(true);
     
     try {
-      const position = await getCurrentPosition();
-      const { latitude, longitude } = position.coords;
-      console.log("Current location:", latitude, longitude, "Accuracy:", position.coords.accuracy);
+      // Try multiple times to get a good position
+      let bestPosition = null;
+      let bestAccuracy = Infinity;
+      
+      for (let i = 0; i < 3; i++) {
+        try {
+          const position = await getCurrentPosition({ 
+            timeout: 5000, 
+            maximumAge: 0,
+            enableHighAccuracy: true 
+          });
+          
+          if (position.coords.accuracy < bestAccuracy) {
+            bestPosition = position;
+            bestAccuracy = position.coords.accuracy;
+            console.log(`Current location attempt ${i+1}, accuracy: ${bestAccuracy} meters`);
+            
+            // If we got a good accuracy, don't need more attempts
+            if (bestAccuracy < 100) break;
+          }
+          
+          // Small delay between attempts
+          await new Promise(r => setTimeout(r, 300));
+        } catch (e) {
+          console.warn(`Attempt ${i+1} to get location failed:`, e);
+        }
+      }
+      
+      if (!bestPosition) {
+        throw new Error("Could not get accurate position after multiple attempts");
+      }
+      
+      const { latitude, longitude, accuracy } = bestPosition.coords;
+      console.log("Current location:", latitude, longitude, "Accuracy:", accuracy);
       
       // Round to 6 decimal places for better precision
       const roundedLat = parseFloat(latitude.toFixed(6));
@@ -364,12 +446,13 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         marker.setLatLng([roundedLat, roundedLng]);
         map.setView([roundedLat, roundedLng], 17); // Higher zoom for better precision
         
-        // Add or update accuracy circle
+        // Add or update accuracy circle - visual indicator of GPS accuracy
         if (map._accuracyCircle) {
           map._accuracyCircle.setLatLng([roundedLat, roundedLng]);
+          map._accuracyCircle.setRadius(Math.min(accuracy / 2, 200)); // Cap at 200m for visibility
         } else {
           map._accuracyCircle = window.L.circle([roundedLat, roundedLng], {
-            radius: position.coords.accuracy / 2, // Visual indicator of accuracy
+            radius: Math.min(accuracy / 2, 200),
             color: 'blue',
             fillColor: '#3388ff',
             fillOpacity: 0.2

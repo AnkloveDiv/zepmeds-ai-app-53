@@ -107,22 +107,28 @@ export const getCurrentPosition = (options = {}): Promise<GeolocationPosition> =
       return;
     }
 
-    // Enhanced geolocation options with maximumAge reduced and timeout increased
+    // Highly enhanced geolocation options for maximum accuracy
     const enhancedOptions = {
-      enableHighAccuracy: true,
-      timeout: 15000,         // Increased timeout to allow more time for accurate position
-      maximumAge: 0,          // Always get fresh position
+      enableHighAccuracy: true,  // Request the most accurate position
+      timeout: 10000,            // 10 seconds timeout
+      maximumAge: 0,             // Force fresh position reading
       ...options
     };
 
+    console.log("Requesting position with options:", enhancedOptions);
+
     navigator.geolocation.getCurrentPosition(
       position => {
-        console.log("Got precise location:", position.coords.latitude, position.coords.longitude, 
+        // Use the most accurate coordinates possible
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        
+        console.log("Received raw position:", lat, lng, 
                     "Accuracy:", position.coords.accuracy, "meters");
         resolve(position);
       },
       error => {
-        console.error("Error getting precise location:", error.message, "Code:", error.code);
+        console.error("Geolocation error code:", error.code, "Message:", error.message);
         reject(error);
       },
       enhancedOptions
@@ -155,7 +161,8 @@ export const mockGeocodeResponse = (latitude: number, longitude: number) => {
 export const getAddressFromCoordinates = async (lat: number, lng: number) => {
   try {
     console.log("Getting address for coordinates:", lat, lng);
-    // Using Geoapify Reverse Geocoding API with improved precision parameters
+    
+    // Using Geoapify Reverse Geocoding API with precise parameters
     const response = await fetch(
       `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&apiKey=${GEOAPIFY_API_KEY}&format=json&lang=en&type=street&limit=1`
     );
@@ -167,8 +174,8 @@ export const getAddressFromCoordinates = async (lat: number, lng: number) => {
     const data = await response.json();
     console.log("Geoapify reverse geocoding response:", data);
     
-    if (data.features && data.features.length > 0) {
-      const result = data.features[0];
+    if (data.results && data.results.length > 0) {
+      const result = data.results[0];
       const properties = result.properties;
       
       // Extract address components from result
@@ -183,11 +190,17 @@ export const getAddressFromCoordinates = async (lat: number, lng: number) => {
         });
       }
       
-      // City/locality
+      // City/locality - prioritize city over county
       if (properties.city) {
         address_components.push({
           long_name: properties.city,
           short_name: properties.city,
+          types: ["locality"]
+        });
+      } else if (properties.county) {
+        address_components.push({
+          long_name: properties.county,
+          short_name: properties.county,
           types: ["locality"]
         });
       }
@@ -219,9 +232,9 @@ export const getAddressFromCoordinates = async (lat: number, lng: number) => {
         });
       }
       
-      // Create formatted address
+      // Create formatted address from properties
       const formatted_address = properties.formatted || 
-        `${properties.street || ''}, ${properties.city || ''}, ${properties.state || ''} ${properties.postcode || ''}`;
+        `${properties.street || ''}, ${properties.city || properties.county || ''}, ${properties.state || ''} ${properties.postcode || ''}`;
       
       return {
         formatted_address,
@@ -258,9 +271,9 @@ export const searchAddressWithGeoapify = async (searchQuery: string) => {
     const data = await response.json();
     console.log("Geoapify geocoding response:", data);
     
-    if (data.features && data.features.length > 0) {
-      const result = data.features[0];
-      const coordinates = result.geometry.coordinates;
+    if (data.results && data.results.length > 0) {
+      const result = data.results[0];
+      const coordinates = [result.lon, result.lat];
       const lng = coordinates[0];
       const lat = coordinates[1];
       
