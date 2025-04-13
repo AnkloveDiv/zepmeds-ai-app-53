@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import SearchBar from "@/components/SearchBar";
+import SearchBar from "@/components/search/SearchBar";
 import EnhancedProductGrid from "@/components/medicine/EnhancedProductGrid";
 import CategoriesNav from "@/components/medicine/CategoriesNav";
 import DealBanners from "@/components/medicine/DealBanners";
