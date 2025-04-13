@@ -13,17 +13,17 @@ declare global {
 // Flag to track if Map API is already being loaded
 let isLoadingMapApi = false;
 
-// Google Maps API key
+// Go Maps API key
 export const GOOGLE_MAPS_API_KEY = "AlzaSyRIm6NDqRiYpX5qvgYaAfNDfcDOvtYqTxH";
 
 /**
- * Utility function to load the Google Maps API
+ * Utility function to load the Go Maps API
  */
 export const loadMapApis = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     // Check if the APIs are already loaded
     if (window.google && window.google.maps) {
-      console.log("Google Maps already loaded");
+      console.log("Go Maps already loaded");
       window.mapInitialized = true;
       resolve();
       return;
@@ -31,7 +31,7 @@ export const loadMapApis = (): Promise<void> => {
 
     // Check if API is already being loaded
     if (isLoadingMapApi) {
-      console.log("Google Maps API is already being loaded");
+      console.log("Go Maps API is already being loaded");
       // Wait for the initialization callback
       const checkInterval = setInterval(() => {
         if (window.mapInitialized) {
@@ -45,40 +45,40 @@ export const loadMapApis = (): Promise<void> => {
     isLoadingMapApi = true;
     window.mapInitialized = false;
 
-    // Setup callback for when Google Maps API is loaded
+    // Setup callback for when Go Maps API is loaded
     window.initMapCallback = () => {
-      console.log("Google Maps API loaded successfully");
+      console.log("Go Maps API loaded successfully");
       window.mapInitialized = true;
       isLoadingMapApi = false;
       resolve();
     };
     
-    // Create script element for Google Maps
-    const googleMapsScript = document.createElement("script");
-    googleMapsScript.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places&callback=initMapCallback`;
-    googleMapsScript.async = true;
-    googleMapsScript.defer = true;
+    // Create script element for Go Maps
+    const goMapsScript = document.createElement("script");
+    goMapsScript.src = `https://maps.gomaps.pro/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places&callback=initMapCallback`;
+    goMapsScript.async = true;
+    goMapsScript.defer = true;
     
     // Handle loading errors
-    googleMapsScript.onerror = () => {
-      console.error("Error loading Google Maps API");
+    goMapsScript.onerror = () => {
+      console.error("Error loading Go Maps API");
       isLoadingMapApi = false;
-      reject(new Error("Failed to load Google Maps API"));
+      reject(new Error("Failed to load Go Maps API"));
     };
     
-    // Start loading Google Maps
-    document.head.appendChild(googleMapsScript);
+    // Start loading Go Maps
+    document.head.appendChild(goMapsScript);
   });
 };
 
 // Function to initialize map libraries and handle errors gracefully
 export const initializeMap = async (): Promise<boolean> => {
   try {
-    console.log("Initializing Google Maps API");
+    console.log("Initializing Go Maps API");
     await loadMapApis();
     return true;
   } catch (error) {
-    console.error("Failed to initialize Google Maps API:", error);
+    console.error("Failed to initialize Go Maps API:", error);
     return false;
   }
 };

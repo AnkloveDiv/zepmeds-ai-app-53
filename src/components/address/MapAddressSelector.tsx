@@ -198,7 +198,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     }
     
     try {
-      console.log("Initializing Google Map with coordinates:", lat, lng);
+      console.log("Initializing Go Map with coordinates:", lat, lng);
       
       const mapOptions: google.maps.MapOptions = {
         center: { lat, lng },
@@ -282,20 +282,10 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         });
       });
       
-      const handleSearchResults = (searchLat: number, searchLng: number) => {
-        if (marker && circle) {
-          const newPosition = new google.maps.LatLng(searchLat, searchLng);
-          marker.setPosition(newPosition);
-          circle.setCenter(newPosition);
-          googleMap.panTo(newPosition);
-          googleMap.setZoom(17);
-        }
-      };
-      
       const addressResult = await getAddressFromCoordinates(lat, lng);
       handleGeocodeResult(addressResult, lat, lng);
     } catch (error) {
-      console.error("Error creating Google map:", error);
+      console.error("Error creating Go map:", error);
       setIsLoading(false);
       setUsingMockData(true);
       toast({

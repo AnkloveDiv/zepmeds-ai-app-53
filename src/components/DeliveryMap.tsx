@@ -32,7 +32,7 @@ const DeliveryMap = ({ showRider = true, orderId }: DeliveryMapProps) => {
       
       if (mapRef.current && window.google && window.google.maps) {
         try {
-          // Create Google Map
+          // Create Go Map
           const googleMap = new google.maps.Map(mapRef.current, {
             center: initialRiderCoords,
             zoom: 14,
@@ -151,7 +151,7 @@ const DeliveryMap = ({ showRider = true, orderId }: DeliveryMapProps) => {
           renderFallbackMap();
         }
       } else {
-        console.error("Google Maps not available or map container not found");
+        console.error("Go Maps not available or map container not found");
         renderFallbackMap();
       }
     };
@@ -328,10 +328,11 @@ const DeliveryMap = ({ showRider = true, orderId }: DeliveryMapProps) => {
       
       riderMarker.setPosition({ lat, lng });
       
-      // Instead of using setTitle, update the marker's title property directly
+      // Update the title by creating a new marker with the updated title
+      // since setTitle doesn't exist on the Marker type
       const newTitle = `${eta} min`;
       if (riderMarker.getTitle() !== newTitle) {
-        // Create a new marker with updated title if needed
+        // Create a new marker with updated title
         const position = riderMarker.getPosition();
         if (position) {
           const icon = riderMarker.getIcon();
