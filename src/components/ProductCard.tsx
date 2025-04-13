@@ -1,7 +1,7 @@
 
 import { motion } from "framer-motion";
 import { Star, ShoppingCart, Plus, Minus, AlertTriangle } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 
 interface ProductCardProps {
@@ -42,6 +42,19 @@ const cartAnimationStyle = `
     animation: floatUp 1s ease-out forwards;
     pointer-events: none;
   }
+
+  .stepper-container {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(8px);
+    padding: 8px;
+    border-radius: 0 0 10px 10px;
+    transform-origin: bottom;
+    z-index: 10;
+  }
 `;
 
 const ProductCard = ({
@@ -62,6 +75,8 @@ const ProductCard = ({
   const [floatingElements, setFloatingElements] = useState<number[]>([]);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [showStepper, setShowStepper] = useState(false);
+  const [animateQuantity, setAnimateQuantity] = useState(false);
 
   const getDiscountPercentage = () => {
     if (!discountPrice) return 0;
@@ -71,6 +86,8 @@ const ProductCard = ({
   const handleQuantityChange = (newQuantity: number) => {
     if (newQuantity >= 1) {
       setQuantity(newQuantity);
+      setAnimateQuantity(true);
+      setTimeout(() => setAnimateQuantity(false), 300);
     }
   };
 
@@ -116,9 +133,41 @@ const ProductCard = ({
     
     toast({
       title: "Added to cart",
-      description: `${name} has been added to your cart.`,
+      description: `${quantity} ${quantity > 1 ? 'units' : 'unit'} of ${name} has been added to your cart.`,
     });
+    
+    // Hide stepper after adding to cart
+    setShowStepper(false);
   };
+
+  const toggleStepper = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (!inStock || disabled) {
+      toast({
+        title: "Out of Stock",
+        description: "This product is currently unavailable.",
+      });
+      return;
+    }
+    
+    setShowStepper(prev => !prev);
+  };
+
+  // Auto-hide stepper if clicked outside
+  useEffect(() => {
+    if (!showStepper) return;
+    
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.stepper-container') && !target.closest('.cart-icon-button')) {
+        setShowStepper(false);
+      }
+    };
+    
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showStepper]);
 
   return (
     <>
@@ -195,10 +244,14 @@ const ProductCard = ({
             
             <div className="relative">
               <motion.button
-                className={`p-2 rounded-full ${(!inStock || disabled) ? 'bg-gray-700' : 'bg-zepmeds-purple'} ${isAnimating ? 'cart-animation' : ''}`}
-                onClick={handleAddToCart}
+                className={`p-2 rounded-full ${(!inStock || disabled) ? 'bg-gray-700' : 'bg-zepmeds-purple'} ${isAnimating ? 'cart-animation' : ''} cart-icon-button`}
+                onClick={toggleStepper}
               >
-                <ShoppingCart className="w-4 h-4 text-white" />
+                {showStepper ? (
+                  <Plus className="w-4 h-4 text-white" />
+                ) : (
+                  <ShoppingCart className="w-4 h-4 text-white" />
+                )}
               </motion.button>
               
               {floatingElements.map(id => (
@@ -206,6 +259,58 @@ const ProductCard = ({
                   <Plus className="w-4 h-4 text-white" />
                 </div>
               ))}
+              
+              {/* Quantity stepper */}
+              {showStepper && (
+                <motion.div 
+                  className="stepper-container"
+                  initial={{ scaleY: 0, opacity: 0 }}
+                  animate={{ scaleY: 1, opacity: 1 }}
+                  exit={{ scaleY: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div className="flex items-center justify-between px-2">
+                    <motion.button 
+                      className="w-8 h-8 flex items-center justify-center text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (quantity > 1) handleQuantityChange(quantity - 1);
+                      }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </motion.button>
+                    
+                    <motion.span 
+                      className="text-white text-sm font-medium mx-2"
+                      animate={animateQuantity ? { scale: [1, 1.3, 1] } : {}}
+                      transition={{ duration: 0.3 }}
+                    >
+                      {quantity}
+                    </motion.span>
+                    
+                    <motion.button 
+                      className="w-8 h-8 flex items-center justify-center text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleQuantityChange(quantity + 1);
+                      }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </motion.button>
+                  </div>
+                  
+                  <motion.button
+                    className="w-full mt-2 py-1 bg-zepmeds-purple text-white text-xs rounded-md flex items-center justify-center"
+                    onClick={handleAddToCart}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <ShoppingCart className="h-3 w-3 mr-1" />
+                    Add to Cart
+                  </motion.button>
+                </motion.div>
+              )}
             </div>
           </div>
         </div>

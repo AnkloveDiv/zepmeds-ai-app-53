@@ -50,20 +50,41 @@ const MedicineDetailModal: React.FC<MedicineDetailModalProps> = ({
     };
   }, [isOpen]);
 
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    
+    if (isOpen) {
+      window.addEventListener('keydown', handleEsc);
+    }
+    
+    return () => {
+      window.removeEventListener('keydown', handleEsc);
+    };
+  }, [isOpen, onClose]);
+
   if (!medicine) return null;
 
   return (
     <AnimatePresence>
       {isOpen && (
-        <div 
+        <motion.div 
           className="fixed inset-0 bg-black/80 z-50 px-4 py-3 overflow-hidden flex items-center justify-center"
           onClick={onClose}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
         >
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
             className="w-full h-full flex items-center justify-center"
             onClick={(e) => e.stopPropagation()}
           >
@@ -73,7 +94,7 @@ const MedicineDetailModal: React.FC<MedicineDetailModalProps> = ({
               onAddToCart={onAddToCart}
             />
           </motion.div>
-        </div>
+        </motion.div>
       )}
     </AnimatePresence>
   );

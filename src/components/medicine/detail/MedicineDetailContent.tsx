@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from "framer-motion";
 import { AlertTriangle } from "lucide-react";
 import MedicineHeader from "./MedicineHeader";
@@ -40,9 +40,62 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
   onClose,
   onAddToCart,
 }) => {
-  const [quantity, setQuantity] = React.useState(1);
-  const [strips, setStrips] = React.useState(1);
-  const [activeTab, setActiveTab] = React.useState("description");
+  const [quantity, setQuantity] = useState(1);
+  const [strips, setStrips] = useState(1);
+  const [activeTab, setActiveTab] = useState("description");
+  const [medicineType, setMedicineType] = useState<"tablets" | "liquid" | "device">("tablets");
+  const [unitsPerStrip, setUnitsPerStrip] = useState(10);
+  const [totalUnits, setTotalUnits] = useState(0);
+  const [contentHeight, setContentHeight] = useState("auto");
+
+  // Determine medicine type
+  useEffect(() => {
+    if (medicine.name) {
+      const lowerName = medicine.name.toLowerCase();
+      if (lowerName.includes("solution") || 
+          lowerName.includes("gel") || 
+          lowerName.includes("drops") ||
+          lowerName.includes("cream") ||
+          lowerName.includes("syrup") ||
+          lowerName.includes("liquid") ||
+          lowerName.includes("lotion")) {
+        setMedicineType("liquid");
+      } else if (lowerName.includes("monitor") || 
+                lowerName.includes("thermometer") ||
+                lowerName.includes("device") ||
+                lowerName.includes("machine") ||
+                lowerName.includes("meter") ||
+                lowerName.includes("tester") ||
+                lowerName.includes("glasses")) {
+        setMedicineType("device");
+      } else {
+        setMedicineType("tablets");
+      }
+    }
+  }, [medicine.name]);
+
+  // Calculate total units
+  useEffect(() => {
+    if (medicineType === "tablets") {
+      setTotalUnits(quantity + (strips * unitsPerStrip));
+    } else {
+      setTotalUnits(quantity);
+    }
+  }, [quantity, strips, medicineType, unitsPerStrip]);
+
+  // Set content height based on window size for better mobile experience
+  useEffect(() => {
+    const updateContentHeight = () => {
+      const vh = window.innerHeight;
+      const maxHeight = vh * 0.6; // 60% of viewport height for content
+      setContentHeight(`${maxHeight}px`);
+    };
+
+    updateContentHeight();
+    window.addEventListener('resize', updateContentHeight);
+    
+    return () => window.removeEventListener('resize', updateContentHeight);
+  }, []);
 
   const handleDecrement = (setter: React.Dispatch<React.SetStateAction<number>>, current: number) => {
     if (current > 1) {
@@ -62,15 +115,8 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
     ? Math.round(((medicine.price - medicine.discountPrice) / medicine.price) * 100) 
     : 0;
 
-  const isLiquid = medicine.name.toLowerCase().includes("solution") || 
-                  medicine.name.toLowerCase().includes("gel") || 
-                  medicine.name.toLowerCase().includes("drops") ||
-                  medicine.name.toLowerCase().includes("cream") ||
-                  medicine.name.toLowerCase().includes("lotion");
-                  
-  const isDevice = medicine.name.toLowerCase().includes("monitor") || 
-                  medicine.name.toLowerCase().includes("thermometer") ||
-                  medicine.name.toLowerCase().includes("glasses");
+  const isLiquid = medicineType === "liquid";
+  const isDevice = medicineType === "device";
 
   // Default inStock to true if not specified
   const inStock = medicine.inStock !== undefined ? medicine.inStock : true;
@@ -101,7 +147,10 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
             setActiveTab={setActiveTab} 
           />
           
-          <div className="border border-gray-800 rounded-lg p-4 mb-6 bg-black/30 overflow-y-auto">
+          <div 
+            className="border border-gray-800 rounded-lg p-4 mb-6 bg-black/30 overflow-y-auto" 
+            style={{ maxHeight: contentHeight }}
+          >
             <TabContent 
               activeTab={activeTab} 
               medicine={medicine} 
@@ -120,6 +169,9 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
             handleDecrement={handleDecrement}
             handleIncrement={handleIncrement}
             disabled={!inStock}
+            medicineType={medicineType}
+            unitsPerStrip={unitsPerStrip}
+            totalQuantity={totalUnits}
           />
           
           <ActionButtons 
