@@ -9,7 +9,7 @@ interface Product {
   price: number;
   discountPrice?: number | null;
   rating: number;
-  description: string;
+  description?: string;
   category?: string;
   fullDescription?: string;
   manufacturer?: string;
