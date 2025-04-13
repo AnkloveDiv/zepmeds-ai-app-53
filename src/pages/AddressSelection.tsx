@@ -8,9 +8,9 @@ import Header from "@/components/Header";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import MapAddressSelector from "@/components/address/MapAddressSelector";
 import { 
-  initializeMapplsMaps, 
+  initializeMap, 
   mockGeocodeResponse, 
-  getAddressFromMapplsCoordinates 
+  getAddressFromCoordinates 
 } from "@/utils/googleMapsLoader";
 
 interface Address {
@@ -42,20 +42,17 @@ const AddressSelection = () => {
   const [mapplsReady, setMapplsReady] = useState(false);
 
   useEffect(() => {
-    // Initialize Mappls API
-    const setupMapplsMaps = async () => {
-      const initialized = await initializeMapplsMaps();
+    const setupMap = async () => {
+      const initialized = await initializeMap();
       setMapplsReady(initialized);
     };
     
-    setupMapplsMaps();
+    setupMap();
     
-    // Load saved addresses from localStorage
     const savedAddresses = localStorage.getItem("savedAddresses");
     if (savedAddresses) {
       setAddresses(JSON.parse(savedAddresses));
     } else {
-      // If no addresses exist, create a default one
       const defaultAddress: Address = {
         id: "home-1",
         label: "Home",
@@ -69,7 +66,6 @@ const AddressSelection = () => {
       localStorage.setItem("savedAddresses", JSON.stringify([defaultAddress]));
     }
 
-    // Try to get current location
     if (navigator.geolocation) {
       setUserCurrentLocation("Getting your location...");
       navigator.geolocation.getCurrentPosition(
@@ -78,13 +74,11 @@ const AddressSelection = () => {
           console.log("Current location coordinates:", latitude, longitude);
           
           try {
-            // Use Mappls reverse geocoding
-            const addressData = await getAddressFromMapplsCoordinates(latitude, longitude);
+            const addressData = await getAddressFromCoordinates(latitude, longitude);
             setUserCurrentLocation(addressData.formatted_address);
             console.log("Current location address:", addressData.formatted_address);
           } catch (error) {
             console.error("Error getting address:", error);
-            // Use mock data when reverse geocoding fails
             const mockResult = mockGeocodeResponse(latitude, longitude);
             setUserCurrentLocation(mockResult.formatted_address);
           }
@@ -131,19 +125,16 @@ const AddressSelection = () => {
       return;
     }
     
-    // Get the actual coordinates
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           const { latitude, longitude } = position.coords;
           
           try {
-            // Use Mappls reverse geocoding
-            const result = await getAddressFromMapplsCoordinates(latitude, longitude);
+            const result = await getAddressFromCoordinates(latitude, longitude);
             processAddressResults(result, latitude, longitude);
           } catch (error) {
             console.error("Error getting address:", error);
-            // Use mock data when reverse geocoding fails
             const mockResult = mockGeocodeResponse(latitude, longitude);
             processAddressResults(mockResult, latitude, longitude);
           }
@@ -163,7 +154,6 @@ const AddressSelection = () => {
   const processAddressResults = (result: any, latitude: number, longitude: number) => {
     const addressComponents = result.address_components;
     
-    // Extract address components
     const city = addressComponents.find((c: any) => 
       c.types.includes("locality"))?.long_name || "Gurugram";
     const state = addressComponents.find((c: any) => 
@@ -171,7 +161,6 @@ const AddressSelection = () => {
     const zipCode = addressComponents.find((c: any) => 
       c.types.includes("postal_code"))?.long_name || "122001";
     
-    // Create a new address with the current location
     const newAddress: Address = {
       id: "current-location",
       label: "Current Location",
@@ -189,7 +178,6 @@ const AddressSelection = () => {
       isSelected: false
     }));
     
-    // Check if we already have a current location address to update
     const currentLocationIndex = updatedAddresses.findIndex(addr => addr.id === "current-location");
     
     if (currentLocationIndex >= 0) {
@@ -279,7 +267,6 @@ const AddressSelection = () => {
     }
     
     if (editingAddress) {
-      // Update existing address
       const updatedAddresses = addresses.map(addr => {
         if (addr.id === editingAddress.id) {
           return { 
@@ -294,7 +281,6 @@ const AddressSelection = () => {
             zipCode: newAddress.zipCode
           };
         }
-        // If current address is being set as default, set all others to non-default
         return newAddress.isSelected 
           ? { ...addr, isSelected: false } 
           : addr;
@@ -308,7 +294,6 @@ const AddressSelection = () => {
         description: "Your address has been updated successfully.",
       });
     } else {
-      // Add new address
       const newId = Date.now().toString();
       const addressToAdd: Address = {
         id: newId,
@@ -323,7 +308,6 @@ const AddressSelection = () => {
       };
       
       let updatedAddresses;
-      // If this is set as default, update all others to not be default
       if (newAddress.isSelected) {
         updatedAddresses = addresses.map(addr => ({ 
           ...addr, 
@@ -345,7 +329,7 @@ const AddressSelection = () => {
     
     setShowAddressModal(false);
   };
-  
+
   const getAddressIcon = (type: string) => {
     if (type === 'Home' || type === 'home') {
       return <Home className="h-5 w-5 text-orange-500" />;

@@ -6,10 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Loader, MapPin, Navigation, Search, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { 
-  initializeMapplsMaps, 
+  initializeMap, 
   mockGeocodeResponse, 
-  getAddressFromMapplsCoordinates,
-  searchAddressWithMappls
+  getAddressFromCoordinates,
+  searchAddressWithMapTiler
 } from "@/utils/googleMapsLoader";
 
 interface MapAddressSelectorProps {
@@ -40,12 +40,12 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
   useEffect(() => {
     const loadMap = async () => {
       try {
-        // Initialize Mappls Maps API
-        const mapsInitialized = await initializeMapplsMaps();
+        // Initialize MapTiler SDK
+        const mapsInitialized = await initializeMap();
         
-        // Check if Mappls Maps API is available
-        if (!window.mappls) {
-          console.error("Mappls Maps API is not loaded after initialization");
+        // Check if MapTiler SDK is available
+        if (!window.maptilersdk) {
+          console.error("MapTiler SDK is not loaded after initialization");
           toast({
             title: "Maps API not available",
             description: "Using fallback map view. Full functionality may be limited.",
@@ -64,7 +64,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
             (position) => {
               const { latitude, longitude } = position.coords;
               console.log("Got user location:", latitude, longitude);
-              initializeMap(latitude, longitude);
+              initializeMapTiler(latitude, longitude);
             },
             (error) => {
               console.error("Error getting location:", error);
@@ -74,7 +74,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
                 description: "Using default location. Please enable location access for better results.",
                 variant: "destructive",
               });
-              initializeMap(28.6139, 77.2090); // New Delhi coordinates as fallback
+              initializeMapTiler(28.6139, 77.2090); // New Delhi coordinates as fallback
             }
           );
         } else {
@@ -84,7 +84,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
             description: "Your browser doesn't support geolocation. Using default location.",
             variant: "destructive",
           });
-          initializeMap(28.6139, 77.2090); // New Delhi coordinates as fallback
+          initializeMapTiler(28.6139, 77.2090); // New Delhi coordinates as fallback
         }
       } catch (error) {
         console.error("Error during map initialization:", error);
@@ -102,7 +102,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     loadMap();
   }, [toast]);
   
-  // Initialize a fallback static map when Mappls Maps fails
+  // Initialize a fallback static map when MapTiler fails
   const initializeFallbackMap = () => {
     setIsLoading(false);
     // Set a default location for fallback
@@ -110,62 +110,87 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     const defaultLng = 77.2090;
     
     // Use mock data for address
-    getAddressFromCoordinates(defaultLat, defaultLng);
+    getAddressFromCoordinates(defaultLat, defaultLng).then(result => {
+      handleGeocodeResult(result, defaultLat, defaultLng);
+    });
   };
   
-  const initializeMap = (lat: number, lng: number) => {
-    if (!mapRef.current || !window.mappls) {
+  const initializeMapTiler = (lat: number, lng: number) => {
+    if (!mapRef.current || !window.maptilersdk) {
       setIsLoading(false);
       setUsingMockData(true);
-      getAddressFromCoordinates(lat, lng); // Use fallback data
+      getAddressFromCoordinates(lat, lng).then(result => {
+        handleGeocodeResult(result, lat, lng);
+      }); // Use fallback data
       return;
     }
     
     try {
       console.log("Initializing map with coordinates:", lat, lng);
       
-      // Initialize Mappls map with correct options
-      const mapplsMap = new window.mappls.Map({
+      // Initialize MapTiler map
+      const maptilerMap = new window.maptilersdk.Map({
         container: mapRef.current,
-        center: { lat, lng },
-        zoom: 15,
-        traffic: false,
-        location: false
+        style: window.maptilersdk.MapStyle.STREETS,
+        center: [lng, lat], // MapTiler uses [lng, lat] format for coordinates
+        zoom: 15
       });
       
-      setMap(mapplsMap);
+      setMap(maptilerMap);
       
       // Wait for the map to load
-      mapplsMap.on('load', () => {
+      maptilerMap.on('load', () => {
         console.log("Map loaded successfully");
         
+        // Check if maplibregl is available for marker
+        if (!window.maplibregl) {
+          console.error("maplibregl not found");
+          setIsLoading(false);
+          return;
+        }
+        
+        // Create marker element
+        const markerElement = document.createElement('div');
+        markerElement.className = 'custom-marker';
+        markerElement.style.width = '25px';
+        markerElement.style.height = '41px';
+        markerElement.style.backgroundImage = 'url(https://docs.maptiler.com/sdk-js/assets/marker-icon.png)';
+        markerElement.style.backgroundSize = 'cover';
+        markerElement.style.cursor = 'pointer';
+        
         // Add a marker at the initial location
-        const mapMarker = new window.mappls.Marker({
-          position: { lat, lng },
-          map: mapplsMap,
-          draggable: true,
-          popupHtml: 'Drag me to adjust location'
-        });
+        const mapMarker = new window.maplibregl.Marker({
+          element: markerElement,
+          draggable: true
+        })
+          .setLngLat([lng, lat])
+          .addTo(maptilerMap);
         
         setMarker(mapMarker);
         setIsLoading(false);
         
         // Get address for initial location
-        getAddressFromCoordinates(lat, lng);
+        getAddressFromCoordinates(lat, lng).then(result => {
+          handleGeocodeResult(result, lat, lng);
+        });
         
         // Add event listener for marker drag end
         mapMarker.on("dragend", () => {
-          const position = mapMarker.getPosition();
+          const position = mapMarker.getLngLat();
           if (position) {
-            getAddressFromCoordinates(position.lat, position.lng);
+            getAddressFromCoordinates(position.lat, position.lng).then(result => {
+              handleGeocodeResult(result, position.lat, position.lng);
+            });
           }
         });
         
         // Add event listener for map click
-        mapplsMap.on("click", (e: any) => {
-          const { lat, lng } = e.latlng;
-          mapMarker.setPosition({ lat, lng });
-          getAddressFromCoordinates(lat, lng);
+        maptilerMap.on("click", (e: any) => {
+          const { lng, lat } = e.lngLat;
+          mapMarker.setLngLat([lng, lat]);
+          getAddressFromCoordinates(lat, lng).then(result => {
+            handleGeocodeResult(result, lat, lng);
+          });
         });
       });
       
@@ -178,31 +203,10 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
         description: "Using fallback view for location selection.",
         variant: "destructive",
       });
-      getAddressFromCoordinates(lat, lng); // Use fallback data
-    }
-  };
-  
-  const getAddressFromCoordinates = async (lat: number, lng: number) => {
-    setLoadingAddress(true);
-    console.log("Getting address for coordinates:", lat, lng);
-    
-    try {
-      // Check if we need to use mock data or if the Mappls API is available
-      if (usingMockData || !window.mappls) {
-        const mockResponse = mockGeocodeResponse(lat, lng);
-        handleGeocodeResult(mockResponse, lat, lng);
-      } else {
-        // Use Mappls reverse geocoding
-        const result = await getAddressFromMapplsCoordinates(lat, lng);
+      getAddressFromCoordinates(lat, lng).then(result => {
         handleGeocodeResult(result, lat, lng);
-      }
-    } catch (error) {
-      console.error("Error in reverse geocoding:", error);
-      const mockResponse = mockGeocodeResponse(lat, lng);
-      handleGeocodeResult(mockResponse, lat, lng);
+      }); // Use fallback data
     }
-    
-    setLoadingAddress(false);
   };
   
   const handleGeocodeResult = (result: any, lat: number, lng: number) => {
@@ -229,6 +233,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     
     console.log("Address details:", addressDetails);
     setSelectedAddress(addressDetails);
+    setLoadingAddress(false);
   };
   
   const handleSearch = async () => {
@@ -239,7 +244,7 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
     
     try {
       // Check if we need to use mock data
-      if (usingMockData || !window.mappls) {
+      if (usingMockData || !window.maptilersdk) {
         // Simulate a search delay
         setTimeout(() => {
           // Default coordinates - simulate finding the location
@@ -248,24 +253,21 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
           
           const mockResponse = mockGeocodeResponse(lat, lng);
           handleGeocodeResult(mockResponse, lat, lng);
-          
-          setLoadingAddress(false);
         }, 1000);
         return;
       }
       
-      // Use Mappls API for geocoding
-      const searchResult = await searchAddressWithMappls(searchQuery);
+      // Use MapTiler API for geocoding
+      const searchResult = await searchAddressWithMapTiler(searchQuery);
       const { lat, lng, address } = searchResult;
       
       // Update marker and map if available
       if (map && marker) {
-        marker.setPosition({ lat, lng });
-        map.flyTo({ center: { lat, lng }, zoom: 15 });
+        marker.setLngLat([lng, lat]);
+        map.flyTo({center: [lng, lat], zoom: 15});
       }
       
       handleGeocodeResult(address, lat, lng);
-      setLoadingAddress(false);
     } catch (error) {
       console.error("Search error:", error);
       toast({
@@ -279,7 +281,6 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
       const lng = 77.2090;
       const mockResponse = mockGeocodeResponse(lat, lng);
       handleGeocodeResult(mockResponse, lat, lng);
-      setLoadingAddress(false);
     }
   };
   
@@ -291,12 +292,14 @@ const MapAddressSelector = ({ onAddressSelected, onCancel }: MapAddressSelectorP
           const { latitude, longitude } = position.coords;
           console.log("Current location:", latitude, longitude);
           
-          if (map && marker && window.mappls && !usingMockData) {
-            marker.setPosition({ lat: latitude, lng: longitude });
-            map.flyTo({ center: { lat: latitude, lng: longitude }, zoom: 15 });
+          if (map && marker && window.maptilersdk && !usingMockData) {
+            marker.setLngLat([longitude, latitude]);
+            map.flyTo({center: [longitude, latitude], zoom: 15});
           }
           
-          getAddressFromCoordinates(latitude, longitude);
+          getAddressFromCoordinates(latitude, longitude).then(result => {
+            handleGeocodeResult(result, latitude, longitude);
+          });
         },
         (error) => {
           console.error("Error getting location:", error);

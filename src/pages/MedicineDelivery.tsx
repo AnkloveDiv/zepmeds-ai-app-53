@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import SearchBar from '../components/SearchBar';
 import { Button } from "../components/ui/button";
@@ -15,34 +14,33 @@ import { useTrendingProducts, TrendingProduct } from '../hooks/useTrendingProduc
 import { useBackNavigation } from '../hooks/useBackNavigation';
 import { fetchWeatherByCoordinates, WeatherData } from '../services/weatherService';
 import { allProducts } from '../data/medicineData';
+import { 
+  initializeMap, 
+  mockGeocodeResponse, 
+  getAddressFromCoordinates 
+} from '@/utils/googleMapsLoader';
 
 const MedicineDelivery = () => {
-  // Add navigation and toast
   const navigate = useNavigate();
   const { toast } = useToast();
   const { ExitConfirmDialog } = useBackNavigation('/dashboard');
   
-  // Get trending products
   const [cartItemsCount, setCartItemsCount] = useState(0);
   const [activeCategory, setActiveCategory] = useState("All");
   const [selectedMedicine, setSelectedMedicine] = useState<TrendingProduct | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
-  // Use the preloaded products from medicineData
   const [products, setProducts] = useState(allProducts);
   
-  // Address state
   const [deliveryAddress, setDeliveryAddress] = useState("to Home Ghh, Bnn, Gurugram, 122001");
   const [deliveryCoordinates, setDeliveryCoordinates] = useState<{lat: number, lng: number} | null>(null);
   
-  // Weather state with API data
   const [weatherData, setWeatherData] = useState<WeatherData>({
     condition: 'cloudy',
     temperature: '29°',
     description: 'Cloudy'
   });
   
-  // Get cart items count from localStorage on component mount
   useEffect(() => {
     const getCartCount = () => {
       const cart = JSON.parse(localStorage.getItem("cart") || "[]");
@@ -51,12 +49,10 @@ const MedicineDelivery = () => {
     
     getCartCount();
     
-    // Add event listener for storage changes (if cart is modified in another tab)
     window.addEventListener('storage', getCartCount);
     
-    // Check for selected address
     const savedAddresses = localStorage.getItem("savedAddresses");
-    let selectedCoordinates = {lat: 28.4595, lng: 77.0266}; // Default to Gurugram
+    let selectedCoordinates = {lat: 28.4595, lng: 77.0266};
     
     if (savedAddresses) {
       const addresses = JSON.parse(savedAddresses);
@@ -64,7 +60,6 @@ const MedicineDelivery = () => {
       if (selectedAddress) {
         setDeliveryAddress(`to ${selectedAddress.label} ${selectedAddress.address}`);
         
-        // If the selected address has coordinates, use them for weather
         if (selectedAddress.latitude && selectedAddress.longitude) {
           selectedCoordinates = {
             lat: selectedAddress.latitude,
@@ -75,10 +70,8 @@ const MedicineDelivery = () => {
       }
     }
     
-    // Fetch weather data on component mount
     const fetchWeather = async () => {
       try {
-        // Using coordinates from the selected address
         const weather = await fetchWeatherByCoordinates(
           selectedCoordinates.lat, 
           selectedCoordinates.lng
@@ -102,17 +95,14 @@ const MedicineDelivery = () => {
     };
   }, [toast]);
   
-  // Handle cart button click
   const handleCartClick = () => {
     navigate('/cart');
   };
 
-  // Handle back button click
   const handleBackClick = () => {
     navigate('/dashboard');
   };
 
-  // Handle prescription upload button click
   const handleUploadClick = () => {
     toast({
       title: "Prescription Upload",
@@ -122,7 +112,6 @@ const MedicineDelivery = () => {
     navigate('/prescription-upload');
   };
 
-  // Handle category click
   const handleCategoryClick = (category: string) => {
     setActiveCategory(category);
     toast({
@@ -132,13 +121,11 @@ const MedicineDelivery = () => {
     });
   };
 
-  // Handle product click
   const handleProductClick = (product: TrendingProduct) => {
     setSelectedMedicine(product);
     setIsModalOpen(true);
   };
 
-  // Handle add to cart
   const handleAddToCart = (product: TrendingProduct, quantity = 1) => {
     const existingCart = JSON.parse(localStorage.getItem("cart") || "[]");
     
@@ -164,7 +151,6 @@ const MedicineDelivery = () => {
     });
   };
 
-  // Handle add to cart from modal
   const handleModalAddToCart = (quantity: number, strips: number) => {
     if (selectedMedicine) {
       const existingCart = JSON.parse(localStorage.getItem("cart") || "[]");
@@ -199,7 +185,6 @@ const MedicineDelivery = () => {
     <div className="flex flex-col min-h-screen bg-black relative">
       <WeatherAnimation type={weatherData.condition} />
       
-      {/* Address Bar with Weather */}
       <AddressWithWeather 
         deliveryTime="11 minutes delivery"
         address={deliveryAddress}
@@ -208,11 +193,9 @@ const MedicineDelivery = () => {
         onBackClick={handleBackClick}
       />
       
-      {/* Search Section */}
       <div className="px-4 py-5 bg-gradient-to-b from-[#3d4355] to-black z-10">
         <SearchBar placeholder="Search for medicines.." />
         
-        {/* Upload Prescription */}
         <div className="mt-4 p-4 bg-[#1a1a1a] rounded-xl flex items-center justify-between">
           <div className="flex items-center">
             <div className="mr-4">
@@ -236,7 +219,6 @@ const MedicineDelivery = () => {
         </div>
       </div>
 
-      {/* Categories Section */}
       <div className="flex-1 bg-black px-4 pt-6 pb-20">
         <h2 className="text-white text-2xl font-bold mb-4">Categories</h2>
         <CategoriesNav 
@@ -244,7 +226,6 @@ const MedicineDelivery = () => {
           onCategoryClick={handleCategoryClick}
         />
         
-        {/* Products Grid */}
         <div className="mt-6">
           <h2 className="text-white text-xl font-bold mb-2">
             {activeCategory === "All" ? "Featured Medicines" : `${activeCategory}`}
@@ -258,7 +239,6 @@ const MedicineDelivery = () => {
         </div>
       </div>
 
-      {/* Medicine Detail Modal */}
       <MedicineDetailModal 
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -266,10 +246,8 @@ const MedicineDelivery = () => {
         onAddToCart={handleModalAddToCart}
       />
 
-      {/* Floating Cart Button */}
       <FloatingCartButton itemsCount={cartItemsCount} onClick={handleCartClick} />
       
-      {/* Exit confirmation dialog */}
       <ExitConfirmDialog />
     </div>
   );
