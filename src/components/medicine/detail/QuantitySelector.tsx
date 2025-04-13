@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Droplets, ThermometerSun, Pill } from "lucide-react";
+import { Plus, Minus } from "lucide-react";
 
 interface QuantitySelectorProps {
   quantity: number;
@@ -11,6 +11,7 @@ interface QuantitySelectorProps {
   isDevice: boolean;
   handleDecrement: (setter: React.Dispatch<React.SetStateAction<number>>, current: number) => void;
   handleIncrement: (setter: React.Dispatch<React.SetStateAction<number>>, current: number) => void;
+  disabled?: boolean;
 }
 
 const QuantitySelector: React.FC<QuantitySelectorProps> = ({
@@ -21,115 +22,59 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   isLiquid,
   isDevice,
   handleDecrement,
-  handleIncrement
+  handleIncrement,
+  disabled = false
 }) => {
   return (
-    <div className="grid grid-cols-2 gap-6 mb-6">
-      {isLiquid ? (
-        <div>
-          <label className="text-sm text-gray-300 mb-2 block flex items-center">
-            <Droplets className="h-4 w-4 mr-1" />
-            Volume (ml)
-          </label>
-          <div className="flex items-center">
-            <button 
-              className="w-8 h-8 rounded-l-lg bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors"
-              onClick={() => handleDecrement(setQuantity, quantity)}
-            >
-              -
-            </button>
-            <input 
-              type="number" 
-              value={quantity}
-              onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-              className="w-12 h-8 bg-black/20 text-white text-center border-none"
-            />
-            <button 
-              className="w-8 h-8 rounded-r-lg bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors"
-              onClick={() => handleIncrement(setQuantity, quantity)}
-            >
-              +
-            </button>
-          </div>
-        </div>
-      ) : isDevice ? (
-        <div>
-          <label className="text-sm text-gray-300 mb-2 block flex items-center">
-            <ThermometerSun className="h-4 w-4 mr-1" />
-            Quantity
-          </label>
-          <div className="flex items-center">
-            <button 
-              className="w-8 h-8 rounded-l-lg bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors"
-              onClick={() => handleDecrement(setQuantity, quantity)}
-            >
-              -
-            </button>
-            <input 
-              type="number" 
-              value={quantity}
-              onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-              className="w-12 h-8 bg-black/20 text-white text-center border-none"
-            />
-            <button 
-              className="w-8 h-8 rounded-r-lg bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors"
-              onClick={() => handleIncrement(setQuantity, quantity)}
-            >
-              +
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div>
-          <label className="text-sm text-gray-300 mb-2 block flex items-center">
-            <Pill className="h-4 w-4 mr-1" />
-            Strips
-          </label>
-          <div className="flex items-center">
-            <button 
-              className="w-8 h-8 rounded-l-lg bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors"
-              onClick={() => handleDecrement(setStrips, strips)}
-            >
-              -
-            </button>
-            <input 
-              type="number" 
-              value={strips}
-              onChange={(e) => setStrips(Math.max(1, parseInt(e.target.value) || 1))}
-              className="w-12 h-8 bg-black/20 text-white text-center border-none"
-            />
-            <button 
-              className="w-8 h-8 rounded-r-lg bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors"
-              onClick={() => handleIncrement(setStrips, strips)}
-            >
-              +
-            </button>
-          </div>
-        </div>
-      )}
+    <div className="mb-6">
+      <h3 className="text-white text-sm font-medium mb-3">Quantity</h3>
       
-      <div>
-        <label className="text-sm text-gray-300 mb-2 block">Quantity</label>
-        <div className="flex items-center">
-          <button 
-            className="w-8 h-8 rounded-l-lg bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors"
-            onClick={() => handleDecrement(setQuantity, quantity)}
-          >
-            -
-          </button>
-          <input 
-            type="number" 
-            value={quantity}
-            onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-            className="w-12 h-8 bg-black/20 text-white text-center border-none"
-          />
-          <button 
-            className="w-8 h-8 rounded-r-lg bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors"
-            onClick={() => handleIncrement(setQuantity, quantity)}
-          >
-            +
-          </button>
+      <div className="flex gap-4">
+        <div className="flex-1">
+          <div className="flex items-center justify-between bg-gray-900/50 border border-gray-800 rounded-md px-3 py-2">
+            <button 
+              className={`p-1 rounded-full ${disabled ? 'text-gray-600' : 'text-white'}`}
+              onClick={() => handleDecrement(setQuantity, quantity)}
+              disabled={disabled}
+            >
+              <Minus className="h-4 w-4" />
+            </button>
+            <span className="text-white text-sm">{quantity}</span>
+            <button 
+              className={`p-1 rounded-full ${disabled ? 'text-gray-600' : 'text-white'}`}
+              onClick={() => handleIncrement(setQuantity, quantity)}
+              disabled={disabled}
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </div>
+          <p className="text-gray-400 text-xs mt-1">
+            {isDevice ? "Units" : isLiquid ? "Bottles" : "Tablets"}
+          </p>
         </div>
+      
+        {!isLiquid && !isDevice && (
+          <div className="flex-1">
+            <div className="flex items-center justify-between bg-gray-900/50 border border-gray-800 rounded-md px-3 py-2">
+              <button 
+                className={`p-1 rounded-full ${disabled ? 'text-gray-600' : 'text-white'}`}
+                onClick={() => handleDecrement(setStrips, strips)}
+                disabled={disabled}
+              >
+                <Minus className="h-4 w-4" />
+              </button>
+              <span className="text-white text-sm">{strips}</span>
+              <button 
+                className={`p-1 rounded-full ${disabled ? 'text-gray-600' : 'text-white'}`}
+                onClick={() => handleIncrement(setStrips, strips)}
+                disabled={disabled}
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="text-gray-400 text-xs mt-1">Strip(s)</p>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 
 import { motion } from "framer-motion";
-import { Star, ShoppingCart, Plus, Minus } from "lucide-react";
+import { Star, ShoppingCart, Plus, Minus, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -11,6 +11,7 @@ interface ProductCardProps {
   discountPrice?: number | null;
   rating: number;
   description?: string;
+  inStock?: boolean;
   onClick?: () => void;
   onAddToCart?: (quantity: number) => void;
 }
@@ -49,6 +50,7 @@ const ProductCard = ({
   discountPrice = null,
   rating,
   description,
+  inStock = true,
   onClick,
   onAddToCart,
 }: ProductCardProps) => {
@@ -81,6 +83,14 @@ const ProductCard = ({
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
+    
+    if (!inStock) {
+      toast({
+        title: "Out of Stock",
+        description: "This product is currently unavailable. We'll notify you when it's back in stock.",
+      });
+      return;
+    }
     
     // Cart animation
     setIsAnimating(true);
@@ -147,6 +157,13 @@ const ProductCard = ({
             <Star className="w-3 h-3 text-yellow-400 fill-yellow-400 mr-1" />
             {rating}
           </div>
+          
+          {!inStock && (
+            <div className="absolute top-2 right-2 bg-red-900/80 text-white text-xs px-2 py-1 rounded-full flex items-center">
+              <AlertTriangle className="w-3 h-3 text-red-300 mr-1" />
+              Out of Stock
+            </div>
+          )}
         </div>
         
         <div className="p-3 flex-1 flex flex-col">
@@ -154,6 +171,12 @@ const ProductCard = ({
           
           {description && (
             <p className="text-gray-400 text-xs mt-1 line-clamp-2">{description}</p>
+          )}
+          
+          {!inStock && (
+            <p className="text-red-400 text-xs mt-1">
+              Not in stock right now, we will notify you
+            </p>
           )}
           
           <div className="flex justify-between items-center mt-auto pt-2">
@@ -170,7 +193,7 @@ const ProductCard = ({
             
             <div className="relative">
               <motion.button
-                className={`p-2 rounded-full bg-zepmeds-purple ${isAnimating ? 'cart-animation' : ''}`}
+                className={`p-2 rounded-full ${inStock ? 'bg-zepmeds-purple' : 'bg-gray-700'} ${isAnimating ? 'cart-animation' : ''}`}
                 onClick={handleAddToCart}
               >
                 <ShoppingCart className="w-4 h-4 text-white" />

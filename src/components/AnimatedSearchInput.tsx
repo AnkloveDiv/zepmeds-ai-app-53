@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -18,13 +18,26 @@ const AnimatedSearchInput = ({
 }: AnimatedSearchInputProps) => {
   const [activePromptIndex, setActivePromptIndex] = useState(0);
   const [searchValue, setSearchValue] = useState('');
+  const intervalRef = useRef<number | null>(null);
   
   useEffect(() => {
-    const interval = setInterval(() => {
+    // Clear any existing interval when component mounts
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    
+    // Set up a new interval
+    intervalRef.current = window.setInterval(() => {
       setActivePromptIndex((prevIndex) => (prevIndex + 1) % searchPrompts.length);
     }, 2000);
     
-    return () => clearInterval(interval);
+    // Clean up the interval when component unmounts
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
   }, []);
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,9 +77,9 @@ const AnimatedSearchInput = ({
           <div className="flex items-center w-full">
             <span className="text-gray-400 whitespace-nowrap">Search for </span>
             <div className="h-6 ml-1 overflow-hidden relative">
-              <AnimatePresence initial={false} mode="wait">
+              <AnimatePresence mode="wait" initial={false}>
                 <motion.span
-                  key={activePromptIndex}
+                  key={searchPrompts[activePromptIndex]}
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: -20, opacity: 0 }}
@@ -77,6 +90,15 @@ const AnimatedSearchInput = ({
                 </motion.span>
               </AnimatePresence>
             </div>
+            <input
+              type="text"
+              className="absolute inset-0 opacity-0 cursor-text"
+              onFocus={(e) => {
+                e.target.classList.remove('opacity-0');
+                setSearchValue('');
+                if (onFocus) onFocus();
+              }}
+            />
           </div>
         )}
       </div>

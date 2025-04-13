@@ -26,6 +26,7 @@ interface MedicineDetailModalProps {
     quickTips?: string[];
     faqs?: { question: string; answer: string }[];
     category?: string;
+    inStock?: boolean;
   } | null;
   onAddToCart: (quantity: number, strips: number) => void;
 }

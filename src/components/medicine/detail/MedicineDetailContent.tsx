@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { motion } from "framer-motion";
+import { AlertTriangle } from "lucide-react";
 import MedicineHeader from "./MedicineHeader";
 import TabSelector from "./TabSelector";
 import TabContent from "./TabContent";
@@ -28,6 +29,7 @@ interface MedicineDetailContentProps {
     quickTips?: string[];
     faqs?: { question: string; answer: string }[];
     category?: string;
+    inStock?: boolean;
   };
   onClose: () => void;
   onAddToCart: (quantity: number, strips: number) => void;
@@ -70,6 +72,9 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
                   medicine.name.toLowerCase().includes("thermometer") ||
                   medicine.name.toLowerCase().includes("glasses");
 
+  // Default inStock to true if not specified
+  const inStock = medicine.inStock !== undefined ? medicine.inStock : true;
+
   return (
     <motion.div
       className="bg-[#1a1a2e] border border-gray-800 rounded-xl w-full max-w-md mx-auto overflow-hidden"
@@ -84,6 +89,13 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
         />
         
         <div className="px-4 sm:px-5 pt-0 pb-4 flex-1 overflow-auto">
+          {!inStock && (
+            <div className="mb-4 bg-red-900/30 border border-red-800 rounded-md p-3 flex items-center">
+              <AlertTriangle className="h-5 w-5 text-red-500 mr-2 flex-shrink-0" />
+              <p className="text-red-300 text-sm">Not in stock right now, we will notify you</p>
+            </div>
+          )}
+          
           <TabSelector 
             activeTab={activeTab} 
             setActiveTab={setActiveTab} 
@@ -107,11 +119,14 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
             isDevice={isDevice}
             handleDecrement={handleDecrement}
             handleIncrement={handleIncrement}
+            disabled={!inStock}
           />
           
           <ActionButtons 
             onClose={onClose} 
-            handleAddToCart={handleAddToCart} 
+            handleAddToCart={handleAddToCart}
+            disabled={!inStock}
+            inStock={inStock}
           />
         </div>
       </div>
