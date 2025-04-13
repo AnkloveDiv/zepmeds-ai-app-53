@@ -7,7 +7,7 @@ interface Product {
   name: string;
   image: string;
   price: number;
-  discountPrice: number | null;
+  discountPrice?: number | null;
   rating: number;
   description: string;
   category?: string;
