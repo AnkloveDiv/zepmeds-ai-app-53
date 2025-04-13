@@ -1,6 +1,5 @@
 
 import React from "react";
-import { ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface ContactCardProps {
@@ -10,36 +9,42 @@ interface ContactCardProps {
   bgColor: string;
   iconColor: string;
   onClick: () => void;
-  delay: number;
+  delay?: number;
+  badge?: string;
 }
 
-const ContactCard = ({
-  icon,
-  title,
-  subtitle,
-  bgColor,
-  iconColor,
-  onClick,
-  delay,
+const ContactCard = ({ 
+  icon, 
+  title, 
+  subtitle, 
+  bgColor, 
+  iconColor, 
+  onClick, 
+  delay = 0,
+  badge
 }: ContactCardProps) => {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
-      className="p-4 glass-morphism rounded-xl flex items-center justify-between"
+      className={`${bgColor} rounded-lg p-4 flex items-center cursor-pointer hover:opacity-90 transition-opacity relative`}
       onClick={onClick}
     >
-      <div className="flex items-center">
-        <div className={`h-10 w-10 rounded-full ${bgColor} flex items-center justify-center mr-3`}>
-          {React.cloneElement(icon as React.ReactElement, { className: `h-5 w-5 ${iconColor}` })}
-        </div>
-        <div>
-          <h3 className="font-medium text-white">{title}</h3>
-          <p className="text-sm text-gray-400">{subtitle}</p>
-        </div>
+      <div className={`p-3 rounded-full ${iconColor} bg-black/20 mr-4`}>
+        {icon}
       </div>
-      <ChevronRight className="h-5 w-5 text-gray-400" />
+      <div>
+        <div className="flex items-center">
+          <h3 className="text-white font-medium">{title}</h3>
+          {badge && (
+            <span className="ml-2 px-1.5 py-0.5 text-[10px] font-bold bg-red-500 text-white rounded-md">
+              {badge}
+            </span>
+          )}
+        </div>
+        <p className="text-white/70 text-sm">{subtitle}</p>
+      </div>
     </motion.div>
   );
 };

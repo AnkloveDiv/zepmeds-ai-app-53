@@ -1,7 +1,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { MessageCircle, Phone, Mail } from "lucide-react";
+import { MessageCircle, Phone, Mail, MessageSquare } from "lucide-react";
 import ContactCard from "./ContactCard";
 import FAQAccordion from "./FAQAccordion";
 import { faqs } from "./data/faqData";
@@ -19,12 +19,23 @@ const MainSupportView = ({ onOpenChat }: MainSupportViewProps) => {
         <div className="grid gap-4">
           <ContactCard 
             icon={<MessageCircle />}
-            title="Chat with Support"
-            subtitle="Response time: ~2 mins"
+            title="AI Chat Support"
+            subtitle="Get instant help from our AI"
             bgColor="bg-zepmeds-purple/20"
             iconColor="text-zepmeds-purple"
             onClick={onOpenChat}
             delay={0.1}
+          />
+          
+          <ContactCard 
+            icon={<MessageSquare />}
+            title="Live Chat with Agent"
+            subtitle="Talk to a real person"
+            bgColor="bg-indigo-500/20"
+            iconColor="text-indigo-400"
+            onClick={onOpenChat}
+            delay={0.15}
+            badge="New"
           />
           
           <ContactCard 

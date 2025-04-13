@@ -212,13 +212,40 @@ const PrescriptionUpload = () => {
       return;
     }
     
+    const existingCart = JSON.parse(localStorage.getItem("cart") || "[]");
+    
+    const updatedCart = [...existingCart];
+    
+    inStockItems.forEach((medicine, index) => {
+      const existingIndex = updatedCart.findIndex(item => 
+        item.name.toLowerCase() === medicine.name.toLowerCase()
+      );
+      
+      if (existingIndex >= 0) {
+        updatedCart[existingIndex].quantity += 1;
+      } else {
+        updatedCart.push({
+          id: `prescription_med_${Date.now()}_${index}`,
+          name: medicine.name,
+          image: "/placeholder.svg",
+          price: Math.floor(Math.random() * 300) + 50,
+          quantity: 1,
+          stripQuantity: 1,
+          rating: 4.0,
+          inStock: true
+        });
+      }
+    });
+    
+    localStorage.setItem("cart", JSON.stringify(updatedCart));
+    
     toast("Processing Order", {
-        description: `Adding ${inStockItems.length} medicine${inStockItems.length > 1 ? 's' : ''} to cart`,
+        description: `Added ${inStockItems.length} medicine${inStockItems.length > 1 ? 's' : ''} to cart`,
         icon: <ShoppingCart className="h-5 w-5 text-green-500" />
     });
     
     setTimeout(() => {
-      navigate("/medicine-delivery");
+      navigate("/cart");
     }, 2000);
   };
   

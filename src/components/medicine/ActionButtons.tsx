@@ -2,6 +2,7 @@
 import { motion } from "framer-motion";
 import { FileUp, Filter, AlertTriangle, Pill, CheckCircle, XCircle, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface Medicine {
   name: string;
@@ -25,6 +26,7 @@ const ActionButtons = ({
   onBuyNow,
   analysisComplete 
 }: ActionButtonsProps) => {
+  const navigate = useNavigate();
   
   const handleUpload = () => {
     if (analysisComplete) {
@@ -61,6 +63,12 @@ const ActionButtons = ({
     }
     
     onUploadPrescription();
+  };
+
+  const handleBuyNowClick = () => {
+    if (onBuyNow) {
+      onBuyNow();
+    }
   };
   
   return (
@@ -105,7 +113,7 @@ const ActionButtons = ({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className="px-4 py-2 bg-green-600 text-white rounded-lg flex items-center"
-            onClick={onBuyNow}
+            onClick={handleBuyNowClick}
           >
             <ShoppingCart className="h-4 w-4 mr-2 text-white" />
             Buy Now
