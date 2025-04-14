@@ -36,7 +36,7 @@ const QuantityStepper = ({
 
   return (
     <motion.div 
-      className="stepper-container"
+      className="stepper-container space-y-4"
       initial={{ scaleY: 0, opacity: 0 }}
       animate={{ scaleY: 1, opacity: 1 }}
       exit={{ scaleY: 0, opacity: 0 }}
@@ -80,7 +80,7 @@ const QuantityStepper = ({
       
       {/* Strips Control (for tablets only) */}
       {!isLiquid && !isDevice && onIncrementStrips && onDecrementStrips && (
-        <div className="flex flex-col gap-2 mt-3">
+        <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <span className="text-white text-sm font-medium">Strips</span>
           </div>
@@ -124,14 +124,21 @@ const QuantityStepper = ({
       </div>
       
       {/* Add to Cart Button */}
-      <motion.button
-        className="w-full mt-4 py-3 bg-zepmeds-purple text-white rounded-md flex items-center justify-center font-medium"
-        onClick={onAddToCart}
-        whileTap={{ scale: 0.95 }}
-      >
-        <ShoppingCart className="h-5 w-5 mr-2" />
-        Add to Cart
-      </motion.button>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex-grow">
+          <p className="text-gray-300 text-xs mb-1">Total Price</p>
+          <p className="text-white font-semibold text-lg">₹{(quantity * 10).toFixed(2)}</p>
+        </div>
+        
+        <motion.button
+          className="w-auto px-4 py-3 bg-zepmeds-purple text-white rounded-md flex items-center justify-center font-medium"
+          onClick={onAddToCart}
+          whileTap={{ scale: 0.95 }}
+        >
+          <ShoppingCart className="h-5 w-5 mr-2" />
+          Add to Cart
+        </motion.button>
+      </div>
     </motion.div>
   );
 };
