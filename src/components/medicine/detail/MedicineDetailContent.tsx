@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from "framer-motion";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Info, ScrollText, Pill, ArrowRight, CircleHelp, Plus, Minus, ShoppingCart, X } from "lucide-react";
+import { Info, ScrollText, Pill, X, ShoppingCart } from "lucide-react";
 import { detectMedicineType } from "./utils/detectMedicineType";
 import { useQuantityManager } from "./hooks/useQuantityManager";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import QuantityStepper from "@/components/product/QuantityStepper";
 import {
   DescriptionTab,
   DirectionsTab,
@@ -47,7 +48,10 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
   onAddToCart,
 }) => {
   const [activeTab, setActiveTab] = useState("description");
+  const [animateQuantity, setAnimateQuantity] = useState(false);
   const medicineType = detectMedicineType(medicine.name);
+  const isLiquid = medicineType === "liquid";
+  const isDevice = medicineType === "device";
   
   // Use the quantity manager hook
   const {
@@ -61,6 +65,33 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
 
   const handleAddToCart = () => {
     onAddToCart(quantity, strips);
+    // Show animation
+    setAnimateQuantity(true);
+    setTimeout(() => setAnimateQuantity(false), 300);
+  };
+
+  const handleIncrementQuantity = (e: React.MouseEvent) => {
+    handleIncrement(setQuantity, quantity);
+    setAnimateQuantity(true);
+    setTimeout(() => setAnimateQuantity(false), 300);
+  };
+
+  const handleDecrementQuantity = (e: React.MouseEvent) => {
+    if (quantity > 1) {
+      handleDecrement(setQuantity, quantity);
+      setAnimateQuantity(true);
+      setTimeout(() => setAnimateQuantity(false), 300);
+    }
+  };
+
+  const handleIncrementStrips = (e: React.MouseEvent) => {
+    handleIncrement(setStrips, strips);
+  };
+
+  const handleDecrementStrips = (e: React.MouseEvent) => {
+    if (strips > 1) {
+      handleDecrement(setStrips, strips);
+    }
   };
 
   const discount = medicine.discountPrice 
@@ -164,11 +195,11 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
         </div>
       </div>
       
-      {/* Tabs Content */}
+      {/* Tabs Content - Scrollable Area */}
       <div className="flex-1 overflow-hidden">
         <Tabs defaultValue="description" className="w-full">
-          <div className="p-2 bg-gray-900/20 border-b border-gray-800">
-            <TabsList className="w-full h-auto bg-gray-900/30 p-1">
+          <div className="sticky top-0 z-10 p-2 bg-gray-900/70 border-b border-gray-800">
+            <TabsList className="w-full h-auto bg-gray-900/50 p-1">
               <TabsTrigger 
                 value="description" 
                 className="flex items-center gap-1 data-[state=active]:bg-indigo-700 data-[state=active]:text-white"
@@ -196,7 +227,7 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
             </TabsList>
           </div>
           
-          <ScrollArea className="h-40 px-4 py-3">
+          <ScrollArea className="h-48 px-4 py-3">
             <TabsContent value="description" className="m-0">
               <DescriptionTab medicine={medicine} />
             </TabsContent>
@@ -211,41 +242,20 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
       </div>
       
       {/* Quantity Stepper and Add to Cart Button */}
-      <div className="px-4 py-3 border-t border-gray-800 bg-gray-900/40">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-white font-medium">Quantity</span>
-          
-          <div className="flex items-center bg-gray-800 rounded-md">
-            <motion.button 
-              className="p-2 text-white"
-              onClick={() => handleDecrement(setQuantity, quantity)}
-              whileTap={{ scale: 0.9 }}
-              disabled={quantity <= 1}
-            >
-              <Minus className="h-4 w-4" />
-            </motion.button>
-            
-            <span className="px-4 text-white">{quantity}</span>
-            
-            <motion.button 
-              className="p-2 text-white"
-              onClick={() => handleIncrement(setQuantity, quantity)}
-              whileTap={{ scale: 0.9 }}
-            >
-              <Plus className="h-4 w-4" />
-            </motion.button>
-          </div>
-        </div>
-        
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="w-full py-3 bg-indigo-600 text-white rounded-md flex items-center justify-center font-medium"
-          onClick={handleAddToCart}
-        >
-          <ShoppingCart className="h-5 w-5 mr-2" />
-          Add to Cart
-        </motion.button>
+      <div className="px-4 py-4 border-t border-gray-800 bg-gray-900/40">
+        <QuantityStepper
+          quantity={quantity}
+          onIncrement={handleIncrementQuantity}
+          onDecrement={handleDecrementQuantity}
+          onAddToCart={handleAddToCart}
+          animateQuantity={animateQuantity}
+          isLiquid={isLiquid}
+          isDevice={isDevice}
+          strips={strips}
+          onIncrementStrips={handleIncrementStrips}
+          onDecrementStrips={handleDecrementStrips}
+          unitsPerStrip={10}
+        />
       </div>
     </motion.div>
   );
