@@ -6,7 +6,7 @@ import BottomNavigation from "@/components/BottomNavigation";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
-import { detectTextFromImage, TextDetectionResult, generateMockResultForTesting } from "@/services/visionService";
+import { detectTextFromImage, TextDetectionResult, generateMockResultForTesting } from "@/services/vision";
 import ActionButtons from "@/components/medicine/ActionButtons";
 import { toast } from "sonner";
 
