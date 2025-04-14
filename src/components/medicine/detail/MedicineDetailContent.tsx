@@ -103,7 +103,7 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
 
   return (
     <motion.div
-      className="bg-[#1a1a2e] border border-gray-800 rounded-xl w-full mx-auto overflow-hidden shadow-xl flex flex-col max-h-[100dvh]"
+      className="bg-[#1a1a2e] border border-gray-800 rounded-xl w-full mx-auto overflow-hidden shadow-xl flex flex-col max-h-[90dvh]"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Medicine Image with Discount Badge */}
@@ -111,7 +111,7 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
         <img 
           src={medicine.image} 
           alt={medicine.name} 
-          className="w-full h-48 object-contain bg-gradient-to-r from-gray-800 to-gray-900 p-2"
+          className="w-full h-52 object-contain bg-gradient-to-r from-gray-800 to-gray-900 p-4"
         />
         
         {discount > 0 && (
@@ -128,8 +128,8 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
         </button>
       </div>
       
-      {/* Medicine Name, Rating, Description & Price */}
-      <div className="px-4 py-3 bg-gray-900/30">
+      {/* Medicine Details Section */}
+      <div className="px-4 py-3">
         <div className="flex justify-between items-start">
           <div>
             <h2 className="text-xl font-bold text-white">{medicine.name}</h2>
@@ -142,6 +142,7 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
           </div>
         </div>
         
+        {/* Price Information */}
         <div className="flex items-baseline mt-2">
           {medicine.discountPrice ? (
             <>

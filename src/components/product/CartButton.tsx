@@ -39,7 +39,8 @@ const CartButton = ({
   return (
     <div className="relative">
       <motion.button
-        className={`p-2 rounded-full ${disabled ? 'bg-gray-700' : 'bg-zepmeds-purple'} ${isAnimating ? 'cart-animation' : ''} cart-icon-button`}
+        className={`p-2 rounded-lg ${disabled ? 'bg-gray-700' : 'bg-zepmeds-purple'} 
+          ${isAnimating ? 'cart-animation' : ''} cart-icon-button`}
         onClick={onClick}
         whileTap={{ scale: 0.9 }}
         disabled={disabled}
