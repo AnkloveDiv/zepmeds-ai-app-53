@@ -73,14 +73,14 @@ const MedicineDetailModal: React.FC<MedicineDetailModalProps> = ({
     <AnimatePresence>
       {isOpen && (
         <motion.div 
-          className="fixed inset-0 bg-black/80 z-50 overflow-y-auto flex items-center justify-center"
+          className="fixed inset-0 bg-black/80 z-50 overflow-y-auto flex items-start sm:items-center justify-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
         >
           <div 
-            className="min-h-[100dvh] sm:min-h-0 py-4 sm:py-10 px-2 sm:px-4 flex items-center justify-center w-full" 
+            className="min-h-[100dvh] w-full p-0 sm:p-4 flex items-start sm:items-center justify-center" 
             onClick={onClose}
           >
             <motion.div
@@ -88,7 +88,7 @@ const MedicineDetailModal: React.FC<MedicineDetailModalProps> = ({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.95 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
-              className="w-full max-w-md mx-auto"
+              className="w-full max-w-md mx-auto max-h-[100dvh]"
               onClick={(e) => e.stopPropagation()}
             >
               <MedicineDetailContent 

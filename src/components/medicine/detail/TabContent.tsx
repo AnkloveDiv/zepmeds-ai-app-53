@@ -8,7 +8,6 @@ import {
   CircleHelp, 
   Droplets, 
   ThermometerSun,
-  ChevronDown 
 } from "lucide-react";
 import { 
   Accordion,
