@@ -1,13 +1,15 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from "framer-motion";
-import { AlertTriangle, ShieldCheck, Truck } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import MedicineHeader from "./MedicineHeader";
 import TabSelector from "./TabSelector";
 import TabContent from "./TabContent";
 import QuantitySelector from "./QuantitySelector";
 import ActionButtons from "./ActionButtons";
+import OutOfStockWarning from "./components/OutOfStockWarning";
+import { detectMedicineType, MedicineType } from "./utils/detectMedicineType";
+import { useQuantityManager } from "./hooks/useQuantityManager";
 
 interface MedicineDetailContentProps {
   medicine: {
@@ -41,58 +43,28 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
   onClose,
   onAddToCart,
 }) => {
-  const [quantity, setQuantity] = useState(1);
-  const [strips, setStrips] = useState(1);
   const [activeTab, setActiveTab] = useState("description");
-  const [medicineType, setMedicineType] = useState<"tablets" | "liquid" | "device">("tablets");
-  const [unitsPerStrip, setUnitsPerStrip] = useState(10);
-  const [totalUnits, setTotalUnits] = useState(0);
+  const [medicineType, setMedicineType] = useState<MedicineType>("tablets");
+  const [unitsPerStrip] = useState(10);
   const contentRef = useRef<HTMLDivElement>(null);
+
+  // Use our custom hook for quantity management
+  const {
+    quantity,
+    setQuantity,
+    strips,
+    setStrips,
+    totalUnits,
+    handleDecrement,
+    handleIncrement
+  } = useQuantityManager(medicineType, unitsPerStrip);
 
   // Determine medicine type
   useEffect(() => {
     if (medicine.name) {
-      const lowerName = medicine.name.toLowerCase();
-      if (lowerName.includes("solution") || 
-          lowerName.includes("gel") || 
-          lowerName.includes("drops") ||
-          lowerName.includes("cream") ||
-          lowerName.includes("syrup") ||
-          lowerName.includes("liquid") ||
-          lowerName.includes("lotion")) {
-        setMedicineType("liquid");
-      } else if (lowerName.includes("monitor") || 
-                lowerName.includes("thermometer") ||
-                lowerName.includes("device") ||
-                lowerName.includes("machine") ||
-                lowerName.includes("meter") ||
-                lowerName.includes("tester") ||
-                lowerName.includes("glasses")) {
-        setMedicineType("device");
-      } else {
-        setMedicineType("tablets");
-      }
+      setMedicineType(detectMedicineType(medicine.name));
     }
   }, [medicine.name]);
-
-  // Calculate total units
-  useEffect(() => {
-    if (medicineType === "tablets") {
-      setTotalUnits(quantity + (strips * unitsPerStrip));
-    } else {
-      setTotalUnits(quantity);
-    }
-  }, [quantity, strips, medicineType, unitsPerStrip]);
-
-  const handleDecrement = (setter: React.Dispatch<React.SetStateAction<number>>, current: number) => {
-    if (current > 1) {
-      setter(current - 1);
-    }
-  };
-
-  const handleIncrement = (setter: React.Dispatch<React.SetStateAction<number>>, current: number) => {
-    setter(current + 1);
-  };
 
   const handleAddToCart = () => {
     onAddToCart(quantity, strips);
@@ -167,12 +139,7 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
       {/* Main Content Area with ScrollArea for better scrolling */}
       <div className="flex-1 overflow-hidden flex flex-col">
         <div className="px-4 pt-3 pb-0">
-          {!inStock && (
-            <div className="mb-3 bg-red-900/30 border border-red-800 rounded-md p-3 flex items-center">
-              <AlertTriangle className="h-5 w-5 text-red-400 mr-2 flex-shrink-0" />
-              <p className="text-red-200 text-sm font-medium">Not in stock right now, we will notify you</p>
-            </div>
-          )}
+          <OutOfStockWarning visible={!inStock} />
           
           <TabSelector 
             activeTab={activeTab} 
@@ -194,37 +161,20 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
           <div className="border-t border-gray-700 my-4"></div>
           
           {/* Quantity Selector */}
-          {(isLiquid || isDevice) ? (
-            <QuantitySelector 
-              quantity={quantity}
-              setQuantity={setQuantity}
-              strips={strips}
-              setStrips={setStrips}
-              isLiquid={isLiquid}
-              isDevice={isDevice}
-              handleDecrement={handleDecrement}
-              handleIncrement={handleIncrement}
-              disabled={!inStock}
-              medicineType={medicineType}
-              unitsPerStrip={unitsPerStrip}
-              totalQuantity={totalUnits}
-            />
-          ) : (
-            <QuantitySelector 
-              quantity={quantity}
-              setQuantity={setQuantity}
-              strips={strips}
-              setStrips={setStrips}
-              isLiquid={isLiquid}
-              isDevice={isDevice}
-              handleDecrement={handleDecrement}
-              handleIncrement={handleIncrement}
-              disabled={!inStock}
-              medicineType={medicineType}
-              unitsPerStrip={unitsPerStrip}
-              totalQuantity={totalUnits}
-            />
-          )}
+          <QuantitySelector 
+            quantity={quantity}
+            setQuantity={setQuantity}
+            strips={strips}
+            setStrips={setStrips}
+            isLiquid={isLiquid}
+            isDevice={isDevice}
+            handleDecrement={handleDecrement}
+            handleIncrement={handleIncrement}
+            disabled={!inStock}
+            medicineType={medicineType}
+            unitsPerStrip={unitsPerStrip}
+            totalQuantity={totalUnits}
+          />
         </ScrollArea>
         
         {/* Action Buttons (fixed at bottom) */}
