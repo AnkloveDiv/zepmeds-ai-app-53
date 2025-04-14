@@ -1,7 +1,7 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { vitaminCImg, thermometerImg, painReliefImg, multivitaminImg } from "@/data/medicineData";
+import { generateMedicineImage } from "@/utils/generateMedicineImage";
 
 // Define the product data structure
 export interface TrendingProduct {
@@ -28,7 +28,7 @@ export interface TrendingProduct {
 }
 
 // Initial products data
-const products: TrendingProduct[] = [
+const initialProducts: TrendingProduct[] = [
   { 
     id: "prod1", 
     name: "Vitamin C Tablets", 
@@ -161,10 +161,46 @@ const products: TrendingProduct[] = [
 
 export const useTrendingProducts = (setCartCount: (count: number) => void) => {
   const { toast } = useToast();
+  const [products, setProducts] = useState<TrendingProduct[]>(initialProducts);
   const [selectedMedicine, setSelectedMedicine] = useState<TrendingProduct | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showAnimation, setShowAnimation] = useState(false);
   const [animatedProduct, setAnimatedProduct] = useState("");
+  const [imagesGenerated, setImagesGenerated] = useState(false);
+
+  useEffect(() => {
+    if (!imagesGenerated) {
+      const generateImages = async () => {
+        const updatedProducts = await Promise.all(
+          products.map(async (product) => {
+            if (
+              product.image === vitaminCImg || 
+              product.image === thermometerImg || 
+              product.image === painReliefImg || 
+              product.image === multivitaminImg
+            ) {
+              try {
+                const generatedImage = await generateMedicineImage(
+                  product.name, 
+                  product.description
+                );
+                return { ...product, image: generatedImage };
+              } catch (error) {
+                console.error(`Failed to generate image for ${product.name}:`, error);
+                return product;
+              }
+            }
+            return product;
+          })
+        );
+        
+        setProducts(updatedProducts);
+        setImagesGenerated(true);
+      };
+      
+      generateImages();
+    }
+  }, [imagesGenerated, products]);
 
   const handleProductClick = (product: TrendingProduct) => {
     setSelectedMedicine(product);
@@ -190,11 +226,9 @@ export const useTrendingProducts = (setCartCount: (count: number) => void) => {
     localStorage.setItem("cart", JSON.stringify(existingCart));
     setCartCount(existingCart.length);
     
-    // Show animation - use a short timeout
     setAnimatedProduct(product.name);
     setShowAnimation(true);
     
-    // Ensure animation is hidden after completion
     setTimeout(() => {
       setShowAnimation(false);
     }, 1500);
@@ -204,6 +238,10 @@ export const useTrendingProducts = (setCartCount: (count: number) => void) => {
     if (selectedMedicine) {
       handleAddToCart(selectedMedicine, quantity, strips);
       setIsModalOpen(false);
+      toast({
+        title: "Added to cart",
+        description: `${quantity} ${selectedMedicine.name} added to cart`,
+      });
     }
   };
 
