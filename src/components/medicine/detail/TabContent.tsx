@@ -1,20 +1,13 @@
 
 import React from "react";
-import { 
-  Info, 
-  ScrollText, 
-  Pill, 
-  ArrowRight, 
-  CircleHelp, 
-  Droplets, 
-  ThermometerSun,
-} from "lucide-react";
-import { 
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger
-} from "@/components/ui/accordion";
+import { MedicineType } from "./utils/detectMedicineType";
+import {
+  DescriptionTab,
+  DirectionsTab,
+  HowItWorksTab,
+  QuickTipsTab,
+  FAQsTab
+} from "./tabs";
 
 interface TabContentProps {
   activeTab: string;
@@ -34,187 +27,56 @@ interface TabContentProps {
 }
 
 const TabContent: React.FC<TabContentProps> = ({ activeTab, medicine }) => {
-  const isLiquid = medicine.name.toLowerCase().includes("solution") || 
-                  medicine.name.toLowerCase().includes("gel") || 
-                  medicine.name.toLowerCase().includes("drops") ||
-                  medicine.name.toLowerCase().includes("cream") ||
-                  medicine.name.toLowerCase().includes("lotion");
-                  
-  const isDevice = medicine.name.toLowerCase().includes("monitor") || 
-                  medicine.name.toLowerCase().includes("thermometer") ||
-                  medicine.name.toLowerCase().includes("glasses");
-
+  // Use the detectMedicineType from utils to determine the medicine type
+  const medicineType = getMedicineType(medicine.name);
+  
   if (activeTab === "description") {
-    return (
-      <div className="space-y-3">
-        <h3 className="text-white font-medium flex items-center gap-2 mb-2">
-          <Info className="h-4 w-4" />
-          Description
-        </h3>
-        <p className="text-sm text-gray-300">{medicine.fullDescription || medicine.description || "No description available."}</p>
-        
-        {medicine.saltComposition && (
-          <Accordion type="single" collapsible className="border-gray-800 pt-2">
-            <AccordionItem value="saltComposition" className="border-gray-800">
-              <AccordionTrigger className="text-white text-sm font-medium py-2">
-                Salt Composition
-              </AccordionTrigger>
-              <AccordionContent className="text-sm text-gray-300">
-                {medicine.saltComposition}
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        )}
-        
-        {medicine.ingredients && medicine.ingredients.length > 0 && (
-          <Accordion type="single" collapsible className="border-gray-800">
-            <AccordionItem value="ingredients" className="border-gray-800">
-              <AccordionTrigger className="text-white text-sm font-medium py-2">
-                Ingredients
-              </AccordionTrigger>
-              <AccordionContent>
-                <ul className="list-disc list-inside text-sm text-gray-300 pl-2">
-                  {medicine.ingredients.map((ingredient, idx) => (
-                    <li key={idx} className="mb-1">{ingredient}</li>
-                  ))}
-                </ul>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        )}
-        
-        {medicine.sideEffects && medicine.sideEffects.length > 0 && (
-          <Accordion type="single" collapsible className="border-gray-800">
-            <AccordionItem value="sideEffects" className="border-gray-800">
-              <AccordionTrigger className="text-white text-sm font-medium py-2">
-                Side Effects
-              </AccordionTrigger>
-              <AccordionContent>
-                <ul className="list-disc list-inside text-sm text-gray-300 pl-2">
-                  {medicine.sideEffects.map((effect, idx) => (
-                    <li key={idx} className="mb-1">{effect}</li>
-                  ))}
-                </ul>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        )}
-      </div>
-    );
+    return <DescriptionTab medicine={medicine} />;
   }
   
   if (activeTab === "directions") {
-    return (
-      <div>
-        <h3 className="text-white font-medium flex items-center gap-2 mb-2">
-          <ScrollText className="h-4 w-4" />
-          Directions of Use
-        </h3>
-        <div className="text-sm text-gray-300">
-          {medicine.directions || medicine.dosage || "Take as directed by your physician."}
-        </div>
-      </div>
-    );
+    return <DirectionsTab medicine={medicine} />;
   }
   
   if (activeTab === "howItWorks") {
-    return (
-      <div>
-        <h3 className="text-white font-medium flex items-center gap-2 mb-2">
-          {isLiquid ? (
-            <Droplets className="h-4 w-4" />
-          ) : isDevice ? (
-            <ThermometerSun className="h-4 w-4" />
-          ) : (
-            <Pill className="h-4 w-4" />
-          )}
-          How it Works
-        </h3>
-        <div className="text-sm text-gray-300">
-          {medicine.howItWorks || (isLiquid 
-            ? "This solution works by direct application to the affected area to provide relief." 
-            : isDevice 
-              ? "This device helps monitor and track your health metrics with precision." 
-              : "This medicine works by targeting specific receptors in the body to provide relief.")}
-        </div>
-      </div>
-    );
+    return <HowItWorksTab medicine={medicine} medicineType={medicineType} />;
   }
   
   if (activeTab === "quickTips") {
-    return (
-      <div>
-        <h3 className="text-white font-medium flex items-center gap-2 mb-2">
-          <ArrowRight className="h-4 w-4" />
-          Quick Tips
-        </h3>
-        {medicine.quickTips && medicine.quickTips.length > 0 ? (
-          <ul className="list-disc list-inside text-sm text-gray-300 pl-2 space-y-1">
-            {medicine.quickTips.map((tip, idx) => (
-              <li key={idx}>{tip}</li>
-            ))}
-          </ul>
-        ) : (
-          <ul className="list-disc list-inside text-sm text-gray-300 pl-2 space-y-1">
-            <li>Store in a cool, dry place away from direct sunlight</li>
-            <li>Keep out of reach of children</li>
-            <li>Do not use after expiry date</li>
-            {isLiquid && <li>Shake well before use</li>}
-          </ul>
-        )}
-      </div>
-    );
+    return <QuickTipsTab medicine={medicine} medicineType={medicineType} />;
   }
   
   if (activeTab === "faqs") {
-    return (
-      <div>
-        <h3 className="text-white font-medium flex items-center gap-2 mb-2">
-          <CircleHelp className="h-4 w-4" />
-          Frequently Asked Questions
-        </h3>
-        
-        <Accordion type="single" collapsible className="w-full border-gray-800">
-          {medicine.faqs && medicine.faqs.length > 0 ? (
-            <>
-              {medicine.faqs.map((faq, idx) => (
-                <AccordionItem key={idx} value={`faq-${idx}`} className="border-gray-800">
-                  <AccordionTrigger className="text-white text-sm font-medium py-2">
-                    {faq.question}
-                  </AccordionTrigger>
-                  <AccordionContent className="text-sm text-gray-300">
-                    {faq.answer}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </>
-          ) : (
-            <>
-              <AccordionItem value="faq-1" className="border-gray-800">
-                <AccordionTrigger className="text-white text-sm font-medium py-2">
-                  Is this medicine safe for long-term use?
-                </AccordionTrigger>
-                <AccordionContent className="text-sm text-gray-300">
-                  Consult with your doctor for long-term use recommendations.
-                </AccordionContent>
-              </AccordionItem>
-              
-              <AccordionItem value="faq-2" className="border-gray-800">
-                <AccordionTrigger className="text-white text-sm font-medium py-2">
-                  Can I take this with other medications?
-                </AccordionTrigger>
-                <AccordionContent className="text-sm text-gray-300">
-                  Always inform your doctor about all medications you are taking.
-                </AccordionContent>
-              </AccordionItem>
-            </>
-          )}
-        </Accordion>
-      </div>
-    );
+    return <FAQsTab medicine={medicine} />;
   }
   
   return null;
+};
+
+// Helper function to determine medicine type
+// This is temporary until we refactor to use the proper utility
+const getMedicineType = (medicineName: string): MedicineType => {
+  const lowerName = medicineName.toLowerCase();
+  
+  if (lowerName.includes("solution") || 
+      lowerName.includes("gel") || 
+      lowerName.includes("drops") ||
+      lowerName.includes("cream") ||
+      lowerName.includes("syrup") ||
+      lowerName.includes("liquid") ||
+      lowerName.includes("lotion")) {
+    return "liquid";
+  } else if (lowerName.includes("monitor") || 
+            lowerName.includes("thermometer") ||
+            lowerName.includes("device") ||
+            lowerName.includes("machine") ||
+            lowerName.includes("meter") ||
+            lowerName.includes("tester") ||
+            lowerName.includes("glasses")) {
+    return "device";
+  } else {
+    return "tablets";
+  }
 };
 
 export default TabContent;
