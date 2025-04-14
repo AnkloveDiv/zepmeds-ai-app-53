@@ -1,6 +1,6 @@
 
 import React from "react";
-import { X } from "lucide-react";
+import { X, Share2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface MedicineImageProps {
@@ -17,25 +17,35 @@ const MedicineImage: React.FC<MedicineImageProps> = ({
   onClose 
 }) => {
   return (
-    <div className="relative">
-      <img 
-        src={image} 
-        alt={name} 
-        className="w-full h-52 object-contain bg-gradient-to-r from-gray-800 to-gray-900 p-4"
-      />
-      
-      {discount && discount > 0 && (
-        <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">
-          {discount}% OFF
-        </div>
-      )}
-      
+    <div className="relative bg-white rounded-t-xl pt-10 pb-4">
       <button 
-        className="absolute top-4 right-4 bg-black/50 text-white p-2 rounded-full"
+        className="absolute top-4 left-4 text-black"
         onClick={onClose}
       >
-        <X size={20} />
+        <X size={24} />
       </button>
+      
+      <button className="absolute top-4 right-4 text-black">
+        <Share2 size={20} />
+      </button>
+      
+      <div className="w-full h-48 flex items-center justify-center">
+        <img 
+          src={image} 
+          alt={name} 
+          className="h-full object-contain"
+        />
+      </div>
+      
+      {/* Image pagination dots */}
+      <div className="flex justify-center gap-1 mt-4">
+        {[...Array(7)].map((_, i) => (
+          <div 
+            key={i} 
+            className={`w-2 h-2 rounded-full ${i === 0 ? 'bg-black' : 'bg-gray-300'}`}
+          />
+        ))}
+      </div>
     </div>
   );
 };

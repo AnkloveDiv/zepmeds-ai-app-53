@@ -5,6 +5,7 @@ import { detectMedicineType } from "../utils/detectMedicineType";
 
 export const useMedicineQuantity = (medicineName: string) => {
   const medicineType = detectMedicineType(medicineName);
+  const isLiquid = medicineType === "liquid";
   const [animateQuantity, setAnimateQuantity] = useState(false);
   
   const {
@@ -46,6 +47,7 @@ export const useMedicineQuantity = (medicineName: string) => {
   return {
     quantity,
     strips,
+    isLiquid,
     animateQuantity,
     handleIncrementQuantity,
     handleDecrementQuantity,

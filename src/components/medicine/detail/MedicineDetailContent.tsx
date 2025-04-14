@@ -6,6 +6,7 @@ import MedicineDetails from './components/MedicineDetails';
 import MedicineTabs from './components/MedicineTabs';
 import MedicineQuantity from './components/MedicineQuantity';
 import { useMedicineQuantity } from './hooks/useMedicineQuantity';
+import { detectMedicineType } from './utils/detectMedicineType';
 
 interface MedicineDetailContentProps {
   medicine: {
@@ -48,10 +49,12 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
     animateQuantity,
     handleIncrementQuantity,
     handleDecrementQuantity,
-    handleIncrementStrips,
-    handleDecrementStrips,
     triggerAnimation
   } = useMedicineQuantity(medicine.name);
+
+  // Determine if the medicine is liquid
+  const medicineType = detectMedicineType(medicine.name);
+  const isLiquid = medicineType === "liquid";
 
   // Calculate discount percentage
   const discount = medicine.discountPrice 
@@ -65,7 +68,7 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
 
   return (
     <motion.div
-      className="bg-[#1a1a2e] border border-gray-800 rounded-xl w-full mx-auto overflow-hidden shadow-xl flex flex-col max-h-[90dvh]"
+      className="bg-black border border-gray-800 rounded-xl w-full mx-auto overflow-hidden shadow-xl flex flex-col max-h-[90dvh]"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Medicine Image with Discount Badge */}
@@ -79,12 +82,13 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
       {/* Medicine Details Section */}
       <MedicineDetails 
         name={medicine.name}
-        description={medicine.description}
-        rating={medicine.rating}
+        isLiquid={isLiquid}
+        volume={isLiquid ? "125 ML" : undefined}
+        quantity={quantity}
         price={medicine.price}
         discountPrice={medicine.discountPrice}
         manufacturer={medicine.manufacturer}
-        expiryDate={medicine.expiryDate}
+        saltComposition={medicine.saltComposition}
       />
       
       {/* Tabs Content - Scrollable Area */}
@@ -98,11 +102,8 @@ const MedicineDetailContent: React.FC<MedicineDetailContentProps> = ({
       <MedicineQuantity 
         medicine={medicine}
         quantity={quantity}
-        strips={strips}
         handleIncrementQuantity={handleIncrementQuantity}
         handleDecrementQuantity={handleDecrementQuantity}
-        handleIncrementStrips={handleIncrementStrips}
-        handleDecrementStrips={handleDecrementStrips}
         handleAddToCart={handleAddToCart}
         animateQuantity={animateQuantity}
       />
