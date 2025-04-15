@@ -17,6 +17,7 @@ import {
 import useBackNavigation from "@/hooks/useBackNavigation";
 import OrderForSomeoneElse from "@/components/checkout/OrderForSomeoneElse";
 import DateTimePicker from "@/components/checkout/DateTimePicker";
+import { useAuth } from "@/contexts/AuthContext";
 
 const UPI_PROVIDERS = [
   { id: "googlepay", name: "Google Pay", iconBg: "bg-blue-500" },
@@ -34,18 +35,18 @@ const BNPL_PROVIDERS = [
   { id: "kredpay", name: "KredPay", iconBg: "bg-red-600" },
 ];
 
-// Valid coupon codes with their discount logic
 const VALID_COUPONS = [
   { code: "WELCOME10", discount: 10, type: "percent", maxDiscount: 100 },
   { code: "FLAT50", discount: 50, type: "flat" },
   { code: "ZEPMEDS20", discount: 20, type: "percent", maxDiscount: 200 },
-  { code: "TESTING", discount: 0, type: "flat" } // For testing purposes
+  { code: "TESTING", discount: 0, type: "flat" }
 ];
 
 const Checkout = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { ExitConfirmDialog } = useBackNavigation();
+  const { user } = useAuth();
   
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [subTotal, setSubTotal] = useState(0);
@@ -85,7 +86,6 @@ const Checkout = () => {
   const [showBnplDetails, setShowBnplDetails] = useState(false);
   const [showUpiDetails, setShowUpiDetails] = useState(false);
   
-  // State for scheduled delivery
   const [scheduledDate, setScheduledDate] = useState<Date | undefined>(undefined);
   const [scheduledTime, setScheduledTime] = useState("");
   
@@ -132,7 +132,6 @@ const Checkout = () => {
     }
   }, [paymentMethod]);
   
-  // Reset scheduled delivery details when changing delivery time
   useEffect(() => {
     if (deliveryTime !== "scheduled") {
       setScheduledDate(undefined);
@@ -310,7 +309,6 @@ const Checkout = () => {
       return;
     }
     
-    // Calculate delivery details based on delivery time choice
     let estimatedDelivery;
     let deliveryDetails;
     
@@ -321,13 +319,10 @@ const Checkout = () => {
       estimatedDelivery = new Date(Date.now() + 120 * 60000).toISOString();
       deliveryDetails = { type: "standard", eta: "2 hours" };
     } else if (deliveryTime === "scheduled") {
-      // Combine the scheduled date and time
       if (scheduledDate && scheduledTime) {
-        // Parse time from format like "10:00 AM"
         const [hourMinute, period] = scheduledTime.split(' ');
         const [hour, minute] = hourMinute.split(':').map(Number);
         
-        // Convert to 24-hour format
         let hour24 = hour;
         if (period.toUpperCase() === 'PM' && hour !== 12) {
           hour24 += 12;
@@ -335,7 +330,6 @@ const Checkout = () => {
           hour24 = 0;
         }
         
-        // Create a new date object with scheduled date and time
         const scheduledDateTime = new Date(scheduledDate);
         scheduledDateTime.setHours(hour24, minute, 0, 0);
         
@@ -384,12 +378,10 @@ const Checkout = () => {
     localStorage.setItem("currentOrder", JSON.stringify(order));
     localStorage.setItem("cart", JSON.stringify([]));
     
-    // Send order to admin dashboard
     try {
       import('./dashboardApiService').then(({ getDashboardApiService, OrderDataPayload }) => {
         const dashboardApi = getDashboardApiService();
         
-        // Format data for dashboard
         const dashboardOrderData: OrderDataPayload = {
           orderId: order.id,
           orderNumber: order.id,
@@ -431,7 +423,6 @@ const Checkout = () => {
     navigate(`/track-order/${order.id}`);
   };
   
-  // Calculate totals - ensure we're using proper number values
   const subTotalAmount = parseFloat(subTotal.toString()) || 0;
   const deliveryFeeAmount = parseFloat(deliveryFee.toString()) || 0;
   const discountAmount = parseFloat(discount.toString()) || 0;
