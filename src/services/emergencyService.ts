@@ -9,7 +9,6 @@ export interface EmergencyRequest {
   status: 'requested' | 'confirming' | 'dispatched' | 'in_progress' | 'completed' | 'cancelled';
   location_lat: number | null;
   location_lng: number | null;
-  address: string;
   description: string;
 }
 
@@ -46,7 +45,7 @@ export const useEmergencyService = () => {
       const locationData = {
         lat: position ? position.coords.latitude : (emergencyData.location_lat || null),
         lng: position ? position.coords.longitude : (emergencyData.location_lng || null),
-        address: emergencyData.address || (user.address || 'Unknown location')
+        address: user.address || 'Unknown location' // This will be included in the location JSON object, not as a separate column
       };
       
       // Prepare request data according to the actual table schema
@@ -61,13 +60,13 @@ export const useEmergencyService = () => {
         notes
       });
       
-      // Send to Supabase using the correct column structure
+      // Send to Supabase using the correct column structure matching the database schema
       const { data, error: supabaseError } = await supabase
         .from('emergency_requests')
         .insert({
           name: name,
           phone: phone,
-          location: locationData,
+          location: locationData, // This matches the JSONB 'location' column in the database
           notes: notes,
           status: 'requested'
         })
@@ -85,7 +84,8 @@ export const useEmergencyService = () => {
       try {
         const dashboardApi = getDashboardApiService();
         
-        const dashboardResponse = await dashboardApi.sendEmergencyRequest({
+        // Use a simpler type definition to avoid circular references
+        const dashboardRequestData: Record<string, any> = {
           user: {
             id: user.phoneNumber,
             name: user.name || 'Unknown',
@@ -101,8 +101,9 @@ export const useEmergencyService = () => {
             },
             description: notes
           }
-        });
+        };
         
+        const dashboardResponse = await dashboardApi.sendEmergencyRequest(dashboardRequestData);
         console.log('Emergency request sent to dashboard API:', dashboardResponse);
       } catch (dashboardError) {
         // Log but continue - data will still sync through database

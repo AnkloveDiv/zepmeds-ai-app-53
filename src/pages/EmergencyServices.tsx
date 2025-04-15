@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
@@ -12,6 +13,7 @@ import useBackNavigation from "@/hooks/useBackNavigation";
 import { useToast } from "@/components/ui/use-toast";
 import { useEmergencyService } from "@/services/emergencyService";
 import { useAuth } from "@/contexts/AuthContext";
+import { Textarea } from "@/components/ui/textarea";
 
 const EmergencyServices = () => {
   useBackNavigation();
@@ -33,7 +35,7 @@ const EmergencyServices = () => {
     status: "idle", // idle, confirming, dispatched
     requestId: null as string | null,
     description: "",
-    address: ""
+    location: ""
   });
   
   const [eta, setEta] = useState(12); // minutes
@@ -78,14 +80,13 @@ const EmergencyServices = () => {
     setEmergency({ ...emergency, status: "confirming" });
     
     try {
-      // Get user's current address or use the one from their profile
-      const userAddress = emergency.address || (user?.address || "Unknown location");
+      // We need to pass location data as part of request
+      const locationData = emergency.location || (user?.address || "Unknown location");
       
-      // Request emergency service
+      // Request emergency service with location data in the proper format for the schema
       const response = await requestEmergencyService({
         request_type: emergency.type,
         status: 'requested',
-        address: userAddress,
         description: emergency.description || "Emergency assistance needed"
       });
       
@@ -122,6 +123,34 @@ const EmergencyServices = () => {
     }
   };
   
+  const handleCancelEmergency = async () => {
+    if (emergency.requestId) {
+      try {
+        await cancelEmergencyRequest(emergency.requestId);
+        setEmergency({ 
+          type: "ambulance", 
+          confirmation: "", 
+          status: "idle",
+          requestId: null,
+          description: "",
+          location: ""
+        });
+        
+        toast({
+          title: "Emergency Request Cancelled",
+          description: "Your emergency service request has been cancelled.",
+        });
+      } catch (err) {
+        console.error("Error cancelling emergency request:", err);
+        toast({
+          title: "Error",
+          description: "Failed to cancel emergency request.",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+  
   return (
     <div className="min-h-screen bg-background pb-20">
       <Header showBackButton title="Emergency Services" />
@@ -146,6 +175,17 @@ const EmergencyServices = () => {
                     This will dispatch emergency medical services to your current location immediately.
                     Only use this service for genuine medical emergencies.
                   </p>
+                  
+                  <div className="mb-4">
+                    <Label htmlFor="description" className="text-white">Describe your emergency (optional)</Label>
+                    <Textarea 
+                      id="description" 
+                      value={emergency.description}
+                      onChange={(e) => setEmergency({ ...emergency, description: e.target.value })}
+                      className="bg-black/20 border-white/10 mt-1"
+                      placeholder="What's happening? Any relevant medical information..."
+                    />
+                  </div>
                   
                   <div className="mb-4">
                     <Label htmlFor="confirmation" className="text-white">Type "yes" to confirm emergency services</Label>
@@ -202,14 +242,7 @@ const EmergencyServices = () => {
                   <Button 
                     variant="outline"
                     className="w-full border-white/10 text-white hover:bg-white/5"
-                    onClick={() => setEmergency({ 
-                      type: "ambulance", 
-                      confirmation: "", 
-                      status: "idle",
-                      requestId: null,
-                      description: "",
-                      address: ""
-                    })}
+                    onClick={handleCancelEmergency}
                   >
                     Cancel Emergency Request
                   </Button>
