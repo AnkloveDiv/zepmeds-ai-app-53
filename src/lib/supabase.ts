@@ -8,7 +8,7 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Import the dashboard API service
-import { getDashboardApiService } from '@/services/dashboardApiService';
+import { getDashboardApiService } from '@/pages/dashboardApiService';
 
 // Export the dashboard API service for use in components
 export const dashboardApiService = getDashboardApiService();

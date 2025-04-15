@@ -1,10 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
 import { useToast } from "@/components/ui/use-toast";
 import useBackNavigation from "@/hooks/useBackNavigation";
+import { getOrderTracking } from "@/services/orderService";
 
 // Refactored components
 import OrderLoadingState from "@/components/order/OrderLoadingState";
@@ -28,51 +28,13 @@ const TrackOrder = () => {
   const { ExitConfirmDialog } = useBackNavigation();
   
   useEffect(() => {
-    const getOrderDetails = () => {
+    const fetchOrderDetails = async () => {
       setLoading(true);
       
       try {
         if (orderId) {
-          const savedOrder = localStorage.getItem("currentOrder");
-          
-          if (savedOrder) {
-            const parsedOrder = JSON.parse(savedOrder);
-            
-            if (parsedOrder.id === orderId) {
-              setOrder(parsedOrder);
-              setLoading(false);
-              return;
-            }
-          }
-          
-          const mockOrder = {
-            id: orderId,
-            status: "in-transit",
-            estimatedDelivery: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
-            deliveryRider: {
-              name: "Rahul Singh",
-              rating: 4.8,
-              phone: "+91 98765 43210",
-              eta: "15 minutes",
-              profileImage: "https://source.unsplash.com/random/100x100/?face"
-            },
-            items: [
-              {
-                id: "med-1",
-                name: "Paracetamol",
-                image: "https://source.unsplash.com/random/100x100/?medicine",
-                quantity: 2,
-                stripQuantity: 10,
-                price: 25
-              }
-            ],
-            totalAmount: 500,
-            deliveryAddress: "123 Main St, Apartment 4B, New York, NY 10001",
-            placedAt: new Date(Date.now() - 20 * 60 * 1000).toISOString()
-          };
-          
-          setOrder(mockOrder);
-          localStorage.setItem("currentOrder", JSON.stringify(mockOrder));
+          const orderData = await getOrderTracking(orderId);
+          setOrder(orderData);
         } else {
           throw new Error("Order ID is missing");
         }
@@ -89,7 +51,7 @@ const TrackOrder = () => {
       }
     };
     
-    getOrderDetails();
+    fetchOrderDetails();
   }, [orderId, toast]);
   
   const handleCallRider = () => {

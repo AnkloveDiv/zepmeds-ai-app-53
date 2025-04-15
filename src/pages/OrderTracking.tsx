@@ -9,6 +9,7 @@ import { Package, Truck, Check, AlertCircle, MapPin } from "lucide-react";
 import useBackNavigation from "@/hooks/useBackNavigation";
 import { useToast } from "@/components/ui/use-toast";
 import { motion } from "framer-motion";
+import { getOrderTracking } from "@/services/orderService";
 
 interface Order {
   id: string;
@@ -33,17 +34,29 @@ const OrderTracking = () => {
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    const savedOrder = localStorage.getItem("currentOrder");
-    if (savedOrder) {
-      try {
-        const parsedOrder = JSON.parse(savedOrder);
-        setActiveOrder(parsedOrder);
-      } catch (e) {
-        console.error("Error parsing order data:", e);
+    const loadActiveOrder = async () => {
+      const savedOrder = localStorage.getItem("currentOrder");
+      if (savedOrder) {
+        try {
+          const parsedOrder = JSON.parse(savedOrder);
+          
+          // Verify the order exists in the system
+          try {
+            const orderData = await getOrderTracking(parsedOrder.id || parsedOrder.orderId);
+            setActiveOrder(orderData);
+          } catch (error) {
+            console.error("Error verifying order:", error);
+            setActiveOrder(parsedOrder);
+          }
+        } catch (e) {
+          console.error("Error parsing order data:", e);
+        }
       }
-    }
+      
+      setLoading(false);
+    };
     
-    setLoading(false);
+    loadActiveOrder();
   }, []);
   
   const handleTrackOrder = () => {
