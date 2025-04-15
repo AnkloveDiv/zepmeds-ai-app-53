@@ -6,8 +6,10 @@
  */
 
 import { BaseApiService } from './baseApiService';
-import { OrderApiService, getOrderApiService, OrderDataPayload } from './orderApiService';
-import { EmergencyApiService, getEmergencyApiService, EmergencyRequestPayload } from './emergencyApiService';
+import { OrderApiService, getOrderApiService } from './orderApiService';
+import type { OrderDataPayload } from './orderApiService';
+import { EmergencyApiService, getEmergencyApiService } from './emergencyApiService';
+import type { EmergencyRequestPayload } from './emergencyApiService';
 
 /**
  * Dashboard API Service that combines all API functionality
@@ -75,6 +77,6 @@ export const getDashboardApiService = (
   return dashboardApiInstance;
 };
 
-// Re-export types and services for backward compatibility
+// Re-export types for backward compatibility
 export type { OrderDataPayload, EmergencyRequestPayload };
 export { getOrderApiService, getEmergencyApiService };

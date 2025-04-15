@@ -7,7 +7,11 @@
 
 export { 
   DashboardApiService, 
-  getDashboardApiService,
+  getDashboardApiService
+} from './dashboardApiService';
+
+// Use 'export type' for type re-exports
+export type {
   OrderDataPayload,
   EmergencyRequestPayload
 } from './dashboardApiService';
