@@ -1,0 +1,287 @@
+
+{
+  "name": "Zepmeds Emergency Services Database Schema",
+  "version": "1.0.0",
+  "description": "Database schema for emergency services integration with Zepmeds Ambulance dashboard",
+  "tables": [
+    {
+      "name": "emergency_requests",
+      "description": "Stores all emergency service requests from users",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "isPrimary": true,
+          "description": "Unique identifier for the emergency request"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "description": "Reference to the user who made the request"
+        },
+        {
+          "name": "request_type",
+          "type": "text",
+          "description": "Type of emergency (ambulance, medical, etc.)"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "description": "Current status of request (requested, dispatched, in_progress, completed, cancelled)"
+        },
+        {
+          "name": "location_lat",
+          "type": "float",
+          "description": "Latitude coordinate of emergency location"
+        },
+        {
+          "name": "location_lng",
+          "type": "float",
+          "description": "Longitude coordinate of emergency location"
+        },
+        {
+          "name": "address",
+          "type": "text",
+          "description": "Text address of emergency location"
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "description": "Description of the emergency"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "description": "When the request was created"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "description": "When the request was last updated"
+        }
+      ],
+      "rls_policies": [
+        {
+          "name": "Users can view their own requests",
+          "definition": "auth.uid() = user_id",
+          "operation": "SELECT",
+          "using_expression": "auth.uid() = user_id"
+        },
+        {
+          "name": "Users can create requests",
+          "definition": "auth.uid() = user_id",
+          "operation": "INSERT",
+          "using_expression": "auth.uid() = user_id"
+        },
+        {
+          "name": "Users can update their own requests",
+          "definition": "auth.uid() = user_id",
+          "operation": "UPDATE",
+          "using_expression": "auth.uid() = user_id"
+        },
+        {
+          "name": "Admins can view all requests",
+          "definition": "auth.uid() IN (SELECT user_id FROM admin_users)",
+          "operation": "SELECT",
+          "using_expression": "auth.uid() IN (SELECT user_id FROM admin_users)"
+        },
+        {
+          "name": "Admins can update all requests",
+          "definition": "auth.uid() IN (SELECT user_id FROM admin_users)",
+          "operation": "UPDATE",
+          "using_expression": "auth.uid() IN (SELECT user_id FROM admin_users)"
+        }
+      ]
+    },
+    {
+      "name": "emergency_responders",
+      "description": "Information about emergency service responders",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "isPrimary": true,
+          "description": "Unique identifier for the responder"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "description": "Name of the responder"
+        },
+        {
+          "name": "vehicle_number",
+          "type": "text",
+          "description": "Identification number of the vehicle"
+        },
+        {
+          "name": "phone_number",
+          "type": "text",
+          "description": "Contact number for the responder"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "description": "Current status (available, assigned, off_duty)"
+        },
+        {
+          "name": "location_lat",
+          "type": "float",
+          "description": "Current latitude coordinate of responder"
+        },
+        {
+          "name": "location_lng",
+          "type": "float",
+          "description": "Current longitude coordinate of responder"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "description": "When the responder record was created"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "description": "When the responder record was last updated"
+        }
+      ],
+      "rls_policies": [
+        {
+          "name": "Admins can manage all responders",
+          "definition": "auth.uid() IN (SELECT user_id FROM admin_users)",
+          "operation": "ALL",
+          "using_expression": "auth.uid() IN (SELECT user_id FROM admin_users)"
+        },
+        {
+          "name": "Responders can view themselves",
+          "definition": "auth.uid() = user_id",
+          "operation": "SELECT",
+          "using_expression": "auth.uid() = user_id"
+        },
+        {
+          "name": "Responders can update their status and location",
+          "definition": "auth.uid() = user_id",
+          "operation": "UPDATE",
+          "using_expression": "auth.uid() = user_id"
+        },
+        {
+          "name": "Users can view responders assigned to their emergencies",
+          "definition": "EXISTS (SELECT 1 FROM emergency_assignments ea JOIN emergency_requests er ON ea.emergency_request_id = er.id WHERE ea.responder_id = emergency_responders.id AND er.user_id = auth.uid())",
+          "operation": "SELECT",
+          "using_expression": "EXISTS (SELECT 1 FROM emergency_assignments ea JOIN emergency_requests er ON ea.emergency_request_id = er.id WHERE ea.responder_id = emergency_responders.id AND er.user_id = auth.uid())"
+        }
+      ]
+    },
+    {
+      "name": "emergency_assignments",
+      "description": "Links emergency requests to responders",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "isPrimary": true,
+          "description": "Unique identifier for the assignment"
+        },
+        {
+          "name": "emergency_request_id",
+          "type": "uuid",
+          "references": "emergency_requests(id)",
+          "description": "Reference to the emergency request"
+        },
+        {
+          "name": "responder_id",
+          "type": "uuid",
+          "references": "emergency_responders(id)",
+          "description": "Reference to the assigned responder"
+        },
+        {
+          "name": "assigned_at",
+          "type": "timestamp with time zone",
+          "description": "When the responder was assigned"
+        },
+        {
+          "name": "eta_minutes",
+          "type": "integer",
+          "description": "Estimated time of arrival in minutes"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "description": "Current assignment status (assigned, arrived, completed)"
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "description": "Additional notes about the assignment"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "description": "When the assignment was created"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "description": "When the assignment was last updated"
+        }
+      ],
+      "rls_policies": [
+        {
+          "name": "Users can view their own assignments",
+          "definition": "auth.uid() IN (SELECT user_id FROM emergency_requests WHERE id = emergency_request_id)",
+          "operation": "SELECT",
+          "using_expression": "auth.uid() IN (SELECT user_id FROM emergency_requests WHERE id = emergency_request_id)"
+        },
+        {
+          "name": "Responders can view and update their own assignments",
+          "definition": "auth.uid() IN (SELECT user_id FROM emergency_responders WHERE id = responder_id)",
+          "operation": "ALL",
+          "using_expression": "auth.uid() IN (SELECT user_id FROM emergency_responders WHERE id = responder_id)"
+        },
+        {
+          "name": "Admins can manage all assignments",
+          "definition": "auth.uid() IN (SELECT user_id FROM admin_users)",
+          "operation": "ALL",
+          "using_expression": "auth.uid() IN (SELECT user_id FROM admin_users)"
+        }
+      ]
+    }
+  ],
+  "integration": {
+    "dashboardAPI": {
+      "endpoint": "https://api.zepmeds-dashboard.example/emergency",
+      "method": "POST",
+      "authType": "Bearer",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer YOUR_API_KEY"
+      },
+      "payloadFormat": {
+        "user": {
+          "id": "string",
+          "name": "string",
+          "phone": "string"
+        },
+        "emergency": {
+          "type": "string",
+          "status": "string",
+          "location": {
+            "lat": "number",
+            "lng": "number",
+            "address": "string"
+          },
+          "description": "string",
+          "timestamp": "string (ISO format)"
+        }
+      }
+    },
+    "realTimeSync": {
+      "method": "Supabase Realtime",
+      "channelName": "emergency_events",
+      "events": [
+        "INSERT on emergency_requests",
+        "UPDATE on emergency_requests",
+        "UPDATE on emergency_assignments"
+      ]
+    }
+  }
+}

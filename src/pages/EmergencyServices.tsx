@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
@@ -11,20 +11,53 @@ import { Ambulance, Phone, MapPin, Clock } from "lucide-react";
 import DeliveryMap from "@/components/DeliveryMap";
 import useBackNavigation from "@/hooks/useBackNavigation";
 import { useToast } from "@/components/ui/use-toast";
+import { useEmergencyService } from "@/services/emergencyService";
+import { useAuth } from "@/contexts/AuthContext";
 
 const EmergencyServices = () => {
   useBackNavigation();
   const { toast } = useToast();
+  const { user } = useAuth();
+  
+  const { 
+    requestEmergencyService, 
+    cancelEmergencyRequest, 
+    loading, 
+    error, 
+    ambulance, 
+    eta: serviceEta 
+  } = useEmergencyService();
   
   const [emergency, setEmergency] = useState({
     type: "ambulance",
     confirmation: "",
     status: "idle", // idle, confirming, dispatched
+    requestId: null as string | null,
+    description: "",
+    address: ""
   });
   
   const [eta, setEta] = useState(12); // minutes
   
-  const handleConfirmEmergency = () => {
+  // Use the ETA from the service if available
+  useEffect(() => {
+    if (serviceEta) {
+      setEta(serviceEta);
+    }
+  }, [serviceEta]);
+  
+  // Show error toast if there's an error
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error",
+        description: error,
+        variant: "destructive"
+      });
+    }
+  }, [error, toast]);
+  
+  const handleConfirmEmergency = async () => {
     if (emergency.confirmation.toLowerCase() !== "yes") {
       toast({
         title: "Error",
@@ -34,16 +67,42 @@ const EmergencyServices = () => {
       return;
     }
     
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You need to be logged in to request emergency services",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setEmergency({ ...emergency, status: "confirming" });
     
-    // Simulate API call
-    setTimeout(() => {
-      setEmergency({ ...emergency, status: "dispatched" });
+    // Get user's current address or use the one from their profile
+    const userAddress = emergency.address || (user?.address || "Unknown location");
+    
+    // Request emergency service
+    const response = await requestEmergencyService({
+      request_type: emergency.type,
+      status: 'requested',
+      address: userAddress,
+      description: emergency.description || "Emergency assistance needed"
+    });
+    
+    if (response) {
+      setEmergency({ 
+        ...emergency, 
+        status: "dispatched", 
+        requestId: response.id 
+      });
+      
       toast({
         title: "Emergency Services Dispatched",
-        description: "Help is on the way! ETA: 12 minutes",
+        description: `Help is on the way! ETA: ${serviceEta || eta} minutes`,
       });
-    }, 2000);
+      
+      // Data has been sent to Zepmeds dashboard through our service
+    }
   };
   
   return (
@@ -126,7 +185,14 @@ const EmergencyServices = () => {
                   <Button 
                     variant="outline"
                     className="w-full border-white/10 text-white hover:bg-white/5"
-                    onClick={() => setEmergency({ type: "ambulance", confirmation: "", status: "idle" })}
+                    onClick={() => setEmergency({ 
+                      type: "ambulance", 
+                      confirmation: "", 
+                      status: "idle",
+                      requestId: null,
+                      description: "",
+                      address: ""
+                    })}
                   >
                     Cancel Emergency Request
                   </Button>
