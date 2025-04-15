@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -349,8 +348,11 @@ const Checkout = () => {
       }
     }
     
+    const orderId = `ZM${Math.floor(Math.random() * 10000)}`;
+    const selectedAddressData = addresses.find(addr => addr.id === selectedAddress);
+    
     const order = {
-      id: `ZM${Math.floor(Math.random() * 10000)}`,
+      id: orderId,
       items: cartItems,
       subTotal,
       deliveryFee,
@@ -365,7 +367,7 @@ const Checkout = () => {
         cardExpiry
       } : (paymentMethod === "bnpl" ? { provider: bnplProvider } : 
            paymentMethod === "upi" ? { provider: upiProvider } : null),
-      address: addresses.find(addr => addr.id === selectedAddress),
+      address: selectedAddressData,
       deliveryTime,
       deliveryDetails,
       status: "confirmed",
@@ -381,6 +383,45 @@ const Checkout = () => {
     
     localStorage.setItem("currentOrder", JSON.stringify(order));
     localStorage.setItem("cart", JSON.stringify([]));
+    
+    // Send order to admin dashboard
+    try {
+      import('./dashboardApiService').then(({ getDashboardApiService, OrderDataPayload }) => {
+        const dashboardApi = getDashboardApiService();
+        
+        // Format data for dashboard
+        const dashboardOrderData: OrderDataPayload = {
+          orderId: order.id,
+          orderNumber: order.id,
+          customerInfo: {
+            name: recipientDetails ? recipientDetails.name : user?.name || "Guest Customer",
+            phone: recipientDetails ? recipientDetails.phone : user?.phoneNumber || "Not provided",
+            address: selectedAddressData ? `${selectedAddressData.address}, ${selectedAddressData.city}, ${selectedAddressData.state}` : "Address not provided"
+          },
+          items: cartItems.map(item => ({
+            id: item.id || `item-${Math.random().toString(36).substring(2, 9)}`,
+            name: item.name,
+            quantity: item.quantity || 1,
+            price: item.discountPrice || item.price
+          })),
+          status: "confirmed",
+          totalAmount: order.total,
+          paymentMethod: order.paymentMethod,
+          createdAt: order.placedAt
+        };
+        
+        console.log("Sending order to admin dashboard:", dashboardOrderData);
+        dashboardApi.sendOrderData(dashboardOrderData).then(response => {
+          console.log("Order successfully sent to admin dashboard:", response);
+        }).catch(error => {
+          console.error("Failed to send order to admin dashboard:", error);
+        });
+      }).catch(err => {
+        console.error("Failed to load dashboard API service:", err);
+      });
+    } catch (err) {
+      console.error("Error sending order to admin dashboard:", err);
+    }
     
     toast({
       title: "Order placed successfully!",

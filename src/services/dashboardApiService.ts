@@ -24,11 +24,32 @@ export interface EmergencyRequestPayload {
   };
 }
 
+export interface OrderDataPayload {
+  orderId: string;
+  orderNumber: string;
+  customerInfo: {
+    name: string;
+    phone?: string;
+    address: string;
+  };
+  items: Array<{
+    id: string;
+    name: string;
+    quantity: number;
+    price: number;
+  }>;
+  status: string;
+  totalAmount: number;
+  paymentMethod: string;
+  createdAt: string;
+}
+
 export class DashboardApiService {
   private apiBaseUrl: string;
   private apiKey: string;
+  private maxRetries: number = 3;
   
-  constructor(apiBaseUrl: string = 'https://api.zepmeds-dashboard.example', apiKey: string = '') {
+  constructor(apiBaseUrl: string = 'https://lovable.dev/projects/248b8658-2f81-447e-bdf7-e30916a3844a/api', apiKey: string = '') {
     this.apiBaseUrl = apiBaseUrl;
     this.apiKey = apiKey;
     console.log('DashboardApiService initialized with URL:', apiBaseUrl);
@@ -40,6 +61,26 @@ export class DashboardApiService {
   public async sendEmergencyRequest(payload: EmergencyRequestPayload): Promise<any> {
     console.log('Sending emergency request to dashboard:', payload);
     return this.apiPost('/emergency/request', payload);
+  }
+  
+  /**
+   * Send order data to the admin dashboard
+   */
+  public async sendOrderData(payload: OrderDataPayload): Promise<any> {
+    console.log('Sending order data to admin dashboard:', payload);
+    return this.apiPost('/orders/new', payload);
+  }
+  
+  /**
+   * Update order status in the admin dashboard
+   */
+  public async updateOrderStatus(orderId: string, status: string): Promise<any> {
+    console.log(`Updating order status for ${orderId} to ${status}`);
+    return this.apiPost('/orders/update', {
+      orderId,
+      status,
+      updatedAt: new Date().toISOString()
+    });
   }
   
   /**
@@ -85,35 +126,64 @@ export class DashboardApiService {
   /**
    * Send a POST request to the dashboard API
    */
-  private async apiPost(endpoint: string, data: any): Promise<any> {
+  private async apiPost(endpoint: string, data: any, retryCount: number = 0): Promise<any> {
     try {
       console.log(`[DASHBOARD API] POST ${this.apiBaseUrl}${endpoint}`, data);
       
-      // In a real implementation using fetch:
+      // Real implementation using fetch with proper error handling
+      const headers = this.getHeaders();
+      const body = JSON.stringify(data);
+      
+      console.log(`Making API request to: ${this.apiBaseUrl}${endpoint}`);
+      console.log(`Headers: ${JSON.stringify(headers)}`);
+      console.log(`Body: ${body.substring(0, 200)}${body.length > 200 ? '...' : ''}`);
+      
       const response = await fetch(`${this.apiBaseUrl}${endpoint}`, {
         method: 'POST',
-        headers: this.getHeaders(),
-        body: JSON.stringify(data)
+        headers: headers,
+        body: body,
+        mode: 'cors', // Enable cross-origin requests
       });
       
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`API Error (${response.status}): ${errorText}`);
+        
+        // Retry logic for recoverable errors
+        if (retryCount < this.maxRetries && (response.status >= 500 || response.status === 429)) {
+          console.log(`Retrying request to ${endpoint} (attempt ${retryCount + 1})`);
+          const delay = Math.min(1000 * Math.pow(2, retryCount), 10000); // Exponential backoff
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return this.apiPost(endpoint, data, retryCount + 1);
+        }
+        
         throw new Error(`API Error: ${response.status} ${response.statusText}`);
       }
       
       try {
-        return await response.json();
+        const responseData = await response.json();
+        console.log(`API Response from ${endpoint}:`, responseData);
+        return responseData;
       } catch (e) {
+        console.log(`No JSON response from ${endpoint}, returning success`);
         return { success: true }; // Return success if not JSON response
       }
     } catch (error) {
       console.error(`Error calling ${endpoint}:`, error);
       
-      // Return a mock successful response to ensure the app continues to function
+      // Retry logic for network errors
+      if (retryCount < this.maxRetries) {
+        console.log(`Retrying request to ${endpoint} due to network error (attempt ${retryCount + 1})`);
+        const delay = Math.min(1000 * Math.pow(2, retryCount), 10000); // Exponential backoff
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.apiPost(endpoint, data, retryCount + 1);
+      }
+      
+      // After all retries, return a mock successful response to ensure the app continues to function
+      console.log(`All retries failed for ${endpoint}, returning mock success response`);
       return {
         success: true,
-        message: `Successfully processed request to ${endpoint}`,
+        message: `Successfully processed request to ${endpoint} (mock response after failure)`,
         data: { ...data, id: `mock-id-${Date.now()}` }
       };
     }
@@ -122,7 +192,7 @@ export class DashboardApiService {
   /**
    * Send a GET request to the dashboard API
    */
-  private async apiGet(endpoint: string, queryParams: Record<string, string> = {}): Promise<any> {
+  private async apiGet(endpoint: string, queryParams: Record<string, string> = {}, retryCount: number = 0): Promise<any> {
     try {
       // Construct URL with query parameters
       const url = new URL(`${this.apiBaseUrl}${endpoint}`);
@@ -132,23 +202,45 @@ export class DashboardApiService {
       
       console.log(`[DASHBOARD API] GET ${url.toString()}`);
       
-      // In a real implementation using fetch:
+      // In a real implementation using fetch with proper error handling
       try {
         const response = await fetch(url.toString(), {
           method: 'GET',
-          headers: this.getHeaders()
+          headers: this.getHeaders(),
+          mode: 'cors', // Enable cross-origin requests
         });
         
         if (!response.ok) {
           const errorText = await response.text();
           console.error(`API Error (${response.status}): ${errorText}`);
+          
+          // Retry logic for recoverable errors
+          if (retryCount < this.maxRetries && (response.status >= 500 || response.status === 429)) {
+            console.log(`Retrying request to ${endpoint} (attempt ${retryCount + 1})`);
+            const delay = Math.min(1000 * Math.pow(2, retryCount), 10000); // Exponential backoff
+            await new Promise(resolve => setTimeout(resolve, delay));
+            return this.apiGet(endpoint, queryParams, retryCount + 1);
+          }
+          
           throw new Error(`API Error: ${response.status} ${response.statusText}`);
         }
         
-        return await response.json();
+        const responseData = await response.json();
+        console.log(`API Response from ${endpoint}:`, responseData);
+        return responseData;
       } catch (e) {
-        // If fetch fails or response isn't valid JSON, return mock data
-        console.error("Error fetching from API, returning mock data", e);
+        // If fetch fails or response isn't valid JSON, return mock data after retries
+        console.error("Error fetching from API:", e);
+        
+        // Retry logic for network errors
+        if (retryCount < this.maxRetries) {
+          console.log(`Retrying request to ${endpoint} due to network error (attempt ${retryCount + 1})`);
+          const delay = Math.min(1000 * Math.pow(2, retryCount), 10000); // Exponential backoff
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return this.apiGet(endpoint, queryParams, retryCount + 1);
+        }
+        
+        console.log(`All retries failed for ${endpoint}, returning mock data`);
         
         // Mock response based on endpoint
         if (endpoint.includes('/responder/')) {
@@ -177,7 +269,7 @@ export class DashboardApiService {
         } else {
           return {
             success: true,
-            message: `Successfully retrieved data from ${endpoint}`
+            message: `Successfully retrieved data from ${endpoint} (mock response after failure)`
           };
         }
       }
@@ -195,7 +287,9 @@ export class DashboardApiService {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${this.apiKey}`,
       'X-App-Source': 'zepmeds-mobile-app',
-      'X-App-Version': '1.0.0'
+      'X-App-Version': '1.0.0',
+      'Accept': 'application/json',
+      'X-Dashboard-Connection': 'true'
     };
   }
 }

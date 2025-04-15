@@ -1,12 +1,17 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { initializeDashboardSync } from '@/services/dashboardSubscription';
+import { getDashboardApiService } from '@/services/dashboardApiService';
+
+// Initialize dashboard API service
+const dashboardApiService = getDashboardApiService('https://lovable.dev/projects/248b8658-2f81-447e-bdf7-e30916a3844a/api');
+console.log('Dashboard API service initialized');
 
 // Initialize dashboard sync with the admin hub
 initializeDashboardSync('https://lovable.dev/projects/248b8658-2f81-447e-bdf7-e30916a3844a/api');
 
 // Export the supabase client for use throughout the app
-export { supabase };
+export { supabase, dashboardApiService };
 
 // Database schema for emergency services
 /* 
