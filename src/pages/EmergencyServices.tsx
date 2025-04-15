@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
@@ -78,30 +77,48 @@ const EmergencyServices = () => {
     
     setEmergency({ ...emergency, status: "confirming" });
     
-    // Get user's current address or use the one from their profile
-    const userAddress = emergency.address || (user?.address || "Unknown location");
-    
-    // Request emergency service
-    const response = await requestEmergencyService({
-      request_type: emergency.type,
-      status: 'requested',
-      address: userAddress,
-      description: emergency.description || "Emergency assistance needed"
-    });
-    
-    if (response) {
-      setEmergency({ 
-        ...emergency, 
-        status: "dispatched", 
-        requestId: response.id 
+    try {
+      // Get user's current address or use the one from their profile
+      const userAddress = emergency.address || (user?.address || "Unknown location");
+      
+      // Request emergency service
+      const response = await requestEmergencyService({
+        request_type: emergency.type,
+        status: 'requested',
+        address: userAddress,
+        description: emergency.description || "Emergency assistance needed"
       });
+      
+      if (response) {
+        setEmergency({ 
+          ...emergency, 
+          status: "dispatched", 
+          requestId: response.id 
+        });
+        
+        toast({
+          title: "Emergency Services Dispatched",
+          description: `Help is on the way! ETA: ${serviceEta || eta} minutes`,
+        });
+      } else {
+        // If response is null but no error was set, we still need to handle the failure
+        setEmergency({ ...emergency, status: "idle" });
+        
+        toast({
+          title: "Request Failed",
+          description: "Unable to request emergency services. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (err) {
+      console.error("Error requesting emergency services:", err);
+      setEmergency({ ...emergency, status: "idle" });
       
       toast({
-        title: "Emergency Services Dispatched",
-        description: `Help is on the way! ETA: ${serviceEta || eta} minutes`,
+        title: "Request Failed",
+        description: "An error occurred while requesting emergency services.",
+        variant: "destructive"
       });
-      
-      // Data has been sent to Zepmeds dashboard through our service
     }
   };
   
@@ -202,7 +219,7 @@ const EmergencyServices = () => {
           </Card>
         </div>
         
-        <div className="space-y-4 mb-20"> {/* Added mb-20 to ensure content doesn't go under bottom nav */}
+        <div className="space-y-4 mb-20">
           <h3 className="text-white font-medium mb-2">Other Emergency Services</h3>
           
           <motion.div

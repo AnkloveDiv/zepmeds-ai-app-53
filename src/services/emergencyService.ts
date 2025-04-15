@@ -42,32 +42,35 @@ export const useEmergencyService = () => {
         console.error('Error getting location:', err);
       }
       
-      // Prepare request data
-      const requestData: Record<string, any> = {
-        user_id: user.phoneNumber, // In a real app, use a proper user ID
-        request_type: emergencyData.request_type || 'ambulance',
-        status: 'requested',
-        address: emergencyData.address || (user.address || 'Unknown address'),
-        description: emergencyData.description || 'Emergency assistance needed',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+      // Prepare location data in format compatible with the emergency_requests table schema
+      const locationData = {
+        lat: position ? position.coords.latitude : (emergencyData.location_lat || null),
+        lng: position ? position.coords.longitude : (emergencyData.location_lng || null),
+        address: emergencyData.address || (user.address || 'Unknown location')
       };
       
-      // Add location if available
-      if (position) {
-        requestData.location_lat = position.coords.latitude;
-        requestData.location_lng = position.coords.longitude;
-      } else if (emergencyData.location_lat && emergencyData.location_lng) {
-        requestData.location_lat = emergencyData.location_lat;
-        requestData.location_lng = emergencyData.location_lng;
-      }
+      // Prepare request data according to the actual table schema
+      const name = user.name || 'Unknown';
+      const phone = user.phoneNumber || 'Unknown';
+      const notes = emergencyData.description || 'Emergency assistance needed';
       
-      console.log('Sending emergency request to Supabase:', requestData);
+      console.log('Sending emergency request to Supabase with data:', {
+        name,
+        phone,
+        location: locationData,
+        notes
+      });
       
-      // Send to Supabase
+      // Send to Supabase using the correct column structure
       const { data, error: supabaseError } = await supabase
         .from('emergency_requests')
-        .insert(requestData)
+        .insert({
+          name: name,
+          phone: phone,
+          location: locationData,
+          notes: notes,
+          status: 'requested'
+        })
         .select()
         .single();
       
@@ -89,14 +92,14 @@ export const useEmergencyService = () => {
             phone: user.phoneNumber
           },
           emergency: {
-            type: requestData.request_type,
-            status: requestData.status,
+            type: emergencyData.request_type || 'ambulance',
+            status: 'requested',
             location: {
-              lat: requestData.location_lat || undefined,
-              lng: requestData.location_lng || undefined,
-              address: requestData.address
+              lat: locationData.lat || undefined,
+              lng: locationData.lng || undefined,
+              address: locationData.address
             },
-            description: requestData.description
+            description: notes
           }
         });
         
@@ -146,7 +149,6 @@ export const useEmergencyService = () => {
           updated_at: new Date().toISOString()
         })
         .eq('id', requestId)
-        .eq('user_id', user.phoneNumber) // Ensure user owns this request
         .select()
         .single();
       
