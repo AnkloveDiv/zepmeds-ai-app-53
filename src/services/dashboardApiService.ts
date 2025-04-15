@@ -1,3 +1,4 @@
+
 /**
  * Zepmeds Dashboard API Service
  * 
@@ -173,7 +174,7 @@ export class DashboardApiService {
       console.log(`Headers: ${JSON.stringify(headers)}`);
       console.log(`Body: ${body.substring(0, 200)}${body.length > 200 ? '...' : ''}`);
       
-      // Add mode: 'no-cors' to bypass CORS issues in development
+      // Add mode: 'cors' for cross-origin requests
       const response = await fetch(`${this.apiBaseUrl}${endpoint}`, {
         method: 'POST',
         headers: headers,
