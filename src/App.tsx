@@ -1,102 +1,78 @@
+import React from 'react';
+import {
+  createBrowserRouter,
+  RouterProvider,
+} from "react-router-dom";
+import './App.css';
+import MedicineDelivery from './pages/MedicineDelivery';
+import Support from './pages/Support';
+import TrackOrder from './pages/TrackOrder';
+import OrderTracking from './pages/OrderTracking';
+import Checkout from './pages/Checkout';
+import Cart from './pages/Cart';
+import Addresses from './pages/Addresses';
+import Emergency from './pages/Emergency';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import PublicRoute from './components/PublicRoute';
+import AdminDashboard from './pages/AdminDashboard';
 
-import React from "react";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
-import Index from "./pages/Index";
-import Login from "./pages/Login";
-import PhoneVerification from "./pages/PhoneVerification";
-import Dashboard from "./pages/Dashboard";
-import Profile from "./pages/Profile";
-import MedicineDelivery from "./pages/MedicineDelivery";
-import DoctorConsultation from "./pages/DoctorConsultation";
-import NotFound from "./pages/NotFound";
-import Activity from "./pages/Activity";
-import AISymptomChecker from "./pages/AISymptomChecker";
-import PrescriptionUpload from "./pages/PrescriptionUpload";
-import Cart from "./pages/Cart";
-import Checkout from "./pages/Checkout";
-import OrderTracking from "./pages/OrderTracking";
-import TrackOrder from "./pages/TrackOrder";
-import PatientDetails from "./pages/PatientDetails";
-import ManageAddresses from "./pages/ManageAddresses";
-import OrderHistory from "./pages/OrderHistory";
-import MedicalReports from "./pages/MedicalReports";
-import EmergencyServices from "./pages/EmergencyServices";
-import Wallet from "./pages/Wallet";
-import Coupons from "./pages/Coupons";
-import Offers from "./pages/Offers";
-import DeveloperInfo from "./pages/DeveloperInfo";
-import Support from "./pages/Support";
-import ScheduleMedicines from "./pages/ScheduleMedicines";
-import PetCare from "./pages/PetCare";
-import MedicalDevices from "./pages/MedicalDevices";
-import PastMedicines from "./pages/PastMedicines";
-import AddressSelection from "./pages/AddressSelection";
-
-const queryClient = new QueryClient();
-
-// App wrapper that includes router
-const App = () => {
+function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AppContent />
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
   );
-};
+}
 
-// Separate component for app content so we can use hooks inside
-const AppContent = () => {
-  return (
-    <>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/verify" element={<PhoneVerification />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/medicine-delivery" element={<MedicineDelivery />} />
-        <Route path="/doctor" element={<DoctorConsultation />} />
-        <Route path="/activity" element={<Activity />} />
-        <Route path="/symptom-checker" element={<AISymptomChecker />} />
-        <Route path="/prescription-upload" element={<PrescriptionUpload />} />
-        <Route path="/cart" element={<Cart />} />
-        <Route path="/checkout" element={<Checkout />} />
-        <Route path="/order-tracking" element={<OrderTracking />} />
-        <Route path="/track-order/:orderId" element={<TrackOrder />} />
-        <Route path="/support" element={<Support />} />
-        <Route path="/schedule-medicines" element={<ScheduleMedicines />} />
-        <Route path="/pet-care" element={<PetCare />} />
-        <Route path="/medical-devices" element={<MedicalDevices />} />
-        <Route path="/past-medicines" element={<PastMedicines />} />
-        <Route path="/address-selection" element={<AddressSelection />} />
-        
-        {/* Profile Section Routes */}
-        <Route path="/patient-details" element={<PatientDetails />} />
-        <Route path="/addresses" element={<ManageAddresses />} />
-        <Route path="/orders" element={<OrderHistory />} />
-        <Route path="/reports" element={<MedicalReports />} />
-        <Route path="/emergency" element={<EmergencyServices />} />
-        <Route path="/wallet" element={<Wallet />} />
-        <Route path="/coupons" element={<Coupons />} />
-        <Route path="/offers" element={<Offers />} />
-        <Route path="/about-developers" element={<DeveloperInfo />} />
-        
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </>
-  );
-};
+// Add the AdminDashboard route to the router
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <ProtectedRoute><MedicineDelivery /></ProtectedRoute>
+  },
+  {
+    path: "/support",
+    element: <ProtectedRoute><Support /></ProtectedRoute>
+  },
+  {
+    path: "/track-order/:orderId",
+    element: <ProtectedRoute><TrackOrder /></ProtectedRoute>
+  },
+  {
+    path: "/order-tracking",
+    element: <ProtectedRoute><OrderTracking /></ProtectedRoute>
+  },
+  {
+    path: "/checkout",
+    element: <ProtectedRoute><Checkout /></ProtectedRoute>
+  },
+  {
+    path: "/cart",
+    element: <ProtectedRoute><Cart /></ProtectedRoute>
+  },
+  {
+    path: "/addresses",
+    element: <ProtectedRoute><Addresses /></ProtectedRoute>
+  },
+  {
+    path: "/emergency",
+    element: <ProtectedRoute><Emergency /></ProtectedRoute>
+  },
+  {
+    path: "/login",
+    element: <PublicRoute><Login /></PublicRoute>
+  },
+  {
+    path: "/signup",
+    element: <PublicRoute><Signup /></PublicRoute>
+  },
+  {
+    path: "/admin-dashboard",
+    element: <AdminDashboard />
+  },
+]);
 
 export default App;

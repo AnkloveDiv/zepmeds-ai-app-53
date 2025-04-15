@@ -1,126 +1,64 @@
 
+import React from "react";
 import { Button } from "@/components/ui/button";
-import { FileDown, HelpCircle, AlertTriangle, MessageSquare } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { useNavigate } from "react-router-dom";
+import { Phone, MessageCircle, Ban, HelpCircle } from "lucide-react";
+import { updateOrderStatus } from "@/services/orderService";
 
 interface OrderActionsProps {
   orderId: string;
   compact?: boolean;
-  onOpenChat?: () => void;
 }
 
-const OrderActions = ({ orderId, compact = false, onOpenChat }: OrderActionsProps) => {
+const OrderActions = ({ orderId, compact = false }: OrderActionsProps) => {
   const { toast } = useToast();
-  const navigate = useNavigate();
   
-  const handleDownloadInvoice = () => {
-    toast({
-      title: "Invoice Downloaded",
-      description: `Invoice for order #${orderId} has been downloaded.`,
-    });
-    
-    // In a real app, this would download a PDF
-    const invoiceText = `
-ZEPMEDS INVOICE
---------------
-Order ID: ${orderId}
---------------
-Thank you for shopping with Zepmeds!
-    `;
-    
-    // Create a blob and download it
-    const blob = new Blob([invoiceText], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `zepmeds_invoice_${orderId}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const handleCancelOrder = async () => {
+    try {
+      await updateOrderStatus(orderId, "cancelled");
+      toast({
+        title: "Order cancelled",
+        description: "Your order has been cancelled successfully.",
+      });
+      
+      // Force reload the page to reflect changes
+      window.location.reload();
+    } catch (error) {
+      console.error("Error cancelling order:", error);
+      toast({
+        title: "Error",
+        description: "Failed to cancel your order. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
   
-  const handleGetSupport = () => {
-    // Navigate to the Support page when user clicks on Help & Support button
-    navigate('/support');
-  };
-  
-  const handleRaiseIssue = () => {
+  const handleSupportRequest = () => {
     toast({
-      title: "Issue Reported",
-      description: "We'll look into this and get back to you soon.",
-      variant: "destructive",
+      title: "Support request sent",
+      description: "Our customer service will contact you shortly.",
     });
   };
-  
-  if (compact) {
-    return (
-      <div className="flex space-x-2">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="text-green-500 border-green-500/30 hover:bg-green-500/10"
-          onClick={handleDownloadInvoice}
-        >
-          <FileDown className="h-4 w-4 mr-1" />
-          Invoice
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="text-amber-500 border-amber-500/30 hover:bg-amber-500/10"
-          onClick={handleGetSupport}
-        >
-          <HelpCircle className="h-4 w-4 mr-1" />
-          Help
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="text-red-500 border-red-500/30 hover:bg-red-500/10"
-          onClick={handleRaiseIssue}
-        >
-          <AlertTriangle className="h-4 w-4 mr-1" />
-          Issue
-        </Button>
-      </div>
-    );
-  }
   
   return (
-    <div className="space-y-2 w-full">
+    <div className={`flex ${compact ? "flex-col gap-2" : "flex-row gap-3 justify-between"} mt-4`}>
       <Button 
         variant="outline" 
-        className="w-full justify-start text-green-500 border-green-500/30 hover:bg-green-500/10"
-        onClick={handleDownloadInvoice}
+        size={compact ? "sm" : "default"}
+        className={`${compact ? "w-full" : "flex-1"} bg-red-900/20 text-red-400 border-red-800 hover:bg-red-900/30`}
+        onClick={handleCancelOrder}
       >
-        <FileDown className="h-5 w-5 mr-2" />
-        Download Invoice
+        <Ban className={`${compact ? "h-4 w-4 mr-1" : "h-5 w-5 mr-2"}`} />
+        Cancel Order
       </Button>
       <Button 
         variant="outline" 
-        className="w-full justify-start text-amber-500 border-amber-500/30 hover:bg-amber-500/10"
-        onClick={handleGetSupport}
+        size={compact ? "sm" : "default"}
+        className={`${compact ? "w-full" : "flex-1"} bg-blue-900/20 text-blue-400 border-blue-800 hover:bg-blue-900/30`}
+        onClick={handleSupportRequest}
       >
-        <HelpCircle className="h-5 w-5 mr-2" />
-        Help & Support
-      </Button>
-      <Button 
-        variant="outline" 
-        className="w-full justify-start text-red-500 border-red-500/30 hover:bg-red-500/10"
-        onClick={handleRaiseIssue}
-      >
-        <AlertTriangle className="h-5 w-5 mr-2" />
-        Report an Issue
-      </Button>
-      <Button 
-        variant="outline" 
-        className="w-full justify-start text-blue-500 border-blue-500/30 hover:bg-blue-500/10"
-        onClick={onOpenChat}
-      >
-        <MessageSquare className="h-5 w-5 mr-2" />
-        Chat with Support
+        <HelpCircle className={`${compact ? "h-4 w-4 mr-1" : "h-5 w-5 mr-2"}`} />
+        Need Help?
       </Button>
     </div>
   );

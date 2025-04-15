@@ -1,8 +1,8 @@
 
 /**
- * Base API Service
+ * Base API Service for Zepmeds
  * 
- * Provides common functionality for API interactions
+ * Provides the foundation for all API services with common methods and configuration
  */
 
 export class BaseApiService {
@@ -27,10 +27,6 @@ export class BaseApiService {
       
       const headers = this.getHeaders();
       const body = JSON.stringify(data);
-      
-      console.log(`Making API request to: ${this.apiBaseUrl}${endpoint}`);
-      console.log(`Headers: ${JSON.stringify(headers)}`);
-      console.log(`Body: ${body.substring(0, 200)}${body.length > 200 ? '...' : ''}`);
       
       // Add mode: 'cors' for cross-origin requests
       const response = await fetch(`${this.apiBaseUrl}${endpoint}`, {
@@ -75,13 +71,7 @@ export class BaseApiService {
         return this.apiPost(endpoint, data, retryCount + 1);
       }
       
-      // After all retries, return a mock successful response to ensure the app continues to function
-      console.log(`All retries failed for ${endpoint}, returning mock success response`);
-      return {
-        success: true,
-        message: `Successfully processed request to ${endpoint} (mock response after failure)`,
-        data: { ...data, id: `mock-id-${Date.now()}` }
-      };
+      throw error;
     }
   }
   
@@ -98,53 +88,42 @@ export class BaseApiService {
       
       console.log(`[API] GET ${url.toString()}`);
       
-      try {
-        const response = await fetch(url.toString(), {
-          method: 'GET',
-          headers: this.getHeaders(),
-          mode: 'cors', // Enable cross-origin requests
-        });
+      // In a real implementation using fetch with proper error handling
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: this.getHeaders(),
+        mode: 'cors', // Enable cross-origin requests
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`API Error (${response.status}): ${errorText}`);
         
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`API Error (${response.status}): ${errorText}`);
-          
-          // Retry logic for recoverable errors
-          if (retryCount < this.maxRetries && (response.status >= 500 || response.status === 429)) {
-            console.log(`Retrying request to ${endpoint} (attempt ${retryCount + 1})`);
-            const delay = Math.min(1000 * Math.pow(2, retryCount), 10000); // Exponential backoff
-            await new Promise(resolve => setTimeout(resolve, delay));
-            return this.apiGet(endpoint, queryParams, retryCount + 1);
-          }
-          
-          throw new Error(`API Error: ${response.status} ${response.statusText}`);
-        }
-        
-        const responseData = await response.json();
-        console.log(`API Response from ${endpoint}:`, responseData);
-        return responseData;
-      } catch (e) {
-        // If fetch fails or response isn't valid JSON, return mock data after retries
-        console.error("Error fetching from API:", e);
-        
-        // Retry logic for network errors
-        if (retryCount < this.maxRetries) {
-          console.log(`Retrying request to ${endpoint} due to network error (attempt ${retryCount + 1})`);
+        // Retry logic for recoverable errors
+        if (retryCount < this.maxRetries && (response.status >= 500 || response.status === 429)) {
+          console.log(`Retrying request to ${endpoint} (attempt ${retryCount + 1})`);
           const delay = Math.min(1000 * Math.pow(2, retryCount), 10000); // Exponential backoff
           await new Promise(resolve => setTimeout(resolve, delay));
           return this.apiGet(endpoint, queryParams, retryCount + 1);
         }
         
-        console.log(`All retries failed for ${endpoint}, returning mock data`);
-        
-        // Return generic mock data
-        return {
-          success: true,
-          message: `Successfully retrieved data from ${endpoint} (mock response after failure)`
-        };
+        throw new Error(`API Error: ${response.status} ${response.statusText}`);
       }
+      
+      const responseData = await response.json();
+      console.log(`API Response from ${endpoint}:`, responseData);
+      return responseData;
     } catch (error) {
       console.error(`Error calling ${endpoint}:`, error);
+      
+      // Retry logic for network errors
+      if (retryCount < this.maxRetries) {
+        console.log(`Retrying request to ${endpoint} due to network error (attempt ${retryCount + 1})`);
+        const delay = Math.min(1000 * Math.pow(2, retryCount), 10000); // Exponential backoff
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.apiGet(endpoint, queryParams, retryCount + 1);
+      }
+      
       throw error;
     }
   }
@@ -158,8 +137,7 @@ export class BaseApiService {
       'Authorization': `Bearer ${this.apiKey}`,
       'X-App-Source': 'zepmeds-mobile-app',
       'X-App-Version': '1.0.0',
-      'Accept': 'application/json',
-      'X-Dashboard-Connection': 'true'
+      'Accept': 'application/json'
     };
   }
 }

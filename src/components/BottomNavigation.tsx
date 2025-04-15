@@ -1,8 +1,8 @@
-
-import { Home, Activity, UserRound, ShoppingCart, MoreHorizontal } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Home, Activity, UserRound, ShoppingCart, MoreHorizontal, Settings } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
+import { useAuth } from "@/context/auth";
 import { 
   Drawer,
   DrawerContent,
@@ -13,8 +13,9 @@ import {
 } from "@/components/ui/drawer";
 
 const BottomNavigation = () => {
+  const navigate = useNavigate();
   const location = useLocation();
-  const [accentColors, setAccentColors] = useState<Record<string, string>>({});
+  const { user } = useAuth();
   
   const getRandomAccentColor = () => {
     const colors = ['orange', 'red', 'green', 'blue', 'purple'];
@@ -22,7 +23,6 @@ const BottomNavigation = () => {
   };
   
   useEffect(() => {
-    // Assign random accent colors to each nav item
     const newColors: Record<string, string> = {};
     navItems.forEach(item => {
       newColors[item.path] = getRandomAccentColor();
@@ -55,7 +55,7 @@ const BottomNavigation = () => {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-black/50 backdrop-blur-lg border-t border-white/10 py-2 px-4 z-30">
+    <nav className="fixed bottom-0 left-0 right-0 bg-black/70 backdrop-blur-md border-t border-white/10 py-2 px-4 z-50">
       <div className="flex justify-around items-center">
         {navItems.map((item) => {
           const color = accentColors[item.path] || 'blue';
@@ -129,8 +129,20 @@ const BottomNavigation = () => {
             </div>
           </DrawerContent>
         </Drawer>
+        
+        <div
+          className={`flex flex-col items-center cursor-pointer transition-colors ${
+            location.pathname === "/admin-dashboard"
+              ? "text-zepmeds-purple"
+              : "text-gray-500 hover:text-gray-300"
+          }`}
+          onClick={() => navigate("/admin-dashboard")}
+        >
+          <Settings className="h-6 w-6" />
+          <span className="text-xs mt-1">Admin</span>
+        </div>
       </div>
-    </div>
+    </nav>
   );
 };
 
