@@ -1,11 +1,11 @@
+
 import { supabase } from '@/integrations/supabase/client';
-import { getDashboardApiService } from './api/dashboardApiService';
 
 /**
  * Initialize dashboard synchronization
  */
 export const initializeDashboardSync = (
-  dashboardApiUrl: string = 'https://preview--zepmeds-admin-hub-72.lovable.app/api', 
+  dashboardApiUrl: string = 'https://lovable.dev/projects/248b8658-2f81-447e-bdf7-e30916a3844a/api', 
   apiKey: string = ''
 ): void => {
   const service = getDashboardSyncService(dashboardApiUrl, apiKey);
@@ -33,12 +33,10 @@ export class DashboardSyncService {
   private subscriptions: any[] = [];
   private dashboardApiUrl: string;
   private apiKey: string;
-  private dashboardApi: ReturnType<typeof getDashboardApiService>;
   
   constructor(dashboardApiUrl: string = 'https://api.zepmeds-dashboard.example', apiKey: string = '') {
     this.dashboardApiUrl = dashboardApiUrl;
     this.apiKey = apiKey;
-    this.dashboardApi = getDashboardApiService(dashboardApiUrl, apiKey);
     console.log('DashboardSyncService created with URL:', dashboardApiUrl);
   }
   
@@ -284,25 +282,34 @@ export class DashboardSyncService {
     try {
       console.log(`Sending data to dashboard ${endpoint}:`, data);
       
-      // Now we can use our structured API service that handles errors and retries
-      if (endpoint.startsWith('/emergency/')) {
-        return await this.dashboardApi.sendEmergencyRequest({
-          user: data.user || { id: 'unknown' },
-          emergency: {
-            type: data.requestType || 'general',
-            status: data.status || 'requested',
-            location: data.location || { address: 'Unknown location' },
-            description: data.description || ''
-          }
-        });
-      }
+      // For now, we're mocking the API call since this is just for demonstration
+      // In a real app, this would make an actual API request
+      console.log(`[DASHBOARD API MOCK] POST ${this.dashboardApiUrl}${endpoint}`);
       
-      // Mock response for other endpoints
+      // Simulate successful API response
       return {
         success: true,
         message: `Data sent to ${endpoint} successfully`,
         data: data
       };
+      
+      // In a real implementation, this would be:
+      /*
+      const response = await fetch(`${this.dashboardApiUrl}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to send data to dashboard: ${response.statusText}`);
+      }
+      
+      return await response.json();
+      */
     } catch (error) {
       console.error(`Error sending data to ${endpoint}:`, error);
       return null;
@@ -317,7 +324,7 @@ let dashboardSyncInstance: DashboardSyncService | null = null;
  * Get or create the dashboard sync service
  */
 export const getDashboardSyncService = (
-  dashboardApiUrl: string = 'https://preview--zepmeds-admin-hub-72.lovable.app/api', 
+  dashboardApiUrl: string = 'https://lovable.dev/projects/248b8658-2f81-447e-bdf7-e30916a3844a/api', 
   apiKey: string = ''
 ): DashboardSyncService => {
   if (!dashboardSyncInstance) {

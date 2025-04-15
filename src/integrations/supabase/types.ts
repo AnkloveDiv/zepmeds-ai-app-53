@@ -62,51 +62,6 @@ export type Database = {
           },
         ]
       }
-      admin_dashboard_orders: {
-        Row: {
-          created_at: string
-          customer_address: string | null
-          customer_name: string | null
-          customer_phone: string | null
-          id: string
-          items: Json | null
-          order_id: string
-          order_number: string
-          payment_method: string | null
-          status: string
-          total_amount: number
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          customer_address?: string | null
-          customer_name?: string | null
-          customer_phone?: string | null
-          id?: string
-          items?: Json | null
-          order_id: string
-          order_number: string
-          payment_method?: string | null
-          status: string
-          total_amount: number
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          customer_address?: string | null
-          customer_name?: string | null
-          customer_phone?: string | null
-          id?: string
-          items?: Json | null
-          order_id?: string
-          order_number?: string
-          payment_method?: string | null
-          status?: string
-          total_amount?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
       ambulances: {
         Row: {
           created_at: string | null
@@ -402,30 +357,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      order_tracking_events: {
-        Row: {
-          created_at: string
-          description: string | null
-          id: string
-          order_id: string
-          status: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          order_id: string
-          status: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          order_id?: string
-          status?: string
-        }
-        Relationships: []
       }
       orders: {
         Row: {
