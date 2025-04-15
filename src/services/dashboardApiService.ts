@@ -1,4 +1,3 @@
-
 /**
  * Zepmeds Dashboard API Service
  * 
@@ -49,7 +48,10 @@ export class DashboardApiService {
   private apiKey: string;
   private maxRetries: number = 3;
   
-  constructor(apiBaseUrl: string = 'https://zepmeds-admin-hub-72.lovable.app/api', apiKey: string = '') {
+  constructor(
+    apiBaseUrl: string = 'https://preview--zepmeds-admin-hub-72.lovable.app/api',
+    apiKey: string = ''
+  ) {
     this.apiBaseUrl = apiBaseUrl;
     this.apiKey = apiKey;
     console.log('DashboardApiService initialized with URL:', apiBaseUrl);
@@ -68,7 +70,12 @@ export class DashboardApiService {
    */
   public async sendOrderData(payload: OrderDataPayload): Promise<any> {
     console.log('Sending order data to admin dashboard:', payload);
-    return this.apiPost('/orders/new', payload);
+    try {
+      return this.apiPost('/orders/new', payload);
+    } catch (error) {
+      console.error('Error sending order data to admin dashboard:', error);
+      throw error;
+    }
   }
   
   /**
@@ -76,11 +83,16 @@ export class DashboardApiService {
    */
   public async updateOrderStatus(orderId: string, status: string): Promise<any> {
     console.log(`Updating order status for ${orderId} to ${status}`);
-    return this.apiPost('/orders/update', {
-      orderId,
-      status,
-      updatedAt: new Date().toISOString()
-    });
+    try {
+      return this.apiPost('/orders/update', {
+        orderId,
+        status,
+        updatedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error(`Error updating order status for ${orderId}:`, error);
+      throw error;
+    }
   }
   
   /**
@@ -301,7 +313,7 @@ let dashboardApiInstance: DashboardApiService | null = null;
  * Get or create the dashboard API service
  */
 export const getDashboardApiService = (
-  apiBaseUrl: string = 'https://zepmeds-admin-hub-72.lovable.app/api', 
+  apiBaseUrl: string = 'https://preview--zepmeds-admin-hub-72.lovable.app/api', 
   apiKey: string = ''
 ): DashboardApiService => {
   if (!dashboardApiInstance) {
