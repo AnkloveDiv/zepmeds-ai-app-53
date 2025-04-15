@@ -1,11 +1,8 @@
-import { createClient } from '@supabase/supabase-js';
 
-// These would normally come from environment variables in a production app
-// For demonstration purposes, we'll keep them here 
-const supabaseUrl = 'https://your-project.supabase.co';
-const supabaseAnonKey = 'your-anon-key';
+import { supabase } from '@/integrations/supabase/client';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Export the supabase client for use throughout the app
+export { supabase };
 
 // Database schema for emergency services
 /* 
@@ -44,19 +41,4 @@ Tables:
    - notes (text)
    - created_at (timestamp)
    - updated_at (timestamp)
-
-Row Level Security (RLS):
-1. emergency_requests:
-   - Users can read and create their own emergency requests
-   - Admins can read and update all emergency requests
-   
-2. emergency_responders:
-   - Admins can read and update
-   - Responders can read and update their own records
-   - Users can only read responders assigned to their emergency requests
-   
-3. emergency_assignments:
-   - Users can read assignments related to their emergency requests
-   - Responders can read and update their own assignments
-   - Admins can read and update all assignments
 */

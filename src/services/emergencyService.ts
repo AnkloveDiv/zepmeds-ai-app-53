@@ -1,5 +1,5 @@
 
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useState } from 'react';
 import { getDashboardApiService } from './dashboardApiService';
@@ -62,20 +62,27 @@ export const useEmergencyService = () => {
         requestData.location_lng = emergencyData.location_lng;
       }
       
-      // Send to Supabase (and through RLS policies, to Zepmeds dashboard)
+      console.log('Sending emergency request to Supabase:', requestData);
+      
+      // Send to Supabase
       const { data, error: supabaseError } = await supabase
         .from('emergency_requests')
         .insert(requestData)
         .select()
         .single();
       
-      if (supabaseError) throw supabaseError;
+      if (supabaseError) {
+        console.error('Supabase error:', supabaseError);
+        throw supabaseError;
+      }
+      
+      console.log('Emergency request saved to Supabase:', data);
       
       // Also directly send to Zepmeds dashboard API
       try {
         const dashboardApi = getDashboardApiService();
         
-        await dashboardApi.sendEmergencyRequest({
+        const dashboardResponse = await dashboardApi.sendEmergencyRequest({
           user: {
             id: user.phoneNumber,
             name: user.name || 'Unknown',
@@ -92,6 +99,8 @@ export const useEmergencyService = () => {
             description: requestData.description
           }
         });
+        
+        console.log('Emergency request sent to dashboard API:', dashboardResponse);
       } catch (dashboardError) {
         // Log but continue - data will still sync through database
         console.error("Error sending to dashboard API:", dashboardError);
@@ -113,6 +122,7 @@ export const useEmergencyService = () => {
       
       return data;
     } catch (err: any) {
+      console.error('Error in requestEmergencyService:', err);
       setError(err.message || 'Failed to request emergency service');
       return null;
     } finally {
@@ -127,6 +137,8 @@ export const useEmergencyService = () => {
     try {
       setLoading(true);
       
+      console.log(`Updating emergency status for request ${requestId} to ${status}`);
+      
       const { data, error: supabaseError } = await supabase
         .from('emergency_requests')
         .update({ 
@@ -138,9 +150,24 @@ export const useEmergencyService = () => {
         .select()
         .single();
       
-      if (supabaseError) throw supabaseError;
+      if (supabaseError) {
+        console.error('Error updating emergency status:', supabaseError);
+        throw supabaseError;
+      }
+      
+      console.log('Emergency status updated:', data);
+      
+      // Also update status on dashboard
+      try {
+        const dashboardApi = getDashboardApiService();
+        await dashboardApi.updateEmergencyStatus(requestId, status);
+      } catch (dashboardError) {
+        console.error("Error updating dashboard API:", dashboardError);
+      }
+      
       return data;
     } catch (err: any) {
+      console.error('Error in updateEmergencyStatus:', err);
       setError(err.message || 'Failed to update emergency status');
       return null;
     } finally {
@@ -150,7 +177,23 @@ export const useEmergencyService = () => {
   
   // Cancel emergency request
   const cancelEmergencyRequest = async (requestId: string) => {
-    return await updateEmergencyStatus(requestId, 'cancelled');
+    console.log(`Cancelling emergency request ${requestId}`);
+    try {
+      const data = await updateEmergencyStatus(requestId, 'cancelled');
+      
+      // Also cancel on dashboard
+      try {
+        const dashboardApi = getDashboardApiService();
+        await dashboardApi.cancelEmergencyRequest(requestId);
+      } catch (dashboardError) {
+        console.error("Error cancelling on dashboard API:", dashboardError);
+      }
+      
+      return data;
+    } catch (err) {
+      console.error('Error cancelling emergency request:', err);
+      return null;
+    }
   };
   
   // Helper function to get current position
@@ -173,31 +216,4 @@ export const useEmergencyService = () => {
     ambulance,
     eta
   };
-};
-
-// Function to send emergency data to Zepmeds dashboard
-export const sendToZepmedsDashboard = async (emergencyData: any) => {
-  try {
-    // This URL would point to the Zepmeds Ambulance dashboard API endpoint
-    const dashboardUrl = 'https://api.zepmeds-dashboard.example/emergency';
-    
-    const response = await fetch(dashboardUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer YOUR_API_KEY'
-      },
-      body: JSON.stringify(emergencyData)
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Failed to send data to dashboard: ${response.statusText}`);
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Error sending data to Zepmeds dashboard:', error);
-    // Fall back to Supabase - dashboard will sync through database
-    return null;
-  }
 };
