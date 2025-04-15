@@ -43,7 +43,7 @@ export const useEmergencyService = () => {
       }
       
       // Prepare request data
-      const requestData: any = {
+      const requestData: Record<string, any> = {
         user_id: user.phoneNumber, // In a real app, use a proper user ID
         request_type: emergencyData.request_type || 'ambulance',
         status: 'requested',
