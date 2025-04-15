@@ -49,7 +49,7 @@ export class DashboardApiService {
   private apiKey: string;
   private maxRetries: number = 3;
   
-  constructor(apiBaseUrl: string = 'https://lovable.dev/projects/248b8658-2f81-447e-bdf7-e30916a3844a/api', apiKey: string = '') {
+  constructor(apiBaseUrl: string = 'https://zepmeds-admin-hub-72.lovable.app/api', apiKey: string = '') {
     this.apiBaseUrl = apiBaseUrl;
     this.apiKey = apiKey;
     console.log('DashboardApiService initialized with URL:', apiBaseUrl);
@@ -301,7 +301,7 @@ let dashboardApiInstance: DashboardApiService | null = null;
  * Get or create the dashboard API service
  */
 export const getDashboardApiService = (
-  apiBaseUrl: string = 'https://lovable.dev/projects/248b8658-2f81-447e-bdf7-e30916a3844a/api', 
+  apiBaseUrl: string = 'https://zepmeds-admin-hub-72.lovable.app/api', 
   apiKey: string = ''
 ): DashboardApiService => {
   if (!dashboardApiInstance) {
