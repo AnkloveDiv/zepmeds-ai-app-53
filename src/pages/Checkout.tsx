@@ -18,6 +18,8 @@ import useBackNavigation from "@/hooks/useBackNavigation";
 import OrderForSomeoneElse from "@/components/checkout/OrderForSomeoneElse";
 import DateTimePicker from "@/components/checkout/DateTimePicker";
 import { useAuth } from "@/contexts/AuthContext";
+import type { OrderDataPayload } from "@/services/dashboardApiService";
+import { dashboardApiService } from "@/lib/supabase";
 
 const UPI_PROVIDERS = [
   { id: "googlepay", name: "Google Pay", iconBg: "bg-blue-500" },
@@ -379,37 +381,31 @@ const Checkout = () => {
     localStorage.setItem("cart", JSON.stringify([]));
     
     try {
-      import('./dashboardApiService').then(({ getDashboardApiService, OrderDataPayload }) => {
-        const dashboardApi = getDashboardApiService();
-        
-        const dashboardOrderData: OrderDataPayload = {
-          orderId: order.id,
-          orderNumber: order.id,
-          customerInfo: {
-            name: recipientDetails ? recipientDetails.name : user?.name || "Guest Customer",
-            phone: recipientDetails ? recipientDetails.phone : user?.phoneNumber || "Not provided",
-            address: selectedAddressData ? `${selectedAddressData.address}, ${selectedAddressData.city}, ${selectedAddressData.state}` : "Address not provided"
-          },
-          items: cartItems.map(item => ({
-            id: item.id || `item-${Math.random().toString(36).substring(2, 9)}`,
-            name: item.name,
-            quantity: item.quantity || 1,
-            price: item.discountPrice || item.price
-          })),
-          status: "confirmed",
-          totalAmount: order.total,
-          paymentMethod: order.paymentMethod,
-          createdAt: order.placedAt
-        };
-        
-        console.log("Sending order to admin dashboard:", dashboardOrderData);
-        dashboardApi.sendOrderData(dashboardOrderData).then(response => {
-          console.log("Order successfully sent to admin dashboard:", response);
-        }).catch(error => {
-          console.error("Failed to send order to admin dashboard:", error);
-        });
-      }).catch(err => {
-        console.error("Failed to load dashboard API service:", err);
+      const dashboardOrderData: OrderDataPayload = {
+        orderId: order.id,
+        orderNumber: order.id,
+        customerInfo: {
+          name: recipientDetails ? recipientDetails.name : user?.name || "Guest Customer",
+          phone: recipientDetails ? recipientDetails.phone : user?.phoneNumber || "Not provided",
+          address: selectedAddressData ? `${selectedAddressData.address}, ${selectedAddressData.city}, ${selectedAddressData.state}` : "Address not provided"
+        },
+        items: cartItems.map(item => ({
+          id: item.id || `item-${Math.random().toString(36).substring(2, 9)}`,
+          name: item.name,
+          quantity: item.quantity || 1,
+          price: item.discountPrice || item.price
+        })),
+        status: "confirmed",
+        totalAmount: order.total,
+        paymentMethod: order.paymentMethod,
+        createdAt: order.placedAt
+      };
+      
+      console.log("Sending order to admin dashboard:", dashboardOrderData);
+      dashboardApiService.sendOrderData(dashboardOrderData).then(response => {
+        console.log("Order successfully sent to admin dashboard:", response);
+      }).catch(error => {
+        console.error("Failed to send order to admin dashboard:", error);
       });
     } catch (err) {
       console.error("Error sending order to admin dashboard:", err);
