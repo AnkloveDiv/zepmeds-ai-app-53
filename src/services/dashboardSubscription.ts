@@ -5,12 +5,12 @@ import { supabase } from '@/integrations/supabase/client';
  * Initialize dashboard synchronization
  */
 export const initializeDashboardSync = (
-  dashboardApiUrl?: string, 
-  apiKey?: string
+  dashboardApiUrl: string = 'https://lovable.dev/projects/248b8658-2f81-447e-bdf7-e30916a3844a/api', 
+  apiKey: string = ''
 ): void => {
   const service = getDashboardSyncService(dashboardApiUrl, apiKey);
   service.initialize();
-  console.log('Dashboard synchronization initialized');
+  console.log('Dashboard synchronization initialized with admin hub');
 };
 
 /**
@@ -324,8 +324,8 @@ let dashboardSyncInstance: DashboardSyncService | null = null;
  * Get or create the dashboard sync service
  */
 export const getDashboardSyncService = (
-  dashboardApiUrl?: string, 
-  apiKey?: string
+  dashboardApiUrl: string = 'https://lovable.dev/projects/248b8658-2f81-447e-bdf7-e30916a3844a/api', 
+  apiKey: string = ''
 ): DashboardSyncService => {
   if (!dashboardSyncInstance) {
     dashboardSyncInstance = new DashboardSyncService(dashboardApiUrl, apiKey);

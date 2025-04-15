@@ -1,5 +1,9 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { initializeDashboardSync } from '@/services/dashboardSubscription';
+
+// Initialize dashboard sync with the admin hub
+initializeDashboardSync('https://lovable.dev/projects/248b8658-2f81-447e-bdf7-e30916a3844a/api');
 
 // Export the supabase client for use throughout the app
 export { supabase };
