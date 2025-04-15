@@ -2,7 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useState } from 'react';
-import { getDashboardApiService } from './dashboardApiService';
+import { getDashboardApiService, EmergencyRequestPayload } from './dashboardApiService';
 
 export interface EmergencyRequest {
   request_type: string;
@@ -84,10 +84,10 @@ export const useEmergencyService = () => {
       try {
         const dashboardApi = getDashboardApiService();
         
-        // Use a simpler type definition to avoid circular references
-        const dashboardRequestData: Record<string, any> = {
+        // Create a properly structured EmergencyRequestPayload object
+        const dashboardRequestData: EmergencyRequestPayload = {
           user: {
-            id: user.phoneNumber,
+            id: user.phoneNumber || '',
             name: user.name || 'Unknown',
             phone: user.phoneNumber
           },
@@ -95,8 +95,8 @@ export const useEmergencyService = () => {
             type: emergencyData.request_type || 'ambulance',
             status: 'requested',
             location: {
-              lat: locationData.lat || undefined,
-              lng: locationData.lng || undefined,
+              lat: locationData.lat,
+              lng: locationData.lng,
               address: locationData.address
             },
             description: notes
