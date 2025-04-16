@@ -117,15 +117,26 @@ export const sendEmergencyRequest = async (
     
     console.log('Emergency request created successfully:', data);
     
-    // Enable realtime updates for this record to broadcast to ambulance dashboard
-    await supabase
-      .from('emergency_requests')
-      .on('UPDATE', (payload) => {
-        console.log('Emergency request updated:', payload);
-        // We can handle updates from the ambulance dashboard here
-      })
+    // Set up realtime subscription for this record using the channel API
+    const channel = supabase
+      .channel('emergency_request_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'emergency_requests',
+          filter: `id=eq.${data.id}`
+        },
+        (payload) => {
+          console.log('Emergency request updated:', payload);
+          // We can handle updates from the ambulance dashboard here
+        }
+      )
       .subscribe();
     
+    // We can return both the data and the channel if needed
+    // But for now, we'll just return the data to maintain existing behavior
     return data;
   } catch (error) {
     console.error('Failed to send emergency request:', error);
