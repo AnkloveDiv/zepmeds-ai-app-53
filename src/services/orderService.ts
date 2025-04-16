@@ -150,9 +150,11 @@ export const getOrderTracking = async (orderId: string): Promise<any> => {
         // Create default items if not available
         let parsedItems = [];
         try {
-          // Try to parse items if they exist
-          if (data.items) {
-            parsedItems = JSON.parse(data.items);
+          // Try to access data.items safely - it may not exist in the schema
+          const itemsString = (data as any).items;
+          
+          if (itemsString) {
+            parsedItems = JSON.parse(itemsString);
           } else {
             // Since orders_new table might not have items column, we create a default item
             parsedItems = [{
@@ -173,8 +175,11 @@ export const getOrderTracking = async (orderId: string): Promise<any> => {
         // Try to parse location if available
         let location = null;
         try {
-          if (data.location) {
-            location = JSON.parse(data.location);
+          // Try to access data.location safely - it may not exist in the schema
+          const locationString = (data as any).location;
+          
+          if (locationString) {
+            location = JSON.parse(locationString);
           }
         } catch (locError) {
           console.error('Error parsing location data:', locError);
