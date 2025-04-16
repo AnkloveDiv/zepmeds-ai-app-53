@@ -103,7 +103,7 @@ export const useEmergencyService = () => {
         .from('emergency_requests')
         .insert([
           {
-            name: user.displayName || user.phoneNumber || "Unknown User",
+            name: user.name || user.phoneNumber || "Unknown User",
             phone: user.phoneNumber || "Unknown",
             status: 'requested',
             notes: emergencyData.description,
