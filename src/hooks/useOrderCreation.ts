@@ -17,18 +17,20 @@ export const useOrderCreation = () => {
   const createOrder = async (orderData: OrderInput) => {
     setLoading(true);
     try {
+      // Convert Date to ISO string format for Supabase
+      const createdAt = orderData.date.toISOString();
+      
       const { data, error } = await supabase
         .from('orders')
-        .insert([
-          {
-            customer_name: orderData.customer_name,
-            created_at: orderData.date,
-            total: orderData.amount,
-            prescription_image_url: orderData.prescription,
-            status: 'pending',
-            order_number: `ORD-${Date.now()}`
-          }
-        ])
+        .insert({
+          // Store phone number as customer_id temporarily (we'll update this later with a proper relationship)
+          customer_name: orderData.customer_name, // This will be stored in metadata or used elsewhere
+          created_at: createdAt,
+          total: orderData.amount,
+          prescription_image_url: orderData.prescription || null,
+          status: 'pending',
+          order_number: `ORD-${Date.now()}`
+        })
         .select()
         .single();
 
