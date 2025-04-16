@@ -1,22 +1,21 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
+import { Ambulance } from 'lucide-react';
 
 const EmergencyServices = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [name, setName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
   const [description, setDescription] = useState('');
+  const [confirmText, setConfirmText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationError, setLocationError] = useState('');
@@ -60,13 +59,13 @@ const EmergencyServices = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!userLocation) {
-      toast.error("Location is required for emergency services");
+    if (confirmText.toLowerCase() !== 'yes') {
+      toast.error("Please type 'yes' to confirm emergency services");
       return;
     }
     
-    if (!name || !phoneNumber) {
-      toast.error("Please provide your name and phone number");
+    if (!userLocation) {
+      toast.error("Location is required for emergency services");
       return;
     }
 
@@ -77,8 +76,8 @@ const EmergencyServices = () => {
         .from('emergency_requests')
         .insert([
           { 
-            name,
-            phone: phoneNumber,
+            name: user?.name || 'Unknown',
+            phone: user?.phoneNumber || 'Unknown',
             notes: description,
             status: 'pending',
             location: JSON.stringify({
@@ -106,90 +105,68 @@ const EmergencyServices = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-zepmeds-light-bg">
-      <div className="flex-1 p-4">
-        <div className="max-w-lg mx-auto mt-8">
-          <Card className="shadow-lg border-red-500 border-2">
-            <CardHeader className="bg-red-500 text-white">
-              <CardTitle className="text-2xl font-bold text-center">Emergency Services</CardTitle>
-              <CardDescription className="text-white text-center">
-                Request immediate medical assistance
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6">
-              {locationError && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                  <p>{locationError}</p>
-                  <p className="font-bold">Please enable location services to continue.</p>
-                </div>
-              )}
-              
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium">
-                    Your Name
-                  </label>
-                  <Input
-                    id="name"
-                    placeholder="Enter your full name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium">
-                    Phone Number
-                  </label>
-                  <Input
-                    id="phone"
-                    placeholder="Enter your phone number"
-                    type="tel"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="description" className="block text-sm font-medium">
-                    Emergency Description (Optional)
-                  </label>
-                  <Textarea
-                    id="description"
-                    placeholder="Briefly describe the emergency situation"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    rows={3}
-                  />
-                </div>
-                
-                {userLocation ? (
-                  <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded">
-                    Location detected successfully. Help will be sent to your current location.
-                  </div>
-                ) : (
-                  <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-2 rounded">
-                    Detecting your location...
-                  </div>
-                )}
-                
-                <Button
-                  type="submit"
-                  className="w-full bg-red-600 hover:bg-red-700 text-white"
-                  disabled={isLoading || !userLocation}
-                >
-                  {isLoading ? "Processing..." : "Request Emergency Help"}
-                </Button>
-              </form>
-            </CardContent>
-            <CardFooter className="bg-gray-50 text-sm text-gray-500 text-center">
-              <p className="w-full">
-                For life-threatening emergencies, please also call your local emergency services directly.
-              </p>
-            </CardFooter>
-          </Card>
+    <div className="flex flex-col min-h-screen bg-background p-4">
+      <div className="max-w-lg mx-auto w-full">
+        <div className="bg-black/90 rounded-3xl p-6 shadow-lg border border-red-800/30">
+          <div className="flex items-center mb-4">
+            <div className="h-12 w-12 bg-red-900/50 rounded-full flex items-center justify-center mr-4">
+              <Ambulance className="h-6 w-6 text-red-400" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white">Emergency Assistance</h1>
+              <p className="text-gray-400">For life-threatening emergencies</p>
+            </div>
+          </div>
+          
+          <p className="text-gray-200 mb-6">
+            This will dispatch emergency medical services to your current location immediately. 
+            Only use this service for genuine medical emergencies.
+          </p>
+          
+          {locationError && (
+            <div className="bg-red-900/30 border border-red-500/50 text-red-200 px-4 py-3 rounded mb-4">
+              <p>{locationError}</p>
+              <p className="font-bold">Please enable location services to continue.</p>
+            </div>
+          )}
+          
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label htmlFor="description" className="block text-gray-200 mb-2">
+                Describe your emergency (optional)
+              </label>
+              <Textarea
+                id="description"
+                placeholder="What's happening? Any relevant medical information..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={4}
+                className="w-full bg-black/70 border-red-900/50 text-white"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="confirm" className="block text-gray-200 mb-2">
+                Type "yes" to confirm emergency services
+              </label>
+              <Input
+                id="confirm"
+                placeholder="Type 'yes' to confirm"
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+                className="w-full bg-black/70 border-red-900/50 text-white"
+                required
+              />
+            </div>
+            
+            <Button
+              type="submit"
+              className="w-full bg-red-600 hover:bg-red-700 text-white py-6 rounded-xl"
+              disabled={isLoading || !userLocation}
+            >
+              {isLoading ? "Processing..." : "Request Emergency Services"}
+            </Button>
+          </form>
         </div>
       </div>
     </div>
