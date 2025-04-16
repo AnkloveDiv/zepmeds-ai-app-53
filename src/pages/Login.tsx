@@ -1,6 +1,6 @@
-import { useState } from "react";
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { sendOTP } from "@/services/smsService";
 import { toast } from "sonner";
 import { useOrderCreation } from "@/hooks/useOrderCreation";
-import { createOrder } from "@/services/ordersService"; // Import the dedicated service
+import { createOrder } from "@/services/ordersService";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -35,18 +35,15 @@ const Login = () => {
       setIsSending(true);
       
       try {
-        // Send OTP to the phone number
         const result = await sendOTP(phoneNumber);
         
         if (result.success) {
           toast.success("OTP sent to your phone number");
-          // Always display OTP for easier testing
           if (result.otp) {
             toast.info(`Your OTP is: ${result.otp}`, {
-              duration: 10000, // Show for 10 seconds
+              duration: 10000,
             });
           }
-          // Navigate to verification page with phone number as state
           navigate("/verify", { state: { phoneNumber } });
         } else {
           toast.error("Failed to send OTP. Please try again.");
@@ -66,20 +63,17 @@ const Login = () => {
       try {
         console.log("Creating order with phone:", phoneNumber);
         
-        // Try using both methods to create orders (for debugging)
         try {
-          // First use the hook method
           const hookResult = await createOrderFromHook({
             customer_name: phoneNumber,
             date: new Date(),
-            amount: 0, // Set initial amount to 0
-            prescription: '' // No prescription for login
+            amount: 0,
+            prescription: ''
           });
           console.log("Order created using hook:", hookResult);
         } catch (hookError) {
           console.error("Failed to create order using hook:", hookError);
           
-          // Try using the direct service as fallback
           try {
             const serviceResult = await createOrder({
               orderId: `ORD-${Date.now()}`,
@@ -93,11 +87,9 @@ const Login = () => {
           }
         }
 
-        // Continue with existing login logic even if order creation fails
         handleOTPSend(e);
       } catch (error) {
         console.error('Error creating order:', error);
-        // Still proceed with OTP even if order creation fails
         handleOTPSend(e);
       }
     }
@@ -109,7 +101,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black to-[#0a0a1f] flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gray-900 text-white">
       <div className="flex-1 flex flex-col justify-center px-6 py-12">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -233,6 +225,12 @@ const Login = () => {
             </div>
           </div>
         </motion.div>
+      </div>
+
+      <div className="mt-8 text-center">
+        <Link to="/new-order" className="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors">
+          Create New Order
+        </Link>
       </div>
     </div>
   );

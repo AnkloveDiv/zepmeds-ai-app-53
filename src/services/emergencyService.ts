@@ -98,7 +98,7 @@ export const useEmergencyService = () => {
       // Generate a unique emergency ID
       const emergencyId = generateOrderId();
       
-      // Create emergency record in Supabase using orders_new table instead of orders
+      // Create emergency record in Supabase using orders_new table
       const { data, error: supabaseError } = await supabase
         .from('orders_new')
         .insert([
@@ -164,7 +164,7 @@ export const useEmergencyService = () => {
     setError(null);
     
     try {
-      // Update status in Supabase using orders_new table instead of orders
+      // Update status in Supabase using orders_new table
       const { error: supabaseError } = await supabase
         .from('orders_new')
         .update({ action: 'cancelled' })
