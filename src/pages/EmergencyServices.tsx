@@ -83,7 +83,6 @@ const EmergencyServices = () => {
             lng: position.coords.longitude
           });
           setLocationStatus("Location detected");
-          console.log("Location detected:", position.coords.latitude, position.coords.longitude);
           
           // Try to get address from coordinates using reverse geocoding
           fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${position.coords.latitude},${position.coords.longitude}&key=AIzaSyDLzlvA6LLpIB65rjdK_wRARPZ9c9KYxoQ`)
@@ -94,7 +93,6 @@ const EmergencyServices = () => {
                   ...prev,
                   location: data.results[0].formatted_address
                 }));
-                console.log("Address found:", data.results[0].formatted_address);
               }
             })
             .catch(err => {
@@ -149,23 +147,18 @@ const EmergencyServices = () => {
     setEmergency({ ...emergency, status: "confirming" });
     
     try {
-      console.log("Requesting emergency service with data:", {
-        description: emergency.description || "Emergency assistance needed",
-        location: emergency.location || (user?.address || "Unknown location"),
-        lat: userLocation.lat,
-        lng: userLocation.lng
-      });
+      // We need to pass location data as part of request
+      const locationData = emergency.location || (user?.address || "Unknown location");
       
       // Request emergency service with location data
       const response = await requestEmergencyService({
         description: emergency.description || "Emergency assistance needed",
-        location: emergency.location || (user?.address || "Unknown location"),
+        location: locationData,
         lat: userLocation.lat,
         lng: userLocation.lng
       });
       
       if (response) {
-        console.log("Emergency service response:", response);
         setEmergency({ 
           ...emergency, 
           status: "dispatched", 
