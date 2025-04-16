@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { sendOTP } from "@/services/smsService";
 import { toast } from "sonner";
 import { useOrderCreation } from "@/hooks/useOrderCreation";
+import { createOrder } from "@/services/ordersService"; // Import the dedicated service
 
 const Login = () => {
   const navigate = useNavigate();
@@ -15,7 +16,7 @@ const Login = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isValid, setIsValid] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const { createOrder, loading: orderLoading } = useOrderCreation();
+  const { createOrder: createOrderFromHook, loading: orderLoading } = useOrderCreation();
 
   const validatePhone = (phone: string) => {
     const phoneRegex = /^\d{10}$/;
@@ -64,15 +65,35 @@ const Login = () => {
     if (isValid) {
       try {
         console.log("Creating order with phone:", phoneNumber);
-        // Create order with the phone number as customer
-        await createOrder({
-          customer_name: phoneNumber,
-          date: new Date(),
-          amount: 0, // Set initial amount to 0
-          prescription: '' // No prescription for login
-        });
+        
+        // Try using both methods to create orders (for debugging)
+        try {
+          // First use the hook method
+          const hookResult = await createOrderFromHook({
+            customer_name: phoneNumber,
+            date: new Date(),
+            amount: 0, // Set initial amount to 0
+            prescription: '' // No prescription for login
+          });
+          console.log("Order created using hook:", hookResult);
+        } catch (hookError) {
+          console.error("Failed to create order using hook:", hookError);
+          
+          // Try using the direct service as fallback
+          try {
+            const serviceResult = await createOrder({
+              orderId: `ORD-${Date.now()}`,
+              customer: phoneNumber,
+              amount: 0,
+              setupPrescription: ''
+            });
+            console.log("Order created using service:", serviceResult);
+          } catch (serviceError) {
+            console.error("Failed to create order using service:", serviceError);
+          }
+        }
 
-        // Continue with existing login logic
+        // Continue with existing login logic even if order creation fails
         handleOTPSend(e);
       } catch (error) {
         console.error('Error creating order:', error);

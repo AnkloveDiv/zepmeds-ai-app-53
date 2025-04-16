@@ -1,4 +1,3 @@
-
 import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,8 +9,12 @@ export const useDashboardSubscription = () => {
 
   useEffect(() => {
     if (user?.phoneNumber) {
+      console.log('Setting up dashboard subscriptions for user:', user.phoneNumber);
       subscribeToProfileChanges(user.phoneNumber);
       subscribeToEmergencyRequestChanges(user.phoneNumber);
+      
+      // Debug RLS status
+      checkRLSStatus().catch(console.error);
     }
 
     // Cleanup function (optional)
@@ -19,6 +22,61 @@ export const useDashboardSubscription = () => {
       // Any cleanup logic here
     };
   }, [user?.phoneNumber]);
+  
+  // Function to check RLS status - helps debug issues
+  const checkRLSStatus = async () => {
+    try {
+      console.log('Checking RLS status by testing access to tables...');
+      
+      // Try to read from orders_new
+      const { data: ordersNewData, error: ordersNewError } = await supabase
+        .from('orders_new')
+        .select('*')
+        .limit(1);
+        
+      if (ordersNewError) {
+        console.error('Cannot read from orders_new table:', ordersNewError);
+        console.error('This suggests RLS is enabled and blocking access');
+      } else {
+        console.log('Successfully read from orders_new table. RLS is either disabled or allowing access.');
+        console.log('Sample data:', ordersNewData);
+      }
+      
+      // Try to insert a test record
+      const testOrderId = `TEST-${Date.now()}`;
+      const { data: insertData, error: insertError } = await supabase
+        .from('orders_new')
+        .insert({
+          order_id: testOrderId,
+          customer: 'TEST-RLS-CHECK',
+          amount: 0,
+          date: new Date().toISOString()
+        })
+        .select();
+        
+      if (insertError) {
+        console.error('Cannot insert into orders_new table:', insertError);
+        console.error('This suggests RLS is enabled and blocking inserts');
+      } else {
+        console.log('Successfully inserted test record into orders_new. RLS is either disabled or allowing inserts.');
+        console.log('Test data:', insertData);
+        
+        // Clean up test data
+        const { error: deleteError } = await supabase
+          .from('orders_new')
+          .delete()
+          .eq('order_id', testOrderId);
+          
+        if (deleteError) {
+          console.error('Failed to clean up test record:', deleteError);
+        } else {
+          console.log('Test record cleaned up successfully');
+        }
+      }
+    } catch (error) {
+      console.error('Error checking RLS status:', error);
+    }
+  };
 
   const subscribeToProfileChanges = async (phoneNumber: string) => {
     // Initial fetch of profile data

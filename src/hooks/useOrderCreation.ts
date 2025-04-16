@@ -20,56 +20,50 @@ export const useOrderCreation = () => {
       // Convert Date to ISO string format for Supabase
       const createdAt = orderData.date.toISOString();
       
-      // First try inserting into orders table
-      const { data: orderData1, error: orderError1 } = await supabase
-        .from('orders')
+      console.log('Attempting to create order in orders_new table directly:', {
+        customer: orderData.customer_name,
+        date: createdAt,
+        amount: orderData.amount,
+        setup_prescription: orderData.prescription || null
+      });
+      
+      // Insert directly into orders_new table - no fallbacks
+      const { data: orderData2, error: orderError2 } = await supabase
+        .from('orders_new')
         .insert({
-          customer_name: orderData.customer_name,
-          created_at: createdAt,
-          total: orderData.amount,
-          prescription_image_url: orderData.prescription || null,
-          status: 'pending',
-          order_number: `ORD-${Date.now()}`
+          customer: orderData.customer_name,
+          date: createdAt,
+          amount: orderData.amount,
+          setup_prescription: orderData.prescription || null,
+          order_id: `ORD-${Date.now()}`
         })
         .select()
         .single();
-
-      if (orderError1) {
-        console.error('Error creating order in orders table:', orderError1);
-        // Try inserting into orders_new as backup
-        const { data: orderData2, error: orderError2 } = await supabase
-          .from('orders_new')
-          .insert({
-            customer: orderData.customer_name,
-            date: createdAt,
-            amount: orderData.amount,
-            setup_prescription: orderData.prescription || null,
-            order_id: `ORD-${Date.now()}`
-          })
-          .select()
-          .single();
-          
-        if (orderError2) {
-          console.error('Error creating order in orders_new table:', orderError2);
-          throw new Error('Failed to create order in any available table');
+        
+      if (orderError2) {
+        console.error('Error creating order in orders_new table:', orderError2);
+        console.error('Error details:', JSON.stringify(orderError2));
+        
+        // Check specifically for RLS errors
+        if (orderError2.message && orderError2.message.includes('policy')) {
+          console.error('RLS policy error detected. Please check your database policies.');
         }
         
-        console.log('Order created in orders_new table:', orderData2);
         toast({
-          title: "Success",
-          description: "Order placed successfully in orders_new!",
+          title: "Error",
+          description: "Failed to create order. Database error occurred.",
+          variant: "destructive",
         });
-        
-        return orderData2;
+        throw new Error('Failed to create order in orders_new table');
       }
-
-      console.log('Order created in orders table:', orderData1);
+      
+      console.log('Order created in orders_new table:', orderData2);
       toast({
         title: "Success",
-        description: "Order placed successfully in orders!",
+        description: "Order placed successfully in orders_new!",
       });
-
-      return orderData1;
+      
+      return orderData2;
     } catch (error) {
       console.error('Error creating order:', error);
       toast({
