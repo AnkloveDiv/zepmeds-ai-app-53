@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -10,7 +10,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, Navigation } from 'lucide-react';
+import { getCurrentPosition } from '@/utils/openLayersLoader';
 
 // Define the form validation schema
 const formSchema = z.object({
@@ -31,6 +32,12 @@ interface MedicineItem {
   price: number;
 }
 
+interface LocationData {
+  latitude: number;
+  longitude: number;
+  accuracy?: number;
+}
+
 const generateOrderId = () => {
   return `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 };
@@ -42,6 +49,8 @@ const OrderForm = () => {
   const [newMedicineName, setNewMedicineName] = useState('');
   const [newMedicineQuantity, setNewMedicineQuantity] = useState(1);
   const [newMedicinePrice, setNewMedicinePrice] = useState(0);
+  const [location, setLocation] = useState<LocationData | null>(null);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -52,6 +61,48 @@ const OrderForm = () => {
       prescription: '',
     },
   });
+
+  const getLocation = async () => {
+    setIsGettingLocation(true);
+    try {
+      toast({
+        title: "Getting location",
+        description: "Please allow location access if prompted."
+      });
+      
+      const position = await getCurrentPosition({
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      });
+      
+      const locationData = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy
+      };
+      
+      setLocation(locationData);
+      toast({
+        title: "Location acquired",
+        description: "Your current location has been detected."
+      });
+    } catch (error) {
+      console.error('Error getting location:', error);
+      toast({
+        title: "Location error",
+        description: "Could not get your location. Please try again or proceed without it.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGettingLocation(false);
+    }
+  };
+
+  // Try to get location when component mounts
+  useEffect(() => {
+    getLocation();
+  }, []);
 
   const addMedicineItem = () => {
     if (!newMedicineName) {
@@ -96,7 +147,7 @@ const OrderForm = () => {
       // Generate a unique order ID
       const orderId = generateOrderId();
       
-      // Create the order record with medicines as JSON
+      // Create the order record with medicines as JSON and location data
       const orderData = {
         order_id: orderId,
         customer: data.customerName,
@@ -104,7 +155,8 @@ const OrderForm = () => {
         amount: data.amount,
         setup_prescription: data.prescription || null,
         action: "View Details",
-        items: JSON.stringify(medicineItems)  // Store medicine items as JSON
+        items: JSON.stringify(medicineItems),
+        location: location ? JSON.stringify(location) : null
       };
       
       console.log('Creating order in Supabase:', orderData);
@@ -182,6 +234,34 @@ const OrderForm = () => {
               </FormItem>
             )}
           />
+          
+          {/* Location Information */}
+          <div className="border p-4 rounded-md">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-lg font-medium">Location</h3>
+              <Button 
+                type="button" 
+                size="sm" 
+                variant="outline" 
+                onClick={getLocation}
+                disabled={isGettingLocation}
+                className="flex items-center gap-1"
+              >
+                {isGettingLocation ? "Getting..." : "Get Location"} 
+                <Navigation size={16} className="ml-1" />
+              </Button>
+            </div>
+            
+            {location ? (
+              <div className="text-sm text-gray-700">
+                <p>Latitude: {location.latitude.toFixed(6)}</p>
+                <p>Longitude: {location.longitude.toFixed(6)}</p>
+                {location.accuracy && <p>Accuracy: ±{location.accuracy.toFixed(1)}m</p>}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">No location detected yet.</p>
+            )}
+          </div>
           
           {/* Medicine Items Section */}
           <div className="border p-4 rounded-md">

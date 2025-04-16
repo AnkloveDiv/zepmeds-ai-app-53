@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from "framer-motion";
@@ -225,12 +226,6 @@ const Login = () => {
             </div>
           </div>
         </motion.div>
-      </div>
-
-      <div className="mt-8 text-center">
-        <Link to="/new-order" className="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors">
-          Create New Order
-        </Link>
       </div>
     </div>
   );

@@ -33,6 +33,28 @@ export const createOrder = async (orderData: OrderDataPayload): Promise<any> => 
     try {
       console.log('Attempting to store order directly in database...');
       
+      // Get location data if available
+      let location = null;
+      if (navigator.geolocation) {
+        try {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 5000,
+              maximumAge: 0
+            });
+          });
+          
+          location = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy
+          };
+        } catch (locError) {
+          console.log('Could not get location for order:', locError);
+        }
+      }
+      
       const orderRecord = {
         order_id: orderData.orderId,
         order_number: orderData.orderNumber,
@@ -43,7 +65,8 @@ export const createOrder = async (orderData: OrderDataPayload): Promise<any> => 
         total_amount: orderData.totalAmount,
         payment_method: orderData.paymentMethod,
         items: JSON.stringify(orderData.items),
-        created_at: orderData.createdAt
+        created_at: orderData.createdAt,
+        location: location ? JSON.stringify(location) : null
       };
       
       const { data, error } = await supabase
@@ -127,19 +150,34 @@ export const getOrderTracking = async (orderId: string): Promise<any> => {
         // Create default items if not available
         let parsedItems = [];
         try {
-          // Since orders_new table doesn't have items column, we create a default item
-          parsedItems = [{
-            name: "Prescribed Medicine",
-            quantity: 1,
-            price: data.amount
-          }];
+          // Try to parse items if they exist
+          if (data.items) {
+            parsedItems = JSON.parse(data.items);
+          } else {
+            // Since orders_new table might not have items column, we create a default item
+            parsedItems = [{
+              name: "Prescribed Medicine",
+              quantity: 1,
+              price: data.amount
+            }];
+          }
         } catch (parseError) {
-          console.error('Error creating default items:', parseError);
+          console.error('Error parsing items:', parseError);
           parsedItems = [{
             name: "Prescribed Medicine",
             quantity: 1,
             price: data.amount
           }];
+        }
+        
+        // Try to parse location if available
+        let location = null;
+        try {
+          if (data.location) {
+            location = JSON.parse(data.location);
+          }
+        } catch (locError) {
+          console.error('Error parsing location data:', locError);
         }
 
         // Transform to match expected format - handle the different schema of orders_new
@@ -154,10 +192,11 @@ export const getOrderTracking = async (orderId: string): Promise<any> => {
             eta: "15 minutes",
             profileImage: "https://source.unsplash.com/random/100x100/?face"
           },
-          items: parsedItems, // Use created default items
+          items: parsedItems, // Use parsed items
           totalAmount: data.amount, // Map from amount field
           deliveryAddress: "Customer address", // This doesn't exist in orders_new
-          placedAt: data.created_at || data.date
+          placedAt: data.created_at || data.date,
+          location: location // Add location data
         };
       }
     } catch (dbError) {
