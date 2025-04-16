@@ -36,7 +36,6 @@ import PetCare from "./pages/PetCare";
 import MedicalDevices from "./pages/MedicalDevices";
 import PastMedicines from "./pages/PastMedicines";
 import AddressSelection from "./pages/AddressSelection";
-import NewOrder from "./pages/NewOrder";
 
 const queryClient = new QueryClient();
 
@@ -82,7 +81,6 @@ const AppContent = () => {
         <Route path="/medical-devices" element={<MedicalDevices />} />
         <Route path="/past-medicines" element={<PastMedicines />} />
         <Route path="/address-selection" element={<AddressSelection />} />
-        <Route path="/new-order" element={<NewOrder />} /> {/* New route added */}
         
         {/* Profile Section Routes */}
         <Route path="/patient-details" element={<PatientDetails />} />

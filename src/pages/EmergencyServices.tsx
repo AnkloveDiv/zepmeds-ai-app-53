@@ -1,181 +1,310 @@
 
-import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import Header from "@/components/Header";
+import BottomNavigation from "@/components/BottomNavigation";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Ambulance, Phone, MapPin, Clock } from "lucide-react";
+import DeliveryMap from "@/components/DeliveryMap";
+import useBackNavigation from "@/hooks/useBackNavigation";
+import { useToast } from "@/components/ui/use-toast";
+import { useEmergencyService } from "@/services/emergencyService";
+import { useAuth } from "@/contexts/AuthContext";
+import { Textarea } from "@/components/ui/textarea";
 
 const EmergencyServices = () => {
-  const navigate = useNavigate();
+  useBackNavigation();
+  const { toast } = useToast();
   const { user } = useAuth();
-  const [name, setName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [description, setDescription] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [locationError, setLocationError] = useState('');
-
+  
+  const { 
+    requestEmergencyService, 
+    cancelEmergencyRequest, 
+    loading, 
+    error, 
+    ambulance, 
+    eta: serviceEta 
+  } = useEmergencyService();
+  
+  const [emergency, setEmergency] = useState({
+    type: "ambulance",
+    confirmation: "",
+    status: "idle", // idle, confirming, dispatched
+    requestId: null as string | null,
+    description: "",
+    location: ""
+  });
+  
+  const [eta, setEta] = useState(12); // minutes
+  
+  // Use the ETA from the service if available
   useEffect(() => {
-    // Try to get user's location when component mounts
-    if (navigator.geolocation) {
-      setLocationError('');
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-        },
-        (error) => {
-          console.error("Error getting location:", error);
-          setLocationError("Couldn't get your location. Please enable location services.");
-          toast.error("Please enable location services for emergency assistance");
-        }
-      );
-    } else {
-      setLocationError("Geolocation is not supported by your browser");
-      toast.error("Your browser doesn't support location services");
+    if (serviceEta) {
+      setEta(serviceEta);
     }
-  }, []);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!userLocation) {
-      toast.error("Location is required for emergency services");
+  }, [serviceEta]);
+  
+  // Show error toast if there's an error
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error",
+        description: error,
+        variant: "destructive"
+      });
+    }
+  }, [error, toast]);
+  
+  const handleConfirmEmergency = async () => {
+    if (emergency.confirmation.toLowerCase() !== "yes") {
+      toast({
+        title: "Error",
+        description: "Please type 'yes' to confirm emergency services",
+        variant: "destructive"
+      });
       return;
     }
     
-    if (!name || !phoneNumber) {
-      toast.error("Please provide your name and phone number");
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You need to be logged in to request emergency services",
+        variant: "destructive"
+      });
       return;
     }
-
-    setIsLoading(true);
-
+    
+    setEmergency({ ...emergency, status: "confirming" });
+    
     try {
-      const { data, error } = await supabase
-        .from('emergency_requests')
-        .insert([
-          { 
-            name,
-            phone: phoneNumber,
-            notes: description,
-            status: 'pending',
-            location: {
-              latitude: userLocation.lat,
-              longitude: userLocation.lng
-            }
-          }
-        ]);
-
-      if (error) {
-        console.error("Error submitting emergency request:", error);
-        toast.error("Failed to request emergency services. Please try again.");
-        return;
+      // We need to pass location data as part of request
+      const locationData = emergency.location || (user?.address || "Unknown location");
+      
+      // Request emergency service with location data in the proper format for the schema
+      const response = await requestEmergencyService({
+        request_type: emergency.type,
+        status: 'requested',
+        description: emergency.description || "Emergency assistance needed"
+      });
+      
+      if (response) {
+        setEmergency({ 
+          ...emergency, 
+          status: "dispatched", 
+          requestId: response.id 
+        });
+        
+        toast({
+          title: "Emergency Services Dispatched",
+          description: `Help is on the way! ETA: ${serviceEta || eta} minutes`,
+        });
+      } else {
+        // If response is null but no error was set, we still need to handle the failure
+        setEmergency({ ...emergency, status: "idle" });
+        
+        toast({
+          title: "Request Failed",
+          description: "Unable to request emergency services. Please try again.",
+          variant: "destructive"
+        });
       }
-
-      toast.success("Emergency request submitted successfully");
-      navigate('/dashboard', { state: { emergencyRequested: true } });
     } catch (err) {
-      console.error("Exception when submitting emergency request:", err);
-      toast.error("An unexpected error occurred. Please try again.");
-    } finally {
-      setIsLoading(false);
+      console.error("Error requesting emergency services:", err);
+      setEmergency({ ...emergency, status: "idle" });
+      
+      toast({
+        title: "Request Failed",
+        description: "An error occurred while requesting emergency services.",
+        variant: "destructive"
+      });
     }
   };
-
+  
+  const handleCancelEmergency = async () => {
+    if (emergency.requestId) {
+      try {
+        await cancelEmergencyRequest(emergency.requestId);
+        setEmergency({ 
+          type: "ambulance", 
+          confirmation: "", 
+          status: "idle",
+          requestId: null,
+          description: "",
+          location: ""
+        });
+        
+        toast({
+          title: "Emergency Request Cancelled",
+          description: "Your emergency service request has been cancelled.",
+        });
+      } catch (err) {
+        console.error("Error cancelling emergency request:", err);
+        toast({
+          title: "Error",
+          description: "Failed to cancel emergency request.",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+  
   return (
-    <div className="flex flex-col min-h-screen bg-zepmeds-light-bg">
-      <div className="flex-1 p-4">
-        <div className="max-w-lg mx-auto mt-8">
-          <Card className="shadow-lg border-red-500 border-2">
-            <CardHeader className="bg-red-500 text-white">
-              <CardTitle className="text-2xl font-bold text-center">Emergency Services</CardTitle>
-              <CardDescription className="text-white text-center">
-                Request immediate medical assistance
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6">
-              {locationError && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                  <p>{locationError}</p>
-                  <p className="font-bold">Please enable location services to continue.</p>
+    <div className="min-h-screen bg-background pb-20">
+      <Header showBackButton title="Emergency Services" />
+      
+      <main className="px-4 py-6">
+        <div className="mb-6">
+          <Card className="bg-red-500/10 border border-red-500/30">
+            <CardContent className="p-4">
+              <div className="flex items-center mb-4">
+                <div className="h-12 w-12 rounded-full bg-red-500/20 flex items-center justify-center mr-4">
+                  <Ambulance className="h-6 w-6 text-red-500" />
+                </div>
+                <div>
+                  <h2 className="text-white font-bold text-lg">Emergency Assistance</h2>
+                  <p className="text-gray-400 text-sm">For life-threatening emergencies</p>
+                </div>
+              </div>
+              
+              {emergency.status === "idle" && (
+                <>
+                  <p className="text-white mb-4">
+                    This will dispatch emergency medical services to your current location immediately.
+                    Only use this service for genuine medical emergencies.
+                  </p>
+                  
+                  <div className="mb-4">
+                    <Label htmlFor="description" className="text-white">Describe your emergency (optional)</Label>
+                    <Textarea 
+                      id="description" 
+                      value={emergency.description}
+                      onChange={(e) => setEmergency({ ...emergency, description: e.target.value })}
+                      className="bg-black/20 border-white/10 mt-1"
+                      placeholder="What's happening? Any relevant medical information..."
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <Label htmlFor="confirmation" className="text-white">Type "yes" to confirm emergency services</Label>
+                    <Input 
+                      id="confirmation" 
+                      value={emergency.confirmation}
+                      onChange={(e) => setEmergency({ ...emergency, confirmation: e.target.value })}
+                      className="bg-black/20 border-white/10 mt-1"
+                      placeholder="Type 'yes' to confirm"
+                    />
+                  </div>
+                  
+                  <Button 
+                    className="w-full bg-red-500 hover:bg-red-600 text-white"
+                    onClick={handleConfirmEmergency}
+                  >
+                    Request Emergency Services
+                  </Button>
+                </>
+              )}
+              
+              {emergency.status === "confirming" && (
+                <div className="text-center py-6">
+                  <div className="animate-spin h-10 w-10 border-4 border-red-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                  <p className="text-white">Dispatching emergency services...</p>
                 </div>
               )}
               
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium">
-                    Your Name
-                  </label>
-                  <Input
-                    id="name"
-                    placeholder="Enter your full name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium">
-                    Phone Number
-                  </label>
-                  <Input
-                    id="phone"
-                    placeholder="Enter your phone number"
-                    type="tel"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="description" className="block text-sm font-medium">
-                    Emergency Description (Optional)
-                  </label>
-                  <Textarea
-                    id="description"
-                    placeholder="Briefly describe the emergency situation"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    rows={3}
-                  />
-                </div>
-                
-                {userLocation ? (
-                  <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded">
-                    Location detected successfully. Help will be sent to your current location.
+              {emergency.status === "dispatched" && (
+                <>
+                  <div className="mb-4">
+                    <h3 className="text-white font-medium">Ambulance Dispatched</h3>
+                    <div className="flex items-center text-gray-300 mt-2">
+                      <MapPin className="h-4 w-4 mr-1 text-red-400" />
+                      <span>Current Location</span>
+                    </div>
+                    <div className="flex items-center text-gray-300 mt-1">
+                      <Clock className="h-4 w-4 mr-1 text-red-400" />
+                      <span>ETA: {eta} minutes</span>
+                    </div>
                   </div>
-                ) : (
-                  <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-2 rounded">
-                    Detecting your location...
+                  
+                  <div className="h-60 rounded-lg overflow-hidden mb-4">
+                    <DeliveryMap />
                   </div>
-                )}
-                
-                <Button
-                  type="submit"
-                  className="w-full bg-red-600 hover:bg-red-700 text-white"
-                  disabled={isLoading || !userLocation}
-                >
-                  {isLoading ? "Processing..." : "Request Emergency Help"}
-                </Button>
-              </form>
+                  
+                  <Button 
+                    className="w-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center gap-2 mb-2"
+                    onClick={() => window.location.href = "tel:102"}
+                  >
+                    <Phone className="h-4 w-4" /> Emergency Call (102)
+                  </Button>
+                  
+                  <Button 
+                    variant="outline"
+                    className="w-full border-white/10 text-white hover:bg-white/5"
+                    onClick={handleCancelEmergency}
+                  >
+                    Cancel Emergency Request
+                  </Button>
+                </>
+              )}
             </CardContent>
-            <CardFooter className="bg-gray-50 text-sm text-gray-500 text-center">
-              <p className="w-full">
-                For life-threatening emergencies, please also call your local emergency services directly.
-              </p>
-            </CardFooter>
           </Card>
         </div>
-      </div>
+        
+        <div className="space-y-4 mb-20">
+          <h3 className="text-white font-medium mb-2">Other Emergency Services</h3>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="w-full"
+          >
+            <Button 
+              variant="outline" 
+              className="w-full py-6 border-white/10 text-white hover:bg-white/5 flex items-start justify-between"
+              onClick={() => window.location.href = "tel:102"}
+            >
+              <div className="flex items-center">
+                <div className="h-10 w-10 rounded-full bg-red-500/20 flex items-center justify-center mr-3">
+                  <Phone className="h-5 w-5 text-red-500" />
+                </div>
+                <div className="text-left">
+                  <h4 className="font-medium">Emergency Hotline</h4>
+                  <p className="text-sm text-gray-400">Medical emergency: 102</p>
+                </div>
+              </div>
+              <div className="bg-black/20 px-2 py-1 rounded text-xs">Call Now</div>
+            </Button>
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="w-full"
+          >
+            <Button 
+              variant="outline" 
+              className="w-full py-6 border-white/10 text-white hover:bg-white/5 flex items-start justify-between"
+            >
+              <div className="flex items-center">
+                <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center mr-3">
+                  <MapPin className="h-5 w-5 text-blue-500" />
+                </div>
+                <div className="text-left">
+                  <h4 className="font-medium">Nearest Hospitals</h4>
+                  <p className="text-sm text-gray-400">Find hospitals near you</p>
+                </div>
+              </div>
+              <div className="bg-black/20 px-2 py-1 rounded text-xs">View Map</div>
+            </Button>
+          </motion.div>
+        </div>
+      </main>
+      
+      <BottomNavigation />
     </div>
   );
 };

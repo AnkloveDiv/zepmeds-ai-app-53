@@ -4,35 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Check, Phone, MessageSquare } from "lucide-react";
 import DeliveryMap from "@/components/DeliveryMap";
-import { useToast } from "@/components/ui/use-toast";
 
 interface DeliveryPartnerProps {
-  name: string;
-  rating: number;
-  phone: string;
-  eta: string;
-  profileImage: string;
+  rider: any;
+  orderId?: string;
+  handleCallRider: () => void;
+  handleMessageRider: () => void;
 }
 
-const DeliveryPartner = ({ name, rating, phone, eta, profileImage }: DeliveryPartnerProps) => {
-  const { toast } = useToast();
-  
-  const handleCallRider = () => {
-    toast({
-      title: "Calling rider",
-      description: `Calling ${name}...`,
-    });
-    // In a real app, this would initiate a call
-  };
-
-  const handleMessageRider = () => {
-    toast({
-      title: "Messaging rider",
-      description: `Opening chat with ${name}...`,
-    });
-    // In a real app, this would open a chat interface
-  };
-
+const DeliveryPartner = ({ rider, orderId, handleCallRider, handleMessageRider }: DeliveryPartnerProps) => {
   return (
     <div className="mb-6 glass-morphism rounded-xl p-4">
       <h3 className="text-lg font-bold text-white mb-4">Your Delivery Partner</h3>
@@ -41,8 +21,8 @@ const DeliveryPartner = ({ name, rating, phone, eta, profileImage }: DeliveryPar
         <div className="relative">
           <div className="w-16 h-16 rounded-full bg-orange-500/20 overflow-hidden border-2 border-orange-500">
             <img
-              src={profileImage || "https://source.unsplash.com/random/100x100/?face"} 
-              alt={name}
+              src={rider.profileImage || "https://source.unsplash.com/random/100x100/?face"} 
+              alt={rider.name}
               className="w-full h-full object-cover"
               onError={(e) => {
                 e.currentTarget.src = "https://source.unsplash.com/random/100x100/?face";
@@ -59,18 +39,18 @@ const DeliveryPartner = ({ name, rating, phone, eta, profileImage }: DeliveryPar
         </div>
         
         <div className="ml-4 flex-1">
-          <h4 className="text-white font-medium">{name}</h4>
+          <h4 className="text-white font-medium">{rider.name}</h4>
           <div className="flex items-center">
             <div className="flex items-center text-amber-400">
               {Array.from({ length: 5 }).map((_, i) => (
                 <span key={i} className="text-lg">
-                  {i < Math.floor(rating) ? "★" : "☆"}
+                  {i < Math.floor(rider.rating) ? "★" : "☆"}
                 </span>
               ))}
             </div>
-            <span className="ml-1 text-white">{rating}</span>
+            <span className="ml-1 text-white">{rider.rating}</span>
           </div>
-          <p className="text-gray-400 text-sm">{phone}</p>
+          <p className="text-gray-400 text-sm">{rider.phone}</p>
         </div>
         
         <div className="flex space-x-2">
@@ -94,7 +74,7 @@ const DeliveryPartner = ({ name, rating, phone, eta, profileImage }: DeliveryPar
       <Separator className="my-4 bg-white/10" />
       
       <div className="h-40 rounded-lg overflow-hidden">
-        <DeliveryMap showRider={true} />
+        <DeliveryMap showRider={true} orderId={orderId} />
       </div>
     </div>
   );

@@ -1,50 +1,56 @@
-
-import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { getOrderTracking } from "@/services/orders/trackOrder";
-import { useToast } from "@/components/ui/use-toast";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
-import OrderItems from "@/components/order/OrderItems";
-import DeliveryStatus from "@/components/order/DeliveryStatus";
-import DeliveryPartner from "@/components/order/DeliveryPartner";
-import OrderHeader from "@/components/order/OrderHeader";
+import { useToast } from "@/components/ui/use-toast";
+import useBackNavigation from "@/hooks/useBackNavigation";
+import { getOrderTracking } from "@/services/orderService";
+
+// Refactored components
 import OrderLoadingState from "@/components/order/OrderLoadingState";
 import OrderErrorState from "@/components/order/OrderErrorState";
+import OrderHeader from "@/components/order/OrderHeader";
+import DeliveryStatus from "@/components/order/DeliveryStatus";
+import DeliveryPartner from "@/components/order/DeliveryPartner";
+import OrderItems from "@/components/order/OrderItems";
 import OrderHelp from "@/components/order/OrderHelp";
+import ChatbotModal from "@/components/chat/ChatbotModal";
 
 const TrackOrder = () => {
-  const { orderId } = useParams<{ orderId: string }>();
+  const { orderId } = useParams();
+  const navigate = useNavigate();
   const { toast } = useToast();
-  const [orderData, setOrderData] = useState<any>(null);
+  const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const [showChatbot, setShowChatbot] = useState(false);
+  const { ExitConfirmDialog } = useBackNavigation();
   
   useEffect(() => {
-    const fetchOrderData = async () => {
-      if (!orderId) {
-        setError("No order ID provided");
-        setLoading(false);
-        return;
-      }
+    const fetchOrderDetails = async () => {
+      setLoading(true);
       
       try {
-        console.log("Fetching order data for:", orderId);
-        const data = await getOrderTracking(orderId);
-        console.log("Order data received:", data);
-        
-        if (!data) {
-          setError("Order not found");
-        } else {
-          setOrderData(data);
-          setError(null);
+        if (!orderId) {
+          throw new Error("Order ID is missing");
         }
+        
+        console.log(`Fetching order tracking data for order ID: ${orderId}`);
+        const orderData = await getOrderTracking(orderId);
+        
+        if (!orderData) {
+          throw new Error("Order data not found");
+        }
+        
+        console.log("Order tracking data received:", orderData);
+        setOrder(orderData);
       } catch (err) {
         console.error("Error fetching order:", err);
-        setError("Failed to load order details");
+        setError(true);
         toast({
-          title: "Error",
-          description: "Could not load order details. Please try again.",
+          title: "Error loading order",
+          description: "Could not load the order details. Please try again.",
           variant: "destructive"
         });
       } finally {
@@ -52,50 +58,119 @@ const TrackOrder = () => {
       }
     };
     
-    fetchOrderData();
+    fetchOrderDetails();
   }, [orderId, toast]);
+  
+  const handleCallRider = () => {
+    if (order?.deliveryRider?.phone) {
+      window.location.href = `tel:${order.deliveryRider.phone}`;
+    } else {
+      toast({
+        title: "Cannot call rider",
+        description: "Rider phone number is not available",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const handleMessageRider = () => {
+    toast({
+      title: "Message sent to rider",
+      description: "Your message has been sent to the rider",
+    });
+  };
+  
+  const handleShareOrder = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: `Order #${orderId} from ZepMeds`,
+        text: `Track my medicine delivery from ZepMeds. Order #${orderId}`,
+        url: window.location.href
+      }).catch(err => {
+        console.error("Share failed:", err);
+      });
+    } else {
+      toast({
+        title: "Share not supported",
+        description: "Your browser does not support the Web Share API",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const handleOpenChatbot = () => {
+    setShowChatbot(true);
+  };
+  
+  const handleCloseChatbot = () => {
+    setShowChatbot(false);
+  };
   
   if (loading) {
     return <OrderLoadingState />;
   }
   
-  if (error || !orderData) {
-    return <OrderErrorState error={error || "Order not found"} />;
+  if (error || !order) {
+    return <OrderErrorState />;
   }
   
+  const estimatedDelivery = new Date(order.estimatedDelivery);
+  const now = new Date();
+  const minutesRemaining = Math.floor((estimatedDelivery.getTime() - now.getTime()) / (1000 * 60));
+  
+  const orderStatus = order.status || "confirmed";
+  const statusMap = {
+    "confirmed": { step: 0, text: "Order Confirmed" },
+    "preparing": { step: 1, text: "Preparing" },
+    "rider-assigned": { step: 2, text: "Rider Assigned" },
+    "in-transit": { step: 3, text: "On the Way" },
+    "delivered": { step: 4, text: "Delivered" }
+  };
+  const currentStep = statusMap[orderStatus]?.step || 0;
+  
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-background/90 pb-20">
-      <Header title={`Order: ${orderData.id}`} showBackButton />
+    <div className="min-h-screen bg-background pb-20">
+      <Header showBackButton title="Track Order" />
+      <ExitConfirmDialog />
       
-      <div className="container mx-auto px-4 py-4">
+      <main className="px-4 py-4">
         <OrderHeader 
-          orderId={orderData.id} 
-          status={orderData.status} 
-          placedAt={orderData.placedAt}
-          estimatedDelivery={orderData.estimatedDelivery}
+          order={order}
+          orderId={orderId || ''}
+          showDetails={showDetails}
+          setShowDetails={setShowDetails}
+          minutesRemaining={minutesRemaining}
+          handleShareOrder={handleShareOrder}
+          handleCallRider={handleCallRider}
+        />
+
+        <DeliveryStatus 
+          currentStep={currentStep}
+          riderName={order.deliveryRider.name}
+          minutesRemaining={minutesRemaining}
+          totalItems={order.items?.length || 0}
         />
         
-        <div className="mt-6 space-y-6">
-          <DeliveryStatus 
-            status={orderData.status} 
-            estimatedDelivery={orderData.estimatedDelivery}
-          />
-          
-          <DeliveryPartner 
-            name={orderData.deliveryRider.name}
-            rating={orderData.deliveryRider.rating}
-            phone={orderData.deliveryRider.phone}
-            eta={orderData.deliveryRider.eta}
-            profileImage={orderData.deliveryRider.profileImage}
-          />
-          
-          <OrderItems items={orderData.items || []} />
-          
-          <OrderHelp orderId={orderData.id} />
-        </div>
-      </div>
+        <DeliveryPartner 
+          rider={order.deliveryRider}
+          orderId={orderId}
+          handleCallRider={handleCallRider}
+          handleMessageRider={handleMessageRider}
+        />
+        
+        <OrderItems items={order.items || []} />
+        
+        <OrderHelp orderId={order.id} />
+      </main>
       
       <BottomNavigation />
+      
+      {/* Chatbot Modal */}
+      <ChatbotModal 
+        isOpen={showChatbot} 
+        onClose={handleCloseChatbot} 
+        orderId={orderId || ''} 
+      />
     </div>
   );
 };

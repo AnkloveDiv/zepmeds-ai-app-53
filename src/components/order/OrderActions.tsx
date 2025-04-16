@@ -1,8 +1,9 @@
+
 import { Button } from "@/components/ui/button";
 import { FileDown, HelpCircle, AlertTriangle, MessageSquare } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
-import { updateOrderStatus } from "@/services/orders/updateOrder";
+import { updateOrderStatus } from "@/services/orderService";
 
 interface OrderActionsProps {
   orderId: string;

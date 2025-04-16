@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -8,7 +9,7 @@ import { Package, Truck, Check, AlertCircle, MapPin } from "lucide-react";
 import useBackNavigation from "@/hooks/useBackNavigation";
 import { useToast } from "@/components/ui/use-toast";
 import { motion } from "framer-motion";
-import { getOrderTracking } from "@/services/orders/trackOrder";
+import { getOrderTracking } from "@/services/orderService";
 
 interface Order {
   id: string;

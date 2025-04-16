@@ -1,5 +1,4 @@
 
-import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { ChevronDown, ChevronUp, Copy, Share2, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,20 +8,25 @@ import OrderActions from "@/components/order/OrderActions";
 import { AnimatePresence } from "framer-motion";
 
 interface OrderHeaderProps {
+  order: any;
   orderId: string;
-  status: string;
-  placedAt: string;
-  estimatedDelivery: string;
+  showDetails: boolean;
+  setShowDetails: (show: boolean) => void;
+  minutesRemaining: number;
+  handleShareOrder: () => void;
+  handleCallRider: () => void;
 }
 
 const OrderHeader = ({
+  order,
   orderId,
-  status,
-  placedAt,
-  estimatedDelivery,
+  showDetails,
+  setShowDetails,
+  minutesRemaining,
+  handleShareOrder,
+  handleCallRider
 }: OrderHeaderProps) => {
   const { toast } = useToast();
-  const [showDetails, setShowDetails] = useState(false);
   
   const handleCopyOrderId = () => {
     navigator.clipboard.writeText(orderId);
@@ -32,40 +36,12 @@ const OrderHeader = ({
     });
   };
   
-  const handleShareOrder = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: `Order #${orderId}`,
-        text: `Check my medicine order #${orderId} from ZepMeds`,
-        url: window.location.href,
-      }).catch(err => console.log('Error sharing:', err));
-    } else {
-      toast({
-        title: "Sharing not supported",
-        description: "Your browser doesn't support the Web Share API",
-      });
-    }
-  };
-  
-  const handleCallRider = () => {
-    toast({
-      title: "Calling rider",
-      description: "Connecting you to the delivery partner...",
-    });
-    // In a real app, this would initiate a call
-  };
-  
-  // Calculate minutes remaining (mock for now)
-  const minutesRemaining = new Date(estimatedDelivery).getTime() > Date.now() 
-    ? Math.round((new Date(estimatedDelivery).getTime() - Date.now()) / (1000 * 60))
-    : 0;
-  
   return (
     <div className="mb-6 glass-morphism rounded-xl p-4">
       <div className="flex justify-between items-center">
         <div>
           <div className="flex items-center">
-            <h2 className="text-lg font-bold text-white">Order #{orderId}</h2>
+            <h2 className="text-lg font-bold text-white">Order #{order.id}</h2>
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={handleCopyOrderId}
@@ -112,8 +88,8 @@ const OrderHeader = ({
       <div className="mt-4 flex justify-between items-center">
         <div className="flex items-center">
           <div className="flex flex-col">
-            <span className="text-gray-400 text-xs">Status</span>
-            <span className="text-white text-sm truncate max-w-52">{status}</span>
+            <span className="text-gray-400 text-xs">Delivery address</span>
+            <span className="text-white text-sm truncate max-w-52">{order.deliveryAddress || order.address?.address}</span>
           </div>
         </div>
         <Button
@@ -140,20 +116,38 @@ const OrderHeader = ({
               <div className="flex justify-between text-sm">
                 <span className="text-gray-400">Order placed</span>
                 <span className="text-white">
-                  {new Date(placedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(order.placedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
               
               <div className="flex justify-between text-sm">
                 <span className="text-gray-400">Estimated arrival</span>
                 <span className="text-white">
-                  {new Date(estimatedDelivery).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(order.estimatedDelivery).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
+              </div>
+              
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Total amount</span>
+                <span className="text-white">₹{order.totalAmount || 0}</span>
+              </div>
+              
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Payment method</span>
+                <span className="text-white">{order.paymentMethod === "cod" ? "Cash on Delivery" : 
+                     order.paymentMethod === "card" ? "Credit/Debit Card" : 
+                     order.paymentMethod === "upi" ? "UPI" : 
+                     order.paymentMethod === "bnpl" ? "Buy Now Pay Later" : "Online Payment"}</span>
+              </div>
+              
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Number of items</span>
+                <span className="text-white">{order.items?.length || 0}</span>
               </div>
             </div>
             
             <div className="mt-3">
-              <OrderActions orderId={orderId} compact={true} />
+              <OrderActions orderId={order.id} compact={true} />
             </div>
           </motion.div>
         )}

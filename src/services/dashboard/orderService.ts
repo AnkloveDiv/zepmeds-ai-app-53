@@ -4,7 +4,7 @@
  * Handles order-related API operations
  */
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { ApiClient } from './apiClient';
 import { OrderDataPayload, ApiResponse } from './types';
 
@@ -33,7 +33,7 @@ export class OrderService {
           status: payload.status,
           total_amount: payload.totalAmount,
           payment_method: payload.paymentMethod,
-          items: payload.items,
+          items: JSON.stringify(payload.items),
           created_at: payload.createdAt
         };
         
