@@ -9,7 +9,149 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      admin_dashboard_orders: {
+        Row: {
+          created_at: string
+          customer_address: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          id: string
+          items: Json | null
+          order_id: string
+          order_number: string | null
+          payment_method: string | null
+          status: string
+          total_amount: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_address?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          items?: Json | null
+          order_id: string
+          order_number?: string | null
+          payment_method?: string | null
+          status?: string
+          total_amount?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_address?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          items?: Json | null
+          order_id?: string
+          order_number?: string | null
+          payment_method?: string | null
+          status?: string
+          total_amount?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      customers: {
+        Row: {
+          address: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string | null
+          phone: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          phone: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          phone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      order_tracking_events: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          order_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          order_id: string
+          status: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          order_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_tracking_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_new"
+            referencedColumns: ["order_id"]
+          },
+        ]
+      }
+      orders_new: {
+        Row: {
+          action: string | null
+          amount: number
+          created_at: string
+          customer: string
+          date: string
+          id: string
+          order_id: string
+          setup_prescription: string | null
+          updated_at: string
+        }
+        Insert: {
+          action?: string | null
+          amount: number
+          created_at?: string
+          customer: string
+          date?: string
+          id?: string
+          order_id: string
+          setup_prescription?: string | null
+          updated_at?: string
+        }
+        Update: {
+          action?: string | null
+          amount?: number
+          created_at?: string
+          customer?: string
+          date?: string
+          id?: string
+          order_id?: string
+          setup_prescription?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
