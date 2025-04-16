@@ -20,7 +20,6 @@ import DateTimePicker from "@/components/checkout/DateTimePicker";
 import { useAuth } from "@/contexts/AuthContext";
 import type { OrderDataPayload } from "@/pages/dashboardApiService";
 import { getDashboardApiService } from "@/pages/dashboardApiService";
-import { supabase } from "@/integrations/supabase/client";
 
 const UPI_PROVIDERS = [
   { id: "googlepay", name: "Google Pay", iconBg: "bg-blue-500" },

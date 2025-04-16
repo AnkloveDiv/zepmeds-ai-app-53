@@ -6,13 +6,12 @@ import { useToast } from "@/components/ui/use-toast";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
 import OrderItems from "@/components/order/OrderItems";
+import DeliveryStatus from "@/components/order/DeliveryStatus";
 import DeliveryPartner from "@/components/order/DeliveryPartner";
 import OrderHeader from "@/components/order/OrderHeader";
 import OrderLoadingState from "@/components/order/OrderLoadingState";
 import OrderErrorState from "@/components/order/OrderErrorState";
 import OrderHelp from "@/components/order/OrderHelp";
-import OrderStatusTimeline from "@/components/order/OrderStatusTimeline";
-import { supabase } from "@/integrations/supabase/client";
 
 const TrackOrder = () => {
   const { orderId } = useParams<{ orderId: string }>();
@@ -35,60 +34,7 @@ const TrackOrder = () => {
         console.log("Order data received:", data);
         
         if (!data) {
-          const { data: orderFromSupabase, error: orderError } = await supabase
-            .from('orders_new')
-            .select('*')
-            .eq('order_id', orderId)
-            .maybeSingle();
-            
-          if (orderError) {
-            console.error("Error fetching from orders_new:", orderError);
-            setError("Order not found");
-          } else if (orderFromSupabase) {
-            console.log("Order found in orders_new table:", orderFromSupabase);
-            
-            // Create default items if not available in the orders_new table
-            let orderItems = [];
-            try {
-              // Check if setup_prescription contains items data as JSON string
-              if (orderFromSupabase.setup_prescription) {
-                const parsedPrescription = JSON.parse(orderFromSupabase.setup_prescription);
-                if (Array.isArray(parsedPrescription)) {
-                  orderItems = parsedPrescription;
-                }
-              }
-            } catch (parseError) {
-              console.error("Error parsing setup_prescription:", parseError);
-            }
-            
-            // If no items found, create a default item
-            if (orderItems.length === 0) {
-              orderItems = [{
-                name: "Prescribed Medicine",
-                quantity: 1,
-                price: orderFromSupabase.amount
-              }];
-            }
-            
-            const adaptedOrder = {
-              id: orderFromSupabase.order_id,
-              status: orderFromSupabase.action || "confirmed",
-              placedAt: orderFromSupabase.date,
-              estimatedDelivery: new Date(new Date(orderFromSupabase.date).getTime() + 60 * 60 * 1000).toISOString(),
-              items: orderItems,
-              deliveryRider: {
-                name: "Rahul Singh",
-                rating: 4.8,
-                phone: "+91 98765 43210",
-                eta: "30 minutes",
-                profileImage: "https://source.unsplash.com/random/100x100/?face"
-              }
-            };
-            setOrderData(adaptedOrder);
-            setError(null);
-          } else {
-            setError("Order not found");
-          }
+          setError("Order not found");
         } else {
           setOrderData(data);
           setError(null);
@@ -130,7 +76,10 @@ const TrackOrder = () => {
         />
         
         <div className="mt-6 space-y-6">
-          <OrderStatusTimeline orderId={orderData.id} />
+          <DeliveryStatus 
+            status={orderData.status} 
+            estimatedDelivery={orderData.estimatedDelivery}
+          />
           
           <DeliveryPartner 
             name={orderData.deliveryRider.name}

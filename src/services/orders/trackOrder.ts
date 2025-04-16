@@ -7,26 +7,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { safeParseJSON, getProperty } from './utils';
 
 /**
- * Maps database status values to frontend friendly status values
- */
-const mapStatusValue = (dbStatus: string): string => {
-  // Convert database status values to our standard status values
-  const statusMap: Record<string, string> = {
-    'created': 'processing',
-    'confirmed': 'processing',
-    'preparing': 'packed',
-    'ready': 'packed',
-    'picked_up': 'rider-pickup',
-    'out_for_delivery': 'in-transit',
-    'in_transit': 'in-transit',
-    'delivered': 'delivered',
-    'completed': 'delivered'
-  };
-  
-  return statusMap[dbStatus.toLowerCase()] || dbStatus;
-};
-
-/**
  * Retrieves order tracking information by order ID
  */
 export const getOrderTracking = async (orderId: string): Promise<any> => {
@@ -90,28 +70,11 @@ export const getOrderTracking = async (orderId: string): Promise<any> => {
         } catch (locError) {
           console.error('Error parsing location data:', locError);
         }
-        
-        // Get the latest status from order_tracking_events if available
-        let currentStatus = data.action || 'processing';
-        try {
-          const { data: trackingData, error: trackingError } = await supabase
-            .from('order_tracking_events')
-            .select('*')
-            .eq('order_id', orderId)
-            .order('created_at', { ascending: false })
-            .limit(1);
-            
-          if (!trackingError && trackingData && trackingData.length > 0) {
-            currentStatus = trackingData[0].status;
-          }
-        } catch (trackingError) {
-          console.error('Error getting latest tracking status:', trackingError);
-        }
 
         // Transform to match expected format - handle the different schema of orders_new
         return {
           id: orderId,
-          status: mapStatusValue(currentStatus),
+          status: data.action || 'processing', // Use action field as status
           estimatedDelivery: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
           deliveryRider: {
             name: "Rahul Singh",
@@ -158,33 +121,6 @@ export const getOrderTracking = async (orderId: string): Promise<any> => {
     };
   } catch (error) {
     console.error('Error in getOrderTracking:', error);
-    throw error;
-  }
-};
-
-/**
- * Creates a tracking event for an order
- */
-export const createOrderTrackingEvent = async (orderId: string, status: string, description?: string): Promise<void> => {
-  try {
-    const { data, error } = await supabase
-      .from('order_tracking_events')
-      .insert([
-        {
-          order_id: orderId,
-          status: status,
-          description: description || `Order status updated to ${status}`
-        }
-      ]);
-      
-    if (error) {
-      console.error('Error creating order tracking event:', error);
-      throw error;
-    }
-    
-    console.log('Created order tracking event:', data);
-  } catch (error) {
-    console.error('Failed to create order tracking event:', error);
     throw error;
   }
 };
