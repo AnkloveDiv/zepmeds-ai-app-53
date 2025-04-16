@@ -32,18 +32,25 @@ const TrackOrder = () => {
       setLoading(true);
       
       try {
-        if (orderId) {
-          const orderData = await getOrderTracking(orderId);
-          setOrder(orderData);
-        } else {
+        if (!orderId) {
           throw new Error("Order ID is missing");
         }
+        
+        console.log(`Fetching order tracking data for order ID: ${orderId}`);
+        const orderData = await getOrderTracking(orderId);
+        
+        if (!orderData) {
+          throw new Error("Order data not found");
+        }
+        
+        console.log("Order tracking data received:", orderData);
+        setOrder(orderData);
       } catch (err) {
         console.error("Error fetching order:", err);
         setError(true);
         toast({
           title: "Error loading order",
-          description: "Could not load the order details",
+          description: "Could not load the order details. Please try again.",
           variant: "destructive"
         });
       } finally {

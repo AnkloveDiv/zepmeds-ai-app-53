@@ -9,6 +9,7 @@ export const DASHBOARD_API_URL = 'https://lovable.dev/projects/fad9d36d-9f80-4f1
 // Request configuration
 export const API_REQUEST_CONFIG = {
   maxRetries: 3,
+  timeout: 5000, // 5 seconds timeout
   headers: {
     'Content-Type': 'application/json',
     'X-App-Source': 'zepmeds-mobile-app',
@@ -19,4 +20,4 @@ export const API_REQUEST_CONFIG = {
 };
 
 // Singleton instance for the dashboard API service
-let dashboardApiInstance: any = null;
+// Moved to index.ts to avoid circular dependencies

@@ -1,104 +1,98 @@
 
 /**
  * Dashboard API Service
- * 
- * Entry point for the dashboard API services
+ * Main export file for dashboard API services
  */
 
+import { DASHBOARD_API_URL } from './config';
 import { ApiClient } from './apiClient';
 import { OrderService } from './orderService';
 import { EmergencyService } from './emergencyService';
-import { DASHBOARD_API_URL } from './config';
-import type { EmergencyRequestPayload, OrderDataPayload, ApiResponse } from './types';
+import type { OrderDataPayload, EmergencyRequestPayload, ApiResponse } from './types';
 
-export { EmergencyRequestPayload, OrderDataPayload, ApiResponse };
+// Create a singleton instance for the dashboard API service
+let dashboardApiInstance: DashboardApiService | null = null;
 
+/**
+ * Dashboard API Service class
+ * Handles interaction with the admin dashboard API
+ */
 export class DashboardApiService {
   private apiClient: ApiClient;
-  private orderService: OrderService;
-  private emergencyService: EmergencyService;
+  public order: OrderService;
+  public emergency: EmergencyService;
   
-  constructor(apiBaseUrl: string = DASHBOARD_API_URL, apiKey: string = '') {
-    this.apiClient = new ApiClient(apiBaseUrl, apiKey);
-    this.orderService = new OrderService(this.apiClient);
-    this.emergencyService = new EmergencyService(this.apiClient);
-    
-    console.log('DashboardApiService initialized with URL:', apiBaseUrl);
+  constructor(apiUrl: string, apiKey: string = '') {
+    this.apiClient = new ApiClient(apiUrl, apiKey);
+    this.order = new OrderService(this.apiClient);
+    this.emergency = new EmergencyService(this.apiClient);
   }
-  
-  // Order Service Methods
   
   /**
    * Send order data to the admin dashboard
+   * @deprecated Use order.sendOrderData instead
    */
   public async sendOrderData(payload: OrderDataPayload): Promise<ApiResponse> {
-    return this.orderService.sendOrderData(payload);
+    console.warn('Deprecated: Use order.sendOrderData instead of sendOrderData');
+    return this.order.sendOrderData(payload);
   }
   
   /**
    * Create a tracking event for an order
+   * @deprecated Use order.createOrderTrackingEvent instead
    */
   public async createOrderTrackingEvent(orderId: string, status: string, description?: string): Promise<any> {
-    return this.orderService.createOrderTrackingEvent(orderId, status, description);
+    console.warn('Deprecated: Use order.createOrderTrackingEvent instead of createOrderTrackingEvent');
+    return this.order.createOrderTrackingEvent(orderId, status, description);
   }
   
   /**
    * Update order status in the admin dashboard
+   * @deprecated Use order.updateOrderStatus instead
    */
   public async updateOrderStatus(orderId: string, status: string): Promise<ApiResponse> {
-    return this.orderService.updateOrderStatus(orderId, status);
+    console.warn('Deprecated: Use order.updateOrderStatus instead of updateOrderStatus');
+    return this.order.updateOrderStatus(orderId, status);
   }
   
-  // Emergency Service Methods
-  
   /**
-   * Send a new emergency request to the dashboard
+   * Send emergency request to the admin dashboard
+   * @deprecated Use emergency.sendEmergencyRequest instead
    */
   public async sendEmergencyRequest(payload: EmergencyRequestPayload): Promise<ApiResponse> {
-    return this.emergencyService.sendEmergencyRequest(payload);
+    console.warn('Deprecated: Use emergency.sendEmergencyRequest instead of sendEmergencyRequest');
+    return this.emergency.sendEmergencyRequest(payload);
   }
   
   /**
-   * Update the status of an emergency request
+   * Update emergency status in the admin dashboard
+   * @deprecated Use emergency.updateEmergencyStatus instead
    */
   public async updateEmergencyStatus(requestId: string, status: string): Promise<ApiResponse> {
-    return this.emergencyService.updateEmergencyStatus(requestId, status);
+    console.warn('Deprecated: Use emergency.updateEmergencyStatus instead of updateEmergencyStatus');
+    return this.emergency.updateEmergencyStatus(requestId, status);
   }
   
   /**
-   * Get responder information for an emergency request
+   * Cancel emergency request in the admin dashboard
+   * @deprecated Use emergency.cancelEmergencyRequest instead
    */
-  public async getResponderInfo(requestId: string): Promise<ApiResponse> {
-    return this.emergencyService.getResponderInfo(requestId);
-  }
-  
-  /**
-   * Get ETA for an emergency request
-   */
-  public async getEmergencyEta(requestId: string): Promise<ApiResponse> {
-    return this.emergencyService.getEmergencyEta(requestId);
-  }
-  
-  /**
-   * Cancel an emergency request
-   */
-  public async cancelEmergencyRequest(requestId: string, reason?: string): Promise<ApiResponse> {
-    return this.emergencyService.cancelEmergencyRequest(requestId, reason);
+  public async cancelEmergencyRequest(requestId: string): Promise<ApiResponse> {
+    console.warn('Deprecated: Use emergency.cancelEmergencyRequest instead of cancelEmergencyRequest');
+    return this.emergency.cancelEmergencyRequest(requestId);
   }
 }
 
-// Singleton instance with proper module pattern
-let dashboardApiInstance: DashboardApiService | null = null;
-
 /**
- * Get or create the dashboard API service
+ * Get the dashboard API service instance
+ * @returns DashboardApiService instance
  */
-export const getDashboardApiService = (
-  apiBaseUrl: string = DASHBOARD_API_URL, 
-  apiKey: string = ''
-): DashboardApiService => {
+export function getDashboardApiService(): DashboardApiService {
   if (!dashboardApiInstance) {
-    dashboardApiInstance = new DashboardApiService(apiBaseUrl, apiKey);
+    dashboardApiInstance = new DashboardApiService(DASHBOARD_API_URL);
   }
   return dashboardApiInstance;
-};
+}
+
+// Export types
+export type { OrderDataPayload, EmergencyRequestPayload, ApiResponse };
