@@ -5,7 +5,11 @@ import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
 
-const OrderErrorState = () => {
+interface OrderErrorStateProps {
+  error: string;
+}
+
+const OrderErrorState = ({ error }: OrderErrorStateProps) => {
   const navigate = useNavigate();
   
   return (
@@ -18,7 +22,8 @@ const OrderErrorState = () => {
             <Info className="h-8 w-8 text-red-500" />
           </div>
           <h3 className="text-xl font-bold text-white mb-2">Order Not Found</h3>
-          <p className="text-gray-400 mb-6">We couldn't find the order you're looking for. It may have been cancelled or removed.</p>
+          <p className="text-gray-400 mb-2">{error || "We couldn't find the order you're looking for."}</p>
+          <p className="text-gray-400 mb-6">It may have been cancelled or removed.</p>
           
           <Button
             className="bg-zepmeds-purple hover:bg-zepmeds-purple/90 w-full"

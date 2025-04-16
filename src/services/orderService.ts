@@ -124,23 +124,19 @@ export const getOrderTracking = async (orderId: string): Promise<any> => {
       if (error) {
         console.error('Error fetching order from database:', error);
       } else if (data) {
-        // Parse items from JSON string if available
+        // Create default items if not available
         let parsedItems = [];
         try {
-          if (data.items) {
-            parsedItems = JSON.parse(data.items);
-          } else {
-            // Create a default item if no items found
-            parsedItems = [{
-              name: "Unknown Medicine",
-              quantity: 1,
-              price: data.amount
-            }];
-          }
-        } catch (parseError) {
-          console.error('Error parsing items JSON:', parseError);
+          // Since orders_new table doesn't have items column, we create a default item
           parsedItems = [{
-            name: "Unknown Medicine",
+            name: "Prescribed Medicine",
+            quantity: 1,
+            price: data.amount
+          }];
+        } catch (parseError) {
+          console.error('Error creating default items:', parseError);
+          parsedItems = [{
+            name: "Prescribed Medicine",
             quantity: 1,
             price: data.amount
           }];
@@ -158,7 +154,7 @@ export const getOrderTracking = async (orderId: string): Promise<any> => {
             eta: "15 minutes",
             profileImage: "https://source.unsplash.com/random/100x100/?face"
           },
-          items: parsedItems, // Use parsed items from JSON
+          items: parsedItems, // Use created default items
           totalAmount: data.amount, // Map from amount field
           deliveryAddress: "Customer address", // This doesn't exist in orders_new
           placedAt: data.created_at || data.date
