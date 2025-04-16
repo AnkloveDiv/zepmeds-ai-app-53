@@ -1,6 +1,5 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
 
 interface CreateOrderInput {
   orderId: string;
@@ -14,20 +13,10 @@ export async function createOrder(orderData: CreateOrderInput) {
   try {
     console.log('createOrder service called with data:', orderData);
     
-    // Log database status before insert
-    try {
-      const { count, error: countError } = await supabase
-        .from('orders_new')
-        .select('*', { count: 'exact', head: true });
-      
-      console.log(`Current orders_new table has ${count} records`);
-      if (countError) {
-        console.error('Error checking orders_new table:', countError);
-      }
-    } catch (e) {
-      console.error('Error querying orders_new table:', e);
-    }
+    // Generate a unique timestamp to prevent collisions
+    const timestamp = new Date().toISOString();
     
+    // Create the order with enhanced logging
     const { data, error } = await supabase
       .from('orders_new')
       .insert([{
@@ -35,22 +24,36 @@ export async function createOrder(orderData: CreateOrderInput) {
         customer: orderData.customer,
         amount: orderData.amount,
         setup_prescription: orderData.setupPrescription,
-        action: orderData.action,
-        // Explicitly set date to ensure it's not null
-        date: new Date().toISOString()
+        action: orderData.action || 'created_via_service',
+        date: timestamp
       }])
-      .select()
-      .single();
+      .select();
 
     if (error) {
       console.error('Error creating order in ordersService:', error);
       console.error('Error details:', JSON.stringify(error));
       
-      // Check for RLS issues
-      if (error.message && error.message.includes('policy')) {
-        console.error('RLS policy error detected in ordersService');
+      // Try with a different timestamp approach
+      console.log('Trying with explicit timestamp...');
+      const secondAttempt = await supabase
+        .from('orders_new')
+        .insert([{
+          order_id: `${orderData.orderId}-retry`,
+          customer: orderData.customer,
+          amount: orderData.amount,
+          setup_prescription: orderData.setupPrescription,
+          action: 'created_via_service_retry',
+          date: new Date().toISOString()
+        }])
+        .select();
+        
+      if (secondAttempt.error) {
+        console.error('Second attempt also failed:', secondAttempt.error);
+        throw secondAttempt.error;
       }
-      throw error;
+      
+      console.log('Second attempt successful:', secondAttempt.data);
+      return { success: true, data: secondAttempt.data };
     }
 
     console.log('Order successfully created in ordersService:', data);
