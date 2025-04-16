@@ -73,7 +73,28 @@ export class DashboardApiService {
     try {
       // First, save to local database to ensure we have a backup
       try {
-        const { data: dbData, error: dbError } = await this.saveOrderToDatabase(payload);
+        // Modified to use INSERT instead of UPSERT due to constraint issues
+        const { supabase } = await import('@/lib/supabase');
+        
+        // Ensure all fields match the database schema exactly
+        const orderData = {
+          order_id: payload.orderId,
+          order_number: payload.orderNumber,
+          customer_name: payload.customerInfo.name,
+          customer_phone: payload.customerInfo.phone || '',
+          customer_address: payload.customerInfo.address,
+          status: payload.status,
+          total_amount: payload.totalAmount,
+          payment_method: payload.paymentMethod,
+          items: JSON.stringify(payload.items),
+          created_at: payload.createdAt
+        };
+        
+        // Use insert without on conflict clause to avoid the RLS error
+        const { data: dbData, error: dbError } = await supabase
+          .from('admin_dashboard_orders')
+          .insert(orderData);
+        
         if (dbError) {
           console.error('Failed to store order in admin_dashboard_orders:', dbError);
         } else {
