@@ -1,6 +1,4 @@
-
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -9,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
-import { Ambulance } from 'lucide-react';
+import { Ambulance, Phone, MapPin } from 'lucide-react';
 
 const EmergencyServices = () => {
   const navigate = useNavigate();
@@ -104,10 +102,42 @@ const EmergencyServices = () => {
     }
   };
 
+  const EmergencyOption = ({ 
+    icon, 
+    title, 
+    description, 
+    actionText, 
+    actionFn 
+  }: { 
+    icon: React.ReactNode; 
+    title: string; 
+    description: string; 
+    actionText: string; 
+    actionFn: () => void 
+  }) => (
+    <div className="flex items-center justify-between bg-black/80 rounded-xl p-4 border border-gray-800">
+      <div className="flex items-center">
+        <div className="h-10 w-10 bg-black/80 rounded-full flex items-center justify-center mr-4">
+          {icon}
+        </div>
+        <div>
+          <h3 className="text-white font-medium">{title}</h3>
+          <p className="text-gray-400 text-sm">{description}</p>
+        </div>
+      </div>
+      <button 
+        onClick={actionFn}
+        className="bg-transparent text-white border border-gray-700 px-4 py-1 rounded-lg hover:bg-gray-800 transition-colors text-sm"
+      >
+        {actionText}
+      </button>
+    </div>
+  );
+
   return (
-    <div className="flex flex-col min-h-screen bg-background p-4">
+    <div className="flex flex-col min-h-screen bg-gray-900 p-4">
       <div className="max-w-lg mx-auto w-full">
-        <div className="bg-black/90 rounded-3xl p-6 shadow-lg border border-red-800/30">
+        <div className="bg-black/90 rounded-3xl p-6 shadow-lg border border-red-800/30 mb-8">
           <div className="flex items-center mb-4">
             <div className="h-12 w-12 bg-red-900/50 rounded-full flex items-center justify-center mr-4">
               <Ambulance className="h-6 w-6 text-red-400" />
@@ -141,7 +171,7 @@ const EmergencyServices = () => {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={4}
-                className="w-full bg-black/70 border-red-900/50 text-white"
+                className="w-full bg-black/70 border-red-900/50 text-white resize-none"
               />
             </div>
             
@@ -159,14 +189,34 @@ const EmergencyServices = () => {
               />
             </div>
             
-            <Button
+            <button
               type="submit"
-              className="w-full bg-red-600 hover:bg-red-700 text-white py-6 rounded-xl"
+              className="w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               disabled={isLoading || !userLocation}
             >
               {isLoading ? "Processing..." : "Request Emergency Services"}
-            </Button>
+            </button>
           </form>
+        </div>
+        
+        <div className="space-y-4">
+          <h2 className="text-white text-xl font-semibold mb-4">Other Emergency Services</h2>
+          
+          <EmergencyOption
+            icon={<Phone className="text-red-400 h-5 w-5" />}
+            title="Emergency Hotline"
+            description="Medical emergency: 102"
+            actionText="Call Now"
+            actionFn={() => window.open('tel:102')}
+          />
+          
+          <EmergencyOption
+            icon={<MapPin className="text-blue-400 h-5 w-5" />}
+            title="Nearest Hospitals"
+            description="Find hospitals near you"
+            actionText="View Map"
+            actionFn={() => toast.info("Hospital map feature will open here")}
+          />
         </div>
       </div>
     </div>
