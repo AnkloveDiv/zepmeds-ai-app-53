@@ -28,21 +28,32 @@ export const createOrder = async (orderData: OrderDataPayload): Promise<any> => 
     const response = await dashboardApi.sendOrderData(orderData);
     console.log('Order successfully sent to admin dashboard:', response);
     
-    // Also attempt to store in Supabase (if available)
+    // Also attempt to store in Supabase directly (as a backup)
     try {
-      const { data, error } = await supabase.from('orders').insert({
+      console.log('Attempting to store order directly in database...');
+      
+      const orderRecord = {
+        order_id: orderData.orderId,
         order_number: orderData.orderNumber,
-        delivery_address: orderData.customerInfo.address,
-        total_amount: orderData.totalAmount,
+        customer_name: orderData.customerInfo.name,
+        customer_phone: orderData.customerInfo.phone || '',
+        customer_address: orderData.customerInfo.address,
         status: orderData.status,
+        total_amount: orderData.totalAmount,
         payment_method: orderData.paymentMethod,
-      });
+        items: JSON.stringify(orderData.items),
+        created_at: orderData.createdAt
+      };
+      
+      const { data, error } = await supabase
+        .from('admin_dashboard_orders')
+        .insert(orderRecord);
       
       if (error) {
-        console.error('Failed to store order in database:', error);
-        // Continue execution even if database store fails
+        console.error('Failed to store order directly in database:', error);
+        console.error('Error details:', JSON.stringify(error));
       } else {
-        console.log('Order stored in database:', data);
+        console.log('Order stored directly in database:', data);
         
         // Create an initial tracking event for this order
         try {

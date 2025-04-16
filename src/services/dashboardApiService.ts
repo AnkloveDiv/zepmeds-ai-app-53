@@ -92,6 +92,22 @@ export class DashboardApiService {
         
         console.log('Saving order to admin_dashboard_orders table:', orderData);
         
+        // Try to inspect the tables and their metadata
+        try {
+          const { data: tableInfo, error: tableError } = await supabase
+            .from('admin_dashboard_orders')
+            .select('*')
+            .limit(1);
+          
+          if (tableError) {
+            console.error('Error inspecting admin_dashboard_orders table:', tableError);
+          } else {
+            console.log('Table admin_dashboard_orders exists, sample data:', tableInfo);
+          }
+        } catch (tableInspectError) {
+          console.error('Failed to inspect table:', tableInspectError);
+        }
+        
         // Use insert without on conflict clause to avoid the RLS error
         const { data: dbData, error: dbError } = await supabase
           .from('admin_dashboard_orders')
@@ -99,11 +115,18 @@ export class DashboardApiService {
         
         if (dbError) {
           console.error('Failed to store order in admin_dashboard_orders:', dbError);
+          console.error('Error details:', JSON.stringify(dbError));
+          
+          // Check if this is an RLS error
+          if (dbError.message && dbError.message.includes('policy')) {
+            console.error('This appears to be an RLS (Row Level Security) policy error. The current user may not have permission to insert data.');
+          }
         } else {
           console.log('Order successfully stored in admin_dashboard_orders:', dbData);
         }
       } catch (dbSaveError) {
         console.error('Database operation failed:', dbSaveError);
+        console.error('Error details:', JSON.stringify(dbSaveError));
       }
       
       // Then send to the external API - Use correct endpoint for admin dashboard
@@ -201,6 +224,7 @@ export class DashboardApiService {
         
         if (dbError) {
           console.error(`Error updating order status in database for ${orderId}:`, dbError);
+          console.error('Error details:', JSON.stringify(dbError));
         } else {
           // Create a tracking event for this status update
           await this.createOrderTrackingEvent(orderId, status, `Order status updated to ${status}`);
