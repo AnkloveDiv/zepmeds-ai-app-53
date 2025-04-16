@@ -8,6 +8,8 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { Capacitor } from '@capacitor/core';
+import { Geolocation } from '@capacitor/geolocation';
 
 const EmergencyServices = () => {
   const navigate = useNavigate();
@@ -20,26 +22,39 @@ const EmergencyServices = () => {
   const [locationError, setLocationError] = useState('');
 
   useEffect(() => {
-    // Try to get user's location when component mounts
-    if (navigator.geolocation) {
-      setLocationError('');
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
+    const getLocation = async () => {
+      try {
+        let location;
+        if (Capacitor.isNativePlatform()) {
+          // Use Capacitor's Geolocation for native platforms
+          const result = await Geolocation.getCurrentPosition();
+          location = {
+            lat: result.coords.latitude,
+            lng: result.coords.longitude
+          };
+        } else {
+          // Fallback to browser geolocation for web
+          location = await new Promise<{ lat: number; lng: number }>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(
+              (position) => resolve({
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+              }),
+              (error) => reject(error)
+            );
           });
-        },
-        (error) => {
-          console.error("Error getting location:", error);
-          setLocationError("Couldn't get your location. Please enable location services.");
-          toast.error("Please enable location services for emergency assistance");
         }
-      );
-    } else {
-      setLocationError("Geolocation is not supported by your browser");
-      toast.error("Your browser doesn't support location services");
-    }
+        
+        setUserLocation(location);
+        setLocationError('');
+      } catch (error) {
+        console.error("Error getting location:", error);
+        setLocationError("Couldn't get your location. Please enable location services.");
+        toast.error("Please enable location services for emergency assistance");
+      }
+    };
+
+    getLocation();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -66,12 +81,13 @@ const EmergencyServices = () => {
             phone: phoneNumber,
             notes: description,
             status: 'pending',
-            location: {
+            location: JSON.stringify({
               latitude: userLocation.lat,
               longitude: userLocation.lng
-            }
+            })
           }
-        ]);
+        ])
+        .select();
 
       if (error) {
         console.error("Error submitting emergency request:", error);
