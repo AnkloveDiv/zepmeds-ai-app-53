@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
@@ -14,6 +13,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useEmergencyService } from "@/services/emergencyService";
 import { useAuth } from "@/contexts/AuthContext";
 import { Textarea } from "@/components/ui/textarea";
+import { sendEmergencyRequest } from "@/services/orders/utils";
 
 const EmergencyServices = () => {
   useBackNavigation();
@@ -80,15 +80,16 @@ const EmergencyServices = () => {
     setEmergency({ ...emergency, status: "confirming" });
     
     try {
-      // We need to pass location data as part of request
-      const locationData = emergency.location || (user?.address || "Unknown location");
+      // Get user information from auth context
+      const userName = user?.name || "Unknown User";
+      const userPhone = user?.phoneNumber || "Unknown Phone";
       
-      // Request emergency service with location data in the proper format for the schema
-      const response = await requestEmergencyService({
-        request_type: emergency.type,
-        status: 'requested',
-        description: emergency.description || "Emergency assistance needed"
-      });
+      // Send emergency request to Supabase
+      const response = await sendEmergencyRequest(
+        userName,
+        userPhone,
+        emergency.description
+      );
       
       if (response) {
         setEmergency({ 
@@ -100,6 +101,13 @@ const EmergencyServices = () => {
         toast({
           title: "Emergency Services Dispatched",
           description: `Help is on the way! ETA: ${serviceEta || eta} minutes`,
+        });
+        
+        // Also trigger the existing emergency service for backward compatibility
+        await requestEmergencyService({
+          request_type: emergency.type,
+          status: 'requested',
+          description: emergency.description || "Emergency assistance needed"
         });
       } else {
         // If response is null but no error was set, we still need to handle the failure

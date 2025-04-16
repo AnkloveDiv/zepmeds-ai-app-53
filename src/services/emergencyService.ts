@@ -8,8 +8,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { ApiClient } from './apiClient';
 import { EmergencyRequestPayload, ApiResponse } from './types';
 import { useAuth } from '@/contexts/AuthContext';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
+import { getCurrentLocation } from './orders/utils';
 
 // Function to generate a unique order ID
 const generateOrderId = () => {
@@ -81,9 +82,101 @@ export const useEmergencyService = () => {
   const [error, setError] = useState<string | null>(null);
   const [ambulance, setAmbulance] = useState<any | null>(null);
   const [eta, setEta] = useState<number | null>(null);
+  const [emergencyRequests, setEmergencyRequests] = useState<any[]>([]);
 
   const apiClient = new ApiClient('https://api.zepmeds.com/v1');
   const emergencyService = new EmergencyService(apiClient);
+
+  // Fetch any existing emergency requests for this user
+  useEffect(() => {
+    const fetchEmergencyRequests = async () => {
+      if (!user?.phoneNumber) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('emergency_requests')
+          .select('*')
+          .eq('phone', user.phoneNumber)
+          .order('timestamp', { ascending: false })
+          .limit(5);
+
+        if (error) {
+          console.error('Error fetching emergency requests:', error);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          setEmergencyRequests(data);
+          
+          // If there's an active request, update the UI
+          const activeRequest = data.find(req => req.status === 'pending' || req.status === 'dispatched');
+          if (activeRequest) {
+            // Set ambulance info if available
+            if (activeRequest.ambulance_id) {
+              const { data: ambulanceData } = await supabase
+                .from('ambulances')
+                .select('*')
+                .eq('id', activeRequest.ambulance_id)
+                .single();
+              
+              if (ambulanceData) {
+                setAmbulance(ambulanceData);
+                
+                // Calculate ETA based on ambulance data if available
+                if (ambulanceData.last_updated) {
+                  const minutesSinceUpdate = Math.floor((Date.now() - new Date(ambulanceData.last_updated).getTime()) / (1000 * 60));
+                  setEta(Math.max(5, 15 - minutesSinceUpdate)); // Simple ETA calculation
+                }
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error in emergency requests fetch:', err);
+      }
+    };
+
+    fetchEmergencyRequests();
+    
+    // Set up realtime subscription for emergency request updates
+    const channel = supabase
+      .channel('emergency_requests_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'emergency_requests',
+          filter: user?.phoneNumber ? `phone=eq.${user.phoneNumber}` : undefined
+        },
+        (payload) => {
+          console.log('Emergency request changed:', payload);
+          // Refresh the list when there's a change
+          fetchEmergencyRequests();
+          
+          // Show toast notification for updates
+          if (payload.eventType === 'UPDATE') {
+            const newStatus = payload.new.status;
+            if (newStatus === 'dispatched') {
+              toast({
+                title: 'Ambulance Dispatched',
+                description: 'An ambulance has been dispatched to your location.',
+              });
+            } else if (newStatus === 'arrived') {
+              toast({
+                title: 'Ambulance Arrived',
+                description: 'The ambulance has arrived at your location.',
+              });
+            }
+          }
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.phoneNumber, toast]);
 
   // Request emergency service
   const requestEmergencyService = useCallback(async (emergencyData: EmergencyRequestPayload) => {
@@ -98,16 +191,20 @@ export const useEmergencyService = () => {
       // Generate a unique emergency ID
       const emergencyId = generateOrderId();
       
-      // Create emergency record in Supabase using orders_new table
+      // Get location data
+      const locationData = await getCurrentLocation();
+      
+      // Create emergency record in Supabase
       const { data, error: supabaseError } = await supabase
-        .from('orders_new')
+        .from('emergency_requests')
         .insert([
           {
-            order_id: emergencyId,
-            customer: user.phoneNumber,
-            amount: 0, // Emergency services might be free or have a fixed cost
-            setup_prescription: emergencyData.description,
-            action: 'emergency_request'
+            name: user.name || "Unknown",
+            phone: user.phoneNumber,
+            notes: emergencyData.description,
+            status: 'pending',
+            location: locationData ? JSON.stringify(locationData) : null,
+            timestamp: new Date().toISOString()
           }
         ])
         .select()
@@ -116,6 +213,17 @@ export const useEmergencyService = () => {
       if (supabaseError) {
         throw new Error(supabaseError.message);
       }
+
+      // Also create a record in orders_new for backward compatibility
+      await supabase
+        .from('orders_new')
+        .insert({
+          order_id: emergencyId,
+          customer: user.phoneNumber,
+          amount: 0, // Emergency services might be free or have a fixed cost
+          setup_prescription: emergencyData.description,
+          action: 'emergency_request'
+        });
 
       // Simulate API call to emergency services
       // In a real app, this would actually call a real emergency service
@@ -164,14 +272,23 @@ export const useEmergencyService = () => {
     setError(null);
     
     try {
-      // Update status in Supabase using orders_new table
+      // Update the emergency request status in Supabase
       const { error: supabaseError } = await supabase
-        .from('orders_new')
-        .update({ action: 'cancelled' })
-        .eq('order_id', requestId);
+        .from('emergency_requests')
+        .update({ status: 'cancelled' })
+        .eq('id', requestId);
 
       if (supabaseError) {
         throw new Error(supabaseError.message);
+      }
+
+      // Update status in orders_new table for backward compatibility
+      if (user?.phoneNumber) {
+        await supabase
+          .from('orders_new')
+          .update({ action: 'cancelled' })
+          .eq('customer', user.phoneNumber)
+          .eq('action', 'emergency_request');
       }
 
       // Reset states
@@ -206,7 +323,7 @@ export const useEmergencyService = () => {
       
       return false;
     }
-  }, [toast]);
+  }, [toast, user]);
 
   return {
     requestEmergencyService,
@@ -214,6 +331,7 @@ export const useEmergencyService = () => {
     loading,
     error,
     ambulance,
-    eta
+    eta,
+    emergencyRequests
   };
 };

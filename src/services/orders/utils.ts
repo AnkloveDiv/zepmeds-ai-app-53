@@ -69,3 +69,66 @@ export const safeParseJSON = <T>(jsonString: string | null | undefined, defaultV
 export const getProperty = <T>(obj: any, key: string): T | undefined => {
   return obj && obj[key] !== undefined ? obj[key] as T : undefined;
 };
+
+/**
+ * Sends an emergency request to the backend
+ * @param name User's name
+ * @param phone User's phone number
+ * @param description Description of the emergency
+ * @returns Promise resolving to the emergency request data or null on error
+ */
+export const sendEmergencyRequest = async (
+  name: string, 
+  phone: string, 
+  description: string
+): Promise<any> => {
+  try {
+    // Get user's location
+    const locationData = await getCurrentLocation();
+    
+    if (!locationData) {
+      console.error('Failed to get location for emergency request');
+      // Still proceed, but with null location
+    }
+    
+    // Create the emergency request object
+    const emergencyRequest = {
+      name,
+      phone,
+      notes: description || 'Emergency assistance needed',
+      status: 'pending',
+      location: locationData ? JSON.stringify(locationData) : null,
+      timestamp: new Date().toISOString()
+    };
+    
+    console.log('Sending emergency request:', emergencyRequest);
+    
+    // Insert into emergency_requests table
+    const { data, error } = await supabase
+      .from('emergency_requests')
+      .insert(emergencyRequest)
+      .select()
+      .single();
+      
+    if (error) {
+      console.error('Error creating emergency request:', error);
+      throw error;
+    }
+    
+    console.log('Emergency request created successfully:', data);
+    
+    // Enable realtime updates for this record to broadcast to ambulance dashboard
+    await supabase
+      .from('emergency_requests')
+      .on('UPDATE', (payload) => {
+        console.log('Emergency request updated:', payload);
+        // We can handle updates from the ambulance dashboard here
+      })
+      .subscribe();
+    
+    return data;
+  } catch (error) {
+    console.error('Failed to send emergency request:', error);
+    return null;
+  }
+};
