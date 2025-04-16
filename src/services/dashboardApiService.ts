@@ -84,8 +84,9 @@ export class DashboardApiService {
         console.error('Database operation failed:', dbSaveError);
       }
       
-      // Then send to the external API
-      const response = await this.apiPost('/orders/new', payload);
+      // Then send to the external API - Make sure to use the correct endpoint!
+      // This is key to making orders show up in the dashboard
+      const response = await this.apiPost('/orders/create', payload);
       console.log('Order successfully sent to admin dashboard API:', response);
       return response;
     } catch (error) {
@@ -113,6 +114,7 @@ export class DashboardApiService {
     try {
       const { supabase } = await import('@/lib/supabase');
       
+      // Ensure all fields match the database schema exactly
       const orderData = {
         order_id: payload.orderId,
         order_number: payload.orderNumber,
@@ -126,9 +128,13 @@ export class DashboardApiService {
         created_at: payload.createdAt
       };
       
+      // Make sure to use upsert to prevent duplicates
       return await supabase
         .from('admin_dashboard_orders')
-        .insert(orderData);
+        .upsert(orderData, {
+          onConflict: 'order_id',
+          ignoreDuplicates: false
+        });
     } catch (error) {
       console.error('Error saving order to database:', error);
       throw error;
@@ -180,8 +186,8 @@ export class DashboardApiService {
         console.error(`Database operation failed for ${orderId}:`, dbError);
       }
       
-      // Then update in the external API
-      return this.apiPost('/orders/update', {
+      // Then update in the external API - Make sure to use the correct endpoint!
+      return this.apiPost('/orders/update-status', {
         orderId,
         status,
         updatedAt: new Date().toISOString()
@@ -264,6 +270,9 @@ export class DashboardApiService {
         mode: 'cors',
         credentials: 'omit'  // Don't send cookies to avoid authentication issues
       });
+      
+      // Log the full response for debugging
+      console.log(`Response status: ${response.status}`);
       
       if (!response.ok) {
         const errorText = await response.text();

@@ -50,6 +50,9 @@ Thank you for shopping with Zepmeds!
   const handleRaiseIssue = async () => {
     // Update order status to indicate there's an issue
     try {
+      // Add logging to track the issue reporting flow
+      console.log(`Reporting issue for order: ${orderId}`);
+      
       await updateOrderStatus(orderId, "issue-reported");
       
       toast({
