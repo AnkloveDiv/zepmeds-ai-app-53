@@ -4,7 +4,7 @@
  * Handles emergency-related API operations
  */
 
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { ApiClient } from './apiClient';
 import { EmergencyRequestPayload, ApiResponse } from './types';
 import { useAuth } from '@/contexts/AuthContext';
@@ -98,17 +98,16 @@ export const useEmergencyService = () => {
       // Generate a unique emergency ID
       const emergencyId = generateOrderId();
       
-      // Create emergency record in Supabase
+      // Create emergency record in Supabase using orders_new table instead of orders
       const { data, error: supabaseError } = await supabase
-        .from('orders')
+        .from('orders_new')
         .insert([
           {
             order_id: emergencyId,
             customer: user.phoneNumber,
             amount: 0, // Emergency services might be free or have a fixed cost
-            status: 'requested',
-            order_number: emergencyId,
-            setup_prescription: emergencyData.description
+            setup_prescription: emergencyData.description,
+            action: 'emergency_request'
           }
         ])
         .select()
@@ -165,10 +164,10 @@ export const useEmergencyService = () => {
     setError(null);
     
     try {
-      // Update status in Supabase
+      // Update status in Supabase using orders_new table instead of orders
       const { error: supabaseError } = await supabase
-        .from('orders')
-        .update({ status: 'cancelled' })
+        .from('orders_new')
+        .update({ action: 'cancelled' })
         .eq('order_id', requestId);
 
       if (supabaseError) {

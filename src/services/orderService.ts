@@ -1,10 +1,11 @@
+
 /**
  * Order Service
  * Handles order creation and tracking functionality
  */
 import { getDashboardApiService } from '@/pages/dashboardApiService';
 import { OrderDataPayload } from '@/pages/dashboardApiService';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Creates a new order and sends it to both the local storage and admin dashboard
@@ -115,18 +116,18 @@ export const getOrderTracking = async (orderId: string): Promise<any> => {
     // Then try to get from Supabase
     try {
       const { data, error } = await supabase
-        .from('orders')
+        .from('orders_new')
         .select('*')
-        .eq('order_number', orderId)
+        .eq('order_id', orderId)
         .single();
       
       if (error) {
         console.error('Error fetching order from database:', error);
       } else if (data) {
-        // Transform to match expected format
+        // Transform to match expected format - handle the different schema of orders_new
         return {
           id: orderId,
-          status: data.status,
+          status: data.action || 'processing', // Use action field as status
           estimatedDelivery: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
           deliveryRider: {
             name: "Rahul Singh",
@@ -136,8 +137,8 @@ export const getOrderTracking = async (orderId: string): Promise<any> => {
             profileImage: "https://source.unsplash.com/random/100x100/?face"
           },
           items: [], // Would need to fetch items from order_items table
-          totalAmount: data.total_amount,
-          deliveryAddress: data.delivery_address,
+          totalAmount: data.amount, // Map from amount field
+          deliveryAddress: "Customer address", // This doesn't exist in orders_new
           placedAt: data.created_at
         };
       }
