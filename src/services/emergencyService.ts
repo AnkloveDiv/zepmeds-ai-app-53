@@ -86,7 +86,7 @@ export const useEmergencyService = () => {
   const emergencyService = new EmergencyService(apiClient);
 
   // Request emergency service
-  const requestEmergencyService = useCallback(async (emergencyData: EmergencyRequestPayload) => {
+  const requestEmergencyService = useCallback(async (emergencyData: any) => {
     setLoading(true);
     setError(null);
     
@@ -98,23 +98,27 @@ export const useEmergencyService = () => {
       // Generate a unique emergency ID
       const emergencyId = generateOrderId();
       
-      // Create emergency record in Supabase
+      // Create emergency record directly in emergency_requests table
       const { data, error: supabaseError } = await supabase
-        .from('orders')
+        .from('emergency_requests')
         .insert([
           {
-            order_id: emergencyId,
-            customer: user.phoneNumber,
-            amount: 0, // Emergency services might be free or have a fixed cost
+            name: user.displayName || user.phoneNumber || "Unknown User",
+            phone: user.phoneNumber || "Unknown",
             status: 'requested',
-            order_number: emergencyId,
-            setup_prescription: emergencyData.description
+            notes: emergencyData.description,
+            location: {
+              address: emergencyData.location || "Unknown location",
+              lat: emergencyData.lat || null,
+              lng: emergencyData.lng || null
+            }
           }
         ])
         .select()
         .single();
 
       if (supabaseError) {
+        console.error("Error creating emergency request:", supabaseError);
         throw new Error(supabaseError.message);
       }
 
@@ -165,11 +169,11 @@ export const useEmergencyService = () => {
     setError(null);
     
     try {
-      // Update status in Supabase
+      // Update status in emergency_requests table
       const { error: supabaseError } = await supabase
-        .from('orders')
+        .from('emergency_requests')
         .update({ status: 'cancelled' })
-        .eq('order_id', requestId);
+        .eq('id', requestId);
 
       if (supabaseError) {
         throw new Error(supabaseError.message);

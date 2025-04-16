@@ -39,6 +39,12 @@ const EmergencyServices = () => {
   });
   
   const [eta, setEta] = useState(12); // minutes
+  const [locationStatus, setLocationStatus] = useState<string>("");
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [userLocation, setUserLocation] = useState<{lat: number | null, lng: number | null}>({
+    lat: null, 
+    lng: null
+  });
   
   // Use the ETA from the service if available
   useEffect(() => {
@@ -57,6 +63,57 @@ const EmergencyServices = () => {
       });
     }
   }, [error, toast]);
+
+  // Get user's location when the component mounts
+  useEffect(() => {
+    const getUserLocation = () => {
+      setLocationStatus("Detecting your location...");
+      setLocationError(null);
+      
+      if (!navigator.geolocation) {
+        setLocationStatus("");
+        setLocationError("Geolocation is not supported by your browser");
+        return;
+      }
+      
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+          setLocationStatus("Location detected");
+          
+          // Try to get address from coordinates using reverse geocoding
+          fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${position.coords.latitude},${position.coords.longitude}&key=AIzaSyDLzlvA6LLpIB65rjdK_wRARPZ9c9KYxoQ`)
+            .then(response => response.json())
+            .then(data => {
+              if (data.results && data.results.length > 0) {
+                setEmergency(prev => ({
+                  ...prev,
+                  location: data.results[0].formatted_address
+                }));
+              }
+            })
+            .catch(err => {
+              console.error("Error getting address:", err);
+            });
+        },
+        (err) => {
+          setLocationStatus("");
+          setLocationError(`Error getting location: ${err.message}`);
+          console.error("Error getting location:", err);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0
+        }
+      );
+    };
+    
+    getUserLocation();
+  }, []);
   
   const handleConfirmEmergency = async () => {
     if (emergency.confirmation.toLowerCase() !== "yes") {
@@ -77,17 +134,28 @@ const EmergencyServices = () => {
       return;
     }
     
+    // Check if we have location data
+    if (!emergency.location && !userLocation.lat) {
+      toast({
+        title: "Error",
+        description: "Unable to determine your location. Please provide your address or enable location services.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setEmergency({ ...emergency, status: "confirming" });
     
     try {
       // We need to pass location data as part of request
       const locationData = emergency.location || (user?.address || "Unknown location");
       
-      // Request emergency service with location data in the proper format for the schema
+      // Request emergency service with location data
       const response = await requestEmergencyService({
-        request_type: emergency.type,
-        status: 'requested',
-        description: emergency.description || "Emergency assistance needed"
+        description: emergency.description || "Emergency assistance needed",
+        location: locationData,
+        lat: userLocation.lat,
+        lng: userLocation.lng
       });
       
       if (response) {
@@ -169,6 +237,20 @@ const EmergencyServices = () => {
                 </div>
               </div>
               
+              {locationStatus && (
+                <div className="mb-3 text-sm">
+                  <span className={locationError ? "text-red-400" : "text-green-400"}>
+                    {locationStatus}
+                  </span>
+                </div>
+              )}
+              
+              {locationError && (
+                <div className="mb-3 text-sm text-red-400">
+                  {locationError}
+                </div>
+              )}
+              
               {emergency.status === "idle" && (
                 <>
                   <p className="text-white mb-4">
@@ -188,6 +270,20 @@ const EmergencyServices = () => {
                   </div>
                   
                   <div className="mb-4">
+                    <Label htmlFor="location" className="text-white">Your location</Label>
+                    <Input 
+                      id="location" 
+                      value={emergency.location}
+                      onChange={(e) => setEmergency({ ...emergency, location: e.target.value })}
+                      className="bg-black/20 border-white/10 mt-1"
+                      placeholder="Your current address"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">
+                      {userLocation.lat ? "Using your detected location" : "Please provide your location manually"}
+                    </p>
+                  </div>
+                  
+                  <div className="mb-4">
                     <Label htmlFor="confirmation" className="text-white">Type "yes" to confirm emergency services</Label>
                     <Input 
                       id="confirmation" 
@@ -201,8 +297,9 @@ const EmergencyServices = () => {
                   <Button 
                     className="w-full bg-red-500 hover:bg-red-600 text-white"
                     onClick={handleConfirmEmergency}
+                    disabled={loading || !emergency.location && !userLocation.lat}
                   >
-                    Request Emergency Services
+                    {loading ? "Processing..." : "Request Emergency Services"}
                   </Button>
                 </>
               )}
