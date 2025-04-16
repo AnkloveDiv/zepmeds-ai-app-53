@@ -1,4 +1,3 @@
-
 /**
  * Zepmeds Dashboard API Service
  * 
@@ -84,8 +83,7 @@ export class DashboardApiService {
         console.error('Database operation failed:', dbSaveError);
       }
       
-      // Then send to the external API - Make sure to use the correct endpoint!
-      // This is key to making orders show up in the dashboard
+      // Then send to the external API - Use correct endpoint for admin dashboard
       const response = await this.apiPost('/orders/create', payload);
       console.log('Order successfully sent to admin dashboard API:', response);
       return response;

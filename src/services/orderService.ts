@@ -17,7 +17,7 @@ export const createOrder = async (orderData: OrderDataPayload): Promise<any> => 
     const dashboardApi = getDashboardApiService();
     
     // Log attempt to ensure we're calling the API
-    console.log('Calling dashboardApi.sendOrderData with:', {
+    console.log('Sending order to admin dashboard:', {
       orderId: orderData.orderId,
       orderNumber: orderData.orderNumber,
       customerInfo: orderData.customerInfo,
@@ -26,7 +26,7 @@ export const createOrder = async (orderData: OrderDataPayload): Promise<any> => 
     });
     
     const response = await dashboardApi.sendOrderData(orderData);
-    console.log('Dashboard API response:', response);
+    console.log('Order successfully sent to admin dashboard:', response);
     
     // Also attempt to store in Supabase (if available)
     try {
