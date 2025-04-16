@@ -1,4 +1,3 @@
-
 /**
  * Zepmeds Dashboard API Service
  * 
@@ -91,6 +90,8 @@ export class DashboardApiService {
           created_at: payload.createdAt
         };
         
+        console.log('Saving order to admin_dashboard_orders table:', orderData);
+        
         // Use insert without on conflict clause to avoid the RLS error
         const { data: dbData, error: dbError } = await supabase
           .from('admin_dashboard_orders')
@@ -99,7 +100,7 @@ export class DashboardApiService {
         if (dbError) {
           console.error('Failed to store order in admin_dashboard_orders:', dbError);
         } else {
-          console.log('Order stored in admin_dashboard_orders:', dbData);
+          console.log('Order successfully stored in admin_dashboard_orders:', dbData);
         }
       } catch (dbSaveError) {
         console.error('Database operation failed:', dbSaveError);
@@ -282,7 +283,7 @@ export class DashboardApiService {
       
       console.log(`Making API request to: ${this.apiBaseUrl}${endpoint}`);
       console.log(`Headers: ${JSON.stringify(headers)}`);
-      console.log(`Body: ${body.substring(0, 200)}${body.length > 200 ? '...' : ''}`);
+      console.log(`Request Body (truncated): ${body.substring(0, 200)}${body.length > 200 ? '...' : ''}`);
       
       // Add mode: 'cors' for cross-origin requests
       const response = await fetch(`${this.apiBaseUrl}${endpoint}`, {
@@ -295,10 +296,14 @@ export class DashboardApiService {
       
       // Log the full response for debugging
       console.log(`Response status: ${response.status}`);
+      console.log(`Response headers: ${JSON.stringify([...response.headers.entries()])}`);
+      
+      // Get response text before checking status for better debugging
+      const responseText = await response.text();
+      console.log(`Response text: ${responseText.substring(0, 500)}${responseText.length > 500 ? '...' : ''}`);
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`API Error (${response.status}): ${errorText}`);
+        console.error(`API Error (${response.status}): ${responseText}`);
         
         // Retry logic for recoverable errors
         if (retryCount < this.maxRetries && (response.status >= 500 || response.status === 429)) {
@@ -312,7 +317,8 @@ export class DashboardApiService {
       }
       
       try {
-        const responseData = await response.json();
+        // Try to parse as JSON, but handle non-JSON responses too
+        const responseData = responseText ? JSON.parse(responseText) : {};
         console.log(`API Response from ${endpoint}:`, responseData);
         return responseData;
       } catch (e) {
