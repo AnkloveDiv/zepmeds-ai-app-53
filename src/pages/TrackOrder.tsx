@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getOrderTracking } from "@/services/orders/trackOrder";
@@ -45,12 +46,36 @@ const TrackOrder = () => {
             setError("Order not found");
           } else if (orderFromSupabase) {
             console.log("Order found in orders_new table:", orderFromSupabase);
+            
+            // Create default items if not available in the orders_new table
+            let orderItems = [];
+            try {
+              // Check if setup_prescription contains items data as JSON string
+              if (orderFromSupabase.setup_prescription) {
+                const parsedPrescription = JSON.parse(orderFromSupabase.setup_prescription);
+                if (Array.isArray(parsedPrescription)) {
+                  orderItems = parsedPrescription;
+                }
+              }
+            } catch (parseError) {
+              console.error("Error parsing setup_prescription:", parseError);
+            }
+            
+            // If no items found, create a default item
+            if (orderItems.length === 0) {
+              orderItems = [{
+                name: "Prescribed Medicine",
+                quantity: 1,
+                price: orderFromSupabase.amount
+              }];
+            }
+            
             const adaptedOrder = {
               id: orderFromSupabase.order_id,
               status: orderFromSupabase.action || "confirmed",
               placedAt: orderFromSupabase.date,
               estimatedDelivery: new Date(new Date(orderFromSupabase.date).getTime() + 60 * 60 * 1000).toISOString(),
-              items: orderFromSupabase.items ? JSON.parse(orderFromSupabase.items) : [],
+              items: orderItems,
               deliveryRider: {
                 name: "Rahul Singh",
                 rating: 4.8,
