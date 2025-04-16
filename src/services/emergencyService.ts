@@ -1,8 +1,8 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useState } from 'react';
-import { getDashboardApiService, EmergencyRequestPayload } from './dashboardApiService';
+import { getDashboardApiService } from '@/pages/dashboardApiService';
+import { EmergencyRequestPayload } from '@/pages/dashboardApiService';
 
 export interface EmergencyRequest {
   request_type: string;

@@ -1,9 +1,9 @@
-
 /**
  * Order Service
  * Handles order creation and tracking functionality
  */
-import { getDashboardApiService, OrderDataPayload } from '@/services/dashboardApiService';
+import { getDashboardApiService } from '@/pages/dashboardApiService';
+import { OrderDataPayload } from '@/pages/dashboardApiService';
 import { supabase } from '@/lib/supabase';
 
 /**

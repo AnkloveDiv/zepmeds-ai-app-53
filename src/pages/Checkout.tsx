@@ -18,8 +18,8 @@ import useBackNavigation from "@/hooks/useBackNavigation";
 import OrderForSomeoneElse from "@/components/checkout/OrderForSomeoneElse";
 import DateTimePicker from "@/components/checkout/DateTimePicker";
 import { useAuth } from "@/contexts/AuthContext";
-import type { OrderDataPayload } from "@/services/dashboardApiService";
-import { dashboardApiService } from "@/lib/supabase";
+import type { OrderDataPayload } from "@/pages/dashboardApiService";
+import { getDashboardApiService } from "@/pages/dashboardApiService";
 
 const UPI_PROVIDERS = [
   { id: "googlepay", name: "Google Pay", iconBg: "bg-blue-500" },
@@ -402,7 +402,7 @@ const Checkout = () => {
       };
       
       console.log("Sending order to admin dashboard:", dashboardOrderData);
-      dashboardApiService.sendOrderData(dashboardOrderData).then(response => {
+      getDashboardApiService().sendOrderData(dashboardOrderData).then(response => {
         console.log("Order successfully sent to admin dashboard:", response);
       }).catch(error => {
         console.error("Failed to send order to admin dashboard:", error);
