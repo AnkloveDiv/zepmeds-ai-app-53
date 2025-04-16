@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   appName: 'zepmeds-digital-rx-hub',
   webDir: 'dist',
   server: {
-    url: 'https://5382896e-d8c3-4a3d-a7c6-d46a64daa873.lovableproject.com?forceHideBadge=true',
+    url: 'https://5382896e-d8c3-4f3a-a54f-b8a80cb4cf9b.lovableproject.com?forceHideBadge=true',
     cleartext: true
   },
   android: {
@@ -16,7 +16,16 @@ const config: CapacitorConfig = {
       keystorePassword: null,
       keystoreAliasPassword: null,
       signingType: "apksigner"
-    }
+    },
+    permissions: [
+      "android.permission.ACCESS_COARSE_LOCATION",
+      "android.permission.ACCESS_FINE_LOCATION",
+      "android.permission.INTERNET",
+      "android.permission.ACCESS_NETWORK_STATE"
+    ]
+  },
+  ios: {
+    contentInset: "always"
   }
 };
 

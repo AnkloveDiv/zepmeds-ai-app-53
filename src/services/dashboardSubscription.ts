@@ -1,3 +1,4 @@
+
 import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -81,9 +82,9 @@ export const useDashboardSubscription = () => {
   const subscribeToProfileChanges = async (phoneNumber: string) => {
     // Initial fetch of profile data
     try {
-      // Replace the problematic queries with the correct table names
+      // Use the correct table name: customers instead of profiles
       const { data: profileData, error: profileError } = await supabase
-        .from('customers')  // Changed from 'profiles'
+        .from('customers')
         .select('*')
         .eq('phone', phoneNumber)
         .single();
@@ -132,9 +133,9 @@ export const useDashboardSubscription = () => {
   const subscribeToEmergencyRequestChanges = async (phoneNumber: string) => {
     // Initial fetch of emergency request data
     try {
-      // Update emergency-related queries to use the correct tables
+      // Update to use the orders_new table
       const { data: emergencyData, error: emergencyError } = await supabase
-        .from('orders_new')  // Using orders_new table
+        .from('orders_new')
         .select('*')
         .eq('customer', phoneNumber)
         .order('created_at', { ascending: false })
