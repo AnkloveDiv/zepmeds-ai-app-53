@@ -1,3 +1,4 @@
+
 /**
  * Zepmeds Dashboard API Service
  * 
@@ -130,6 +131,8 @@ export class DashboardApiService {
    * Save order data to local database for backup and local dashboard
    */
   private async saveOrderToDatabase(payload: OrderDataPayload): Promise<any> {
+    // Remove this method as it's no longer being used - the logic has been moved inline
+    // to the sendOrderData method above
     try {
       const { supabase } = await import('@/lib/supabase');
       
