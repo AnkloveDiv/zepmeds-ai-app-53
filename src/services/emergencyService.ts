@@ -1,222 +1,71 @@
-import { supabase } from '@/integrations/supabase/client';
+/**
+ * Emergency Service
+ * Handles emergency-related API operations
+ */
+
+import { supabase } from '@/lib/supabase';
+import { ApiClient } from './apiClient';
+import { EmergencyRequestPayload, ApiResponse } from './types';
 import { useAuth } from '@/contexts/AuthContext';
-import { useState } from 'react';
-import { getDashboardApiService } from '@/pages/dashboardApiService';
-import { EmergencyRequestPayload } from '@/pages/dashboardApiService';
 
-export interface EmergencyRequest {
-  request_type: string;
-  status: 'requested' | 'confirming' | 'dispatched' | 'in_progress' | 'completed' | 'cancelled';
-  location_lat: number | null;
-  location_lng: number | null;
-  description: string;
-}
+// Function to generate a unique order ID
+const generateOrderId = () => {
+  return `EMG-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+};
 
-// Hook to manage emergency services
-export const useEmergencyService = () => {
-  const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [ambulance, setAmbulance] = useState<any>(null);
-  const [eta, setEta] = useState<number | null>(null);
-
-  // Request emergency service
-  const requestEmergencyService = async (emergencyData: Partial<EmergencyRequest>) => {
-    if (!user) {
-      setError('User must be logged in to request emergency services');
-      return null;
-    }
-    
+export class EmergencyService {
+  private apiClient: ApiClient;
+  
+  constructor(apiClient: ApiClient) {
+    this.apiClient = apiClient;
+  }
+  
+  /**
+   * Send emergency request to the admin dashboard
+   */
+  public async sendEmergencyRequest(payload: EmergencyRequestPayload): Promise<ApiResponse> {
+    console.log('Sending emergency request to admin dashboard:', payload);
     try {
-      setLoading(true);
-      setError(null);
-      
-      // Get user's current position if available
-      let position = null;
-      try {
-        if (navigator.geolocation) {
-          position = await getCurrentPosition();
-        }
-      } catch (err) {
-        console.error('Error getting location:', err);
-      }
-      
-      // Prepare location data in format compatible with the emergency_requests table schema
-      const locationData = {
-        lat: position ? position.coords.latitude : (emergencyData.location_lat || null),
-        lng: position ? position.coords.longitude : (emergencyData.location_lng || null),
-        address: user.address || 'Unknown location' // This will be included in the location JSON object, not as a separate column
-      };
-      
-      // Prepare request data according to the actual table schema
-      const name = user.name || 'Unknown';
-      const phone = user.phoneNumber || 'Unknown';
-      const notes = emergencyData.description || 'Emergency assistance needed';
-      
-      console.log('Sending emergency request to Supabase with data:', {
-        name,
-        phone,
-        location: locationData,
-        notes
+      // Send to the external API
+      return await this.apiClient.post<ApiResponse>('/emergency/request', payload);
+    } catch (error) {
+      console.error('Failed to send emergency request to admin dashboard:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Update emergency status in the admin dashboard
+   */
+  public async updateEmergencyStatus(requestId: string, status: string): Promise<ApiResponse> {
+    console.log(`Updating emergency status for ${requestId} to ${status}`);
+    try {
+      // Update in the external API
+      return await this.apiClient.post<ApiResponse>('/emergency/update-status', {
+        requestId,
+        status,
+        updatedAt: new Date().toISOString()
       });
-      
-      // Send to Supabase using the correct column structure matching the database schema
-      const { data, error: supabaseError } = await supabase
-        .from('emergency_requests')
-        .insert({
-          name: name,
-          phone: phone,
-          location: locationData, // This matches the JSONB 'location' column in the database
-          notes: notes,
-          status: 'requested'
-        })
-        .select()
-        .single();
-      
-      if (supabaseError) {
-        console.error('Supabase error:', supabaseError);
-        throw supabaseError;
-      }
-      
-      console.log('Emergency request saved to Supabase:', data);
-      
-      // Also directly send to Zepmeds dashboard API
-      try {
-        const dashboardApi = getDashboardApiService();
-        
-        // Create a properly structured EmergencyRequestPayload object
-        const dashboardRequestData: EmergencyRequestPayload = {
-          user: {
-            id: user.phoneNumber || '',
-            name: user.name || 'Unknown',
-            phone: user.phoneNumber
-          },
-          emergency: {
-            type: emergencyData.request_type || 'ambulance',
-            status: 'requested',
-            location: {
-              lat: locationData.lat,
-              lng: locationData.lng,
-              address: locationData.address
-            },
-            description: notes
-          }
-        };
-        
-        const dashboardResponse = await dashboardApi.sendEmergencyRequest(dashboardRequestData);
-        console.log('Emergency request sent to dashboard API:', dashboardResponse);
-      } catch (dashboardError) {
-        // Log but continue - data will still sync through database
-        console.error("Error sending to dashboard API:", dashboardError);
-      }
-      
-      // Simulate finding a responder and ETA calculation
-      // In a real app, this would come from the dashboard after assignment
-      const simulatedEta = Math.floor(Math.random() * 10) + 5; // 5-15 minutes
-      setEta(simulatedEta);
-      
-      // Simulate ambulance data
-      const ambulanceData = {
-        id: `AMB-${Math.floor(Math.random() * 1000)}`,
-        responder_name: 'Dr. Sarah Johnson',
-        vehicle_number: `ZEP-${Math.floor(Math.random() * 10000)}`,
-        phone_number: '+1234567890',
-      };
-      setAmbulance(ambulanceData);
-      
-      return data;
-    } catch (err: any) {
-      console.error('Error in requestEmergencyService:', err);
-      setError(err.message || 'Failed to request emergency service');
-      return null;
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      console.error(`Error updating emergency status for ${requestId}:`, error);
+      throw error;
     }
-  };
+  }
   
-  // Update emergency request status
-  const updateEmergencyStatus = async (requestId: string, status: EmergencyRequest['status']) => {
-    if (!user) return null;
-    
-    try {
-      setLoading(true);
-      
-      console.log(`Updating emergency status for request ${requestId} to ${status}`);
-      
-      const { data, error: supabaseError } = await supabase
-        .from('emergency_requests')
-        .update({ 
-          status: status,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', requestId)
-        .select()
-        .single();
-      
-      if (supabaseError) {
-        console.error('Error updating emergency status:', supabaseError);
-        throw supabaseError;
-      }
-      
-      console.log('Emergency status updated:', data);
-      
-      // Also update status on dashboard
-      try {
-        const dashboardApi = getDashboardApiService();
-        await dashboardApi.updateEmergencyStatus(requestId, status);
-      } catch (dashboardError) {
-        console.error("Error updating dashboard API:", dashboardError);
-      }
-      
-      return data;
-    } catch (err: any) {
-      console.error('Error in updateEmergencyStatus:', err);
-      setError(err.message || 'Failed to update emergency status');
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Cancel emergency request
-  const cancelEmergencyRequest = async (requestId: string) => {
+  /**
+   * Cancel emergency request in the admin dashboard
+   */
+  public async cancelEmergencyRequest(requestId: string): Promise<ApiResponse> {
     console.log(`Cancelling emergency request ${requestId}`);
     try {
-      const data = await updateEmergencyStatus(requestId, 'cancelled');
-      
-      // Also cancel on dashboard
-      try {
-        const dashboardApi = getDashboardApiService();
-        await dashboardApi.cancelEmergencyRequest(requestId);
-      } catch (dashboardError) {
-        console.error("Error cancelling on dashboard API:", dashboardError);
-      }
-      
-      return data;
-    } catch (err) {
-      console.error('Error cancelling emergency request:', err);
-      return null;
-    }
-  };
-  
-  // Helper function to get current position
-  const getCurrentPosition = (): Promise<GeolocationPosition> => {
-    return new Promise((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(resolve, reject, {
-        enableHighAccuracy: true,
-        timeout: 5000,
-        maximumAge: 0
+      // Cancel in the external API
+      return await this.apiClient.post<ApiResponse>('/emergency/cancel', {
+        requestId,
+        cancelledAt: new Date().toISOString()
       });
-    });
-  };
-  
-  return {
-    requestEmergencyService,
-    updateEmergencyStatus,
-    cancelEmergencyRequest,
-    loading,
-    error,
-    ambulance,
-    eta
-  };
-};
+    } catch (error) {
+      console.error(`Error cancelling emergency request ${requestId}:`, error);
+      throw error;
+    }
+  }
+}

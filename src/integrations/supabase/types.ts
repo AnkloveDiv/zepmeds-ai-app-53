@@ -201,6 +201,39 @@ export type Database = {
           },
         ]
       }
+      orders_new: {
+        Row: {
+          action: string | null
+          amount: number
+          created_at: string
+          customer: string
+          date: string
+          id: string
+          order_id: string
+          setup_prescription: string | null
+        }
+        Insert: {
+          action?: string | null
+          amount: number
+          created_at?: string
+          customer: string
+          date?: string
+          id?: string
+          order_id: string
+          setup_prescription?: string | null
+        }
+        Update: {
+          action?: string | null
+          amount?: number
+          created_at?: string
+          customer?: string
+          date?: string
+          id?: string
+          order_id?: string
+          setup_prescription?: string | null
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           created_at: string
