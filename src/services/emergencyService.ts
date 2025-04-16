@@ -100,8 +100,7 @@ export const useEmergencyService = () => {
       
       // Log detailed information about the request
       console.log('Creating emergency request with data:', {
-        userId: user.id,
-        name: user.name || user.phoneNumber || "Unknown User",
+        userName: user.name || user.phoneNumber || "Unknown User",
         phone: user.phoneNumber || "Unknown",
         location: emergencyData.location || "Unknown location",
         lat: emergencyData.lat || null,
