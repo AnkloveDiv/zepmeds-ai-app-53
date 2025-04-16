@@ -98,6 +98,17 @@ export const useEmergencyService = () => {
       // Generate a unique emergency ID
       const emergencyId = generateOrderId();
       
+      // Log detailed information about the request
+      console.log('Creating emergency request with data:', {
+        userId: user.id,
+        name: user.name || user.phoneNumber || "Unknown User",
+        phone: user.phoneNumber || "Unknown",
+        location: emergencyData.location || "Unknown location",
+        lat: emergencyData.lat || null,
+        lng: emergencyData.lng || null,
+        description: emergencyData.description
+      });
+      
       // Create emergency record directly in emergency_requests table
       const { data, error: supabaseError } = await supabase
         .from('emergency_requests')
@@ -121,6 +132,8 @@ export const useEmergencyService = () => {
         console.error("Error creating emergency request:", supabaseError);
         throw new Error(supabaseError.message);
       }
+
+      console.log('Emergency request created successfully:', data);
 
       // Simulate API call to emergency services
       // In a real app, this would actually call a real emergency service
