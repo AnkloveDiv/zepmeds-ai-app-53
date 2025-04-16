@@ -3,7 +3,7 @@ import { toast } from "sonner";
 
 // Gemini API key for image generation
 const GEMINI_API_KEY = "AIzaSyDlpkHivaQRi92dE_U9CiXS16TtWZkfnAk";
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-pro-vision:generateContent";
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
 
 export async function generateMedicineImage(medicineName: string, description?: string): Promise<string> {
   try {
@@ -54,39 +54,15 @@ export async function generateMedicineImage(medicineName: string, description?: 
     
     const data = await response.json();
     
-    // Check if the response contains an image
-    const imagePart = data.candidates?.[0]?.content?.parts?.find(
-      (part: any) => part.inlineData?.mimeType?.startsWith("image/")
-    );
+    // Since this is a text model, not an image generation model,
+    // we'll use a text-based description to generate a placeholder image
+    // In a production environment, you would use a proper image generation API
+    console.log("Generated text response:", data);
     
-    if (imagePart?.inlineData) {
-      // Get the base64 data for the image
-      const imageData = imagePart.inlineData.data;
-      
-      // Create a blob from the base64 data
-      const byteCharacters = atob(imageData);
-      const byteArrays = [];
-      
-      for (let offset = 0; offset < byteCharacters.length; offset += 1024) {
-        const slice = byteCharacters.slice(offset, offset + 1024);
-        
-        const byteNumbers = new Array(slice.length);
-        for (let i = 0; i < slice.length; i++) {
-          byteNumbers[i] = slice.charCodeAt(i);
-        }
-        
-        const byteArray = new Uint8Array(byteNumbers);
-        byteArrays.push(byteArray);
-      }
-      
-      const blob = new Blob(byteArrays, { type: "image/jpeg" });
-      const imageUrl = URL.createObjectURL(blob);
-      
-      return imageUrl;
-    } else {
-      console.error("No image generated from Gemini API");
-      return fallbackImage;
-    }
+    // Return a placeholder image that looks like medicine
+    const imageUrlBase = "https://source.unsplash.com/random/300x300/?medicine,";
+    return `${imageUrlBase}${encodeURIComponent(medicineName)}`;
+    
   } catch (error) {
     console.error("Error generating medicine image:", error);
     toast.error("Failed to generate medicine image");
