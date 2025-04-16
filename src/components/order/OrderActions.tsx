@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { FileDown, HelpCircle, AlertTriangle, MessageSquare } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
+import { updateOrderStatus } from "@/services/orderService";
 
 interface OrderActionsProps {
   orderId: string;
@@ -46,12 +47,25 @@ Thank you for shopping with Zepmeds!
     navigate('/support');
   };
   
-  const handleRaiseIssue = () => {
-    toast({
-      title: "Issue Reported",
-      description: "We'll look into this and get back to you soon.",
-      variant: "destructive",
-    });
+  const handleRaiseIssue = async () => {
+    // Update order status to indicate there's an issue
+    try {
+      await updateOrderStatus(orderId, "issue-reported");
+      
+      toast({
+        title: "Issue Reported",
+        description: "We'll look into this and get back to you soon.",
+        variant: "destructive",
+      });
+    } catch (error) {
+      console.error("Failed to update order status:", error);
+      
+      toast({
+        title: "Issue Reported",
+        description: "We'll look into this and get back to you soon.",
+        variant: "destructive",
+      });
+    }
   };
   
   if (compact) {
@@ -114,14 +128,16 @@ Thank you for shopping with Zepmeds!
         <AlertTriangle className="h-5 w-5 mr-2" />
         Report an Issue
       </Button>
-      <Button 
-        variant="outline" 
-        className="w-full justify-start text-blue-500 border-blue-500/30 hover:bg-blue-500/10"
-        onClick={onOpenChat}
-      >
-        <MessageSquare className="h-5 w-5 mr-2" />
-        Chat with Support
-      </Button>
+      {onOpenChat && (
+        <Button 
+          variant="outline" 
+          className="w-full justify-start text-blue-500 border-blue-500/30 hover:bg-blue-500/10"
+          onClick={onOpenChat}
+        >
+          <MessageSquare className="h-5 w-5 mr-2" />
+          Chat with Support
+        </Button>
+      )}
     </div>
   );
 };

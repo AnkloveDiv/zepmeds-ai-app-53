@@ -32,6 +32,17 @@ export const createOrder = async (orderData: OrderDataPayload): Promise<any> => 
         // Continue execution even if database store fails
       } else {
         console.log('Order stored in database:', data);
+        
+        // Create an initial tracking event for this order
+        try {
+          await dashboardApi.createOrderTrackingEvent(
+            orderData.orderId, 
+            orderData.status, 
+            `Order created with status: ${orderData.status}`
+          );
+        } catch (trackingError) {
+          console.error('Error creating tracking event:', trackingError);
+        }
       }
     } catch (dbError) {
       console.error('Database operation failed:', dbError);
@@ -140,6 +151,34 @@ export const getOrderTracking = async (orderId: string): Promise<any> => {
     };
   } catch (error) {
     console.error('Error in getOrderTracking:', error);
+    throw error;
+  }
+};
+
+/**
+ * Updates the status of an existing order
+ */
+export const updateOrderStatus = async (orderId: string, status: string): Promise<any> => {
+  console.log(`Updating status for order: ${orderId} to ${status}`);
+  
+  try {
+    // Update through dashboard API
+    const dashboardApi = getDashboardApiService();
+    const response = await dashboardApi.updateOrderStatus(orderId, status);
+    
+    // Update local storage if present
+    const savedOrder = localStorage.getItem("currentOrder");
+    if (savedOrder) {
+      const parsedOrder = JSON.parse(savedOrder);
+      if (parsedOrder.id === orderId || parsedOrder.orderId === orderId) {
+        parsedOrder.status = status;
+        localStorage.setItem("currentOrder", JSON.stringify(parsedOrder));
+      }
+    }
+    
+    return response;
+  } catch (error) {
+    console.error(`Failed to update order status: ${error}`);
     throw error;
   }
 };

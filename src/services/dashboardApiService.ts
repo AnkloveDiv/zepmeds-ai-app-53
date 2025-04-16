@@ -72,8 +72,21 @@ export class DashboardApiService {
   public async sendOrderData(payload: OrderDataPayload): Promise<any> {
     console.log('Sending order data to admin dashboard:', payload);
     try {
+      // First, save to local database to ensure we have a backup
+      try {
+        const { data: dbData, error: dbError } = await this.saveOrderToDatabase(payload);
+        if (dbError) {
+          console.error('Failed to store order in admin_dashboard_orders:', dbError);
+        } else {
+          console.log('Order stored in admin_dashboard_orders:', dbData);
+        }
+      } catch (dbSaveError) {
+        console.error('Database operation failed:', dbSaveError);
+      }
+      
+      // Then send to the external API
       const response = await this.apiPost('/orders/new', payload);
-      console.log('Order successfully sent to admin dashboard:', response);
+      console.log('Order successfully sent to admin dashboard API:', response);
       return response;
     } catch (error) {
       console.error('Failed to send order to admin dashboard:', error);
@@ -94,11 +107,80 @@ export class DashboardApiService {
   }
   
   /**
+   * Save order data to local database for backup and local dashboard
+   */
+  private async saveOrderToDatabase(payload: OrderDataPayload): Promise<any> {
+    try {
+      const { supabase } = await import('@/lib/supabase');
+      
+      const orderData = {
+        order_id: payload.orderId,
+        order_number: payload.orderNumber,
+        customer_name: payload.customerInfo.name,
+        customer_phone: payload.customerInfo.phone || '',
+        customer_address: payload.customerInfo.address,
+        status: payload.status,
+        total_amount: payload.totalAmount,
+        payment_method: payload.paymentMethod,
+        items: JSON.stringify(payload.items),
+        created_at: payload.createdAt
+      };
+      
+      return await supabase
+        .from('admin_dashboard_orders')
+        .insert(orderData);
+    } catch (error) {
+      console.error('Error saving order to database:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Create a tracking event for an order
+   */
+  public async createOrderTrackingEvent(orderId: string, status: string, description?: string): Promise<any> {
+    try {
+      const { supabase } = await import('@/lib/supabase');
+      
+      return await supabase
+        .from('order_tracking_events')
+        .insert({
+          order_id: orderId,
+          status,
+          description
+        });
+    } catch (error) {
+      console.error('Error creating order tracking event:', error);
+      throw error;
+    }
+  }
+  
+  /**
    * Update order status in the admin dashboard
    */
   public async updateOrderStatus(orderId: string, status: string): Promise<any> {
     console.log(`Updating order status for ${orderId} to ${status}`);
     try {
+      // First update in local database
+      try {
+        const { supabase } = await import('@/lib/supabase');
+        
+        const { error: dbError } = await supabase
+          .from('admin_dashboard_orders')
+          .update({ status })
+          .eq('order_id', orderId);
+        
+        if (dbError) {
+          console.error(`Error updating order status in database for ${orderId}:`, dbError);
+        } else {
+          // Create a tracking event for this status update
+          await this.createOrderTrackingEvent(orderId, status, `Order status updated to ${status}`);
+        }
+      } catch (dbError) {
+        console.error(`Database operation failed for ${orderId}:`, dbError);
+      }
+      
+      // Then update in the external API
       return this.apiPost('/orders/update', {
         orderId,
         status,
