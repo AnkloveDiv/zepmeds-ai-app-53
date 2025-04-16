@@ -207,6 +207,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          assigned_rider_id: string | null
           created_at: string
           id: string
           order_id: string
@@ -216,6 +217,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          assigned_rider_id?: string | null
           created_at?: string
           id?: string
           order_id: string
@@ -225,6 +227,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          assigned_rider_id?: string | null
           created_at?: string
           id?: string
           order_id?: string
@@ -234,6 +237,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_assigned_rider_id_fkey"
+            columns: ["assigned_rider_id"]
+            isOneToOne: false
+            referencedRelation: "riders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_order_id_fkey"
             columns: ["order_id"]
@@ -372,6 +382,7 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          is_online: boolean | null
           name: string
           phone: string
           status: string
@@ -381,6 +392,7 @@ export type Database = {
           created_at?: string
           email: string
           id?: string
+          is_online?: boolean | null
           name: string
           phone: string
           status?: string
@@ -390,6 +402,7 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          is_online?: boolean | null
           name?: string
           phone?: string
           status?: string
