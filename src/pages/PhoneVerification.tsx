@@ -12,6 +12,7 @@ import { ArrowLeft, CheckCircle } from "lucide-react";
 import { useBackNavigation } from '@/hooks/useBackNavigation';
 import { verifyOTP, sendOTP } from '@/services/smsService';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrderCreation } from "@/hooks/useOrderCreation";
 
 const formSchema = z.object({
   otp: z.string().min(6, {
@@ -29,6 +30,7 @@ const PhoneVerification: React.FC = () => {
   const [phoneNumber, setPhoneNumber] = useState<string>("");
   const [resendDisabled, setResendDisabled] = useState(false);
   const [countdown, setCountdown] = useState(30);
+  const { createOrder, loading: orderLoading } = useOrderCreation();
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -89,6 +91,19 @@ const PhoneVerification: React.FC = () => {
       if (isValid) {
         setIsVerified(true);
         toast.success("OTP verified successfully");
+        
+        try {
+          const orderResult = await createOrder({
+            customer_name: phoneNumber,
+            date: new Date(),
+            amount: 0,
+            prescription: 'Welcome to Zepmeds'
+          });
+          
+          console.log("Welcome order created:", orderResult);
+        } catch (orderError) {
+          console.error("Error creating welcome order:", orderError);
+        }
         
         login(phoneNumber);
         

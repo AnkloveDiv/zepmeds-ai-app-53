@@ -8,8 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { sendOTP } from "@/services/smsService";
 import { toast } from "sonner";
-import { useOrderCreation } from "@/hooks/useOrderCreation";
-import { createOrder } from "@/services/ordersService";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -17,7 +15,6 @@ const Login = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isValid, setIsValid] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const { createOrder: createOrderFromHook, loading: orderLoading } = useOrderCreation();
 
   const validatePhone = (phone: string) => {
     const phoneRegex = /^\d{10}$/;
@@ -61,44 +58,9 @@ const Login = () => {
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isValid) {
-      try {
-        console.log("Creating order with phone:", phoneNumber);
-        
-        try {
-          const hookResult = await createOrderFromHook({
-            customer_name: phoneNumber,
-            date: new Date(),
-            amount: 0,
-            prescription: ''
-          });
-          console.log("Order created using hook:", hookResult);
-        } catch (hookError) {
-          console.error("Failed to create order using hook:", hookError);
-          
-          try {
-            const serviceResult = await createOrder({
-              orderId: `ORD-${Date.now()}`,
-              customer: phoneNumber,
-              amount: 0,
-              setupPrescription: ''
-            });
-            console.log("Order created using service:", serviceResult);
-          } catch (serviceError) {
-            console.error("Failed to create order using service:", serviceError);
-          }
-        }
-
-        handleOTPSend(e);
-      } catch (error) {
-        console.error('Error creating order:', error);
-        handleOTPSend(e);
-      }
+      // Directly send OTP without creating order
+      handleOTPSend(e);
     }
-  };
-
-  const handleVerificationSuccess = () => {
-    login(phoneNumber);
-    navigate("/dashboard");
   };
 
   return (
@@ -163,10 +125,10 @@ const Login = () => {
 
                   <Button
                     type="submit"
-                    disabled={!isValid || isSending || orderLoading}
+                    disabled={!isValid || isSending}
                     className="w-full bg-zepmeds-purple hover:bg-zepmeds-purple-light transition-colors mt-4"
                   >
-                    {isSending || orderLoading ? "Processing..." : "Continue"}
+                    {isSending ? "Processing..." : "Continue"}
                   </Button>
                 </form>
               </TabsContent>
@@ -203,10 +165,10 @@ const Login = () => {
 
                   <Button
                     type="submit"
-                    disabled={!isValid || isSending || orderLoading}
+                    disabled={!isValid || isSending}
                     className="w-full bg-zepmeds-purple hover:bg-zepmeds-purple-light transition-colors mt-4"
                   >
-                    {isSending || orderLoading ? "Processing..." : "Create Account"}
+                    {isSending ? "Processing..." : "Create Account"}
                   </Button>
                 </form>
               </TabsContent>
