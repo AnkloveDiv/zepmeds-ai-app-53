@@ -1,3 +1,4 @@
+
 /**
  * Zepmeds Dashboard API Service
  * 
@@ -49,7 +50,7 @@ export class DashboardApiService {
   private maxRetries: number = 3;
   
   constructor(
-    apiBaseUrl: string = 'https://preview--zepmeds-admin-hub-72.lovable.app/api',
+    apiBaseUrl: string = 'https://lovable.dev/projects/fad9d36d-9f80-4f19-94e1-7c9f544c1020/api',
     apiKey: string = ''
   ) {
     this.apiBaseUrl = apiBaseUrl;
@@ -108,7 +109,7 @@ export class DashboardApiService {
           console.error('Failed to inspect table:', tableInspectError);
         }
         
-        // Use insert without on conflict clause to avoid the RLS error
+        // Use insert without on conflict clause to avoid RLS errors
         const { data: dbData, error: dbError } = await supabase
           .from('admin_dashboard_orders')
           .insert(orderData);
@@ -482,7 +483,7 @@ let dashboardApiInstance: DashboardApiService | null = null;
  * Get or create the dashboard API service
  */
 export const getDashboardApiService = (
-  apiBaseUrl: string = 'https://preview--zepmeds-admin-hub-72.lovable.app/api', 
+  apiBaseUrl: string = 'https://lovable.dev/projects/fad9d36d-9f80-4f19-94e1-7c9f544c1020/api', 
   apiKey: string = ''
 ): DashboardApiService => {
   if (!dashboardApiInstance) {

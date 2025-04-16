@@ -1,11 +1,10 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Initialize dashboard synchronization
  */
 export const initializeDashboardSync = (
-  dashboardApiUrl: string = 'https://lovable.dev/projects/248b8658-2f81-447e-bdf7-e30916a3844a/api', 
+  dashboardApiUrl: string = 'https://lovable.dev/projects/fad9d36d-9f80-4f19-94e1-7c9f544c1020/api', 
   apiKey: string = ''
 ): void => {
   const service = getDashboardSyncService(dashboardApiUrl, apiKey);
@@ -34,7 +33,7 @@ export class DashboardSyncService {
   private dashboardApiUrl: string;
   private apiKey: string;
   
-  constructor(dashboardApiUrl: string = 'https://api.zepmeds-dashboard.example', apiKey: string = '') {
+  constructor(dashboardApiUrl: string = 'https://lovable.dev/projects/fad9d36d-9f80-4f19-94e1-7c9f544c1020/api', apiKey: string = '') {
     this.dashboardApiUrl = dashboardApiUrl;
     this.apiKey = apiKey;
     console.log('DashboardSyncService created with URL:', dashboardApiUrl);
@@ -324,7 +323,7 @@ let dashboardSyncInstance: DashboardSyncService | null = null;
  * Get or create the dashboard sync service
  */
 export const getDashboardSyncService = (
-  dashboardApiUrl: string = 'https://lovable.dev/projects/248b8658-2f81-447e-bdf7-e30916a3844a/api', 
+  dashboardApiUrl: string = 'https://lovable.dev/projects/fad9d36d-9f80-4f19-94e1-7c9f544c1020/api', 
   apiKey: string = ''
 ): DashboardSyncService => {
   if (!dashboardSyncInstance) {
