@@ -4,6 +4,8 @@
  * Handles order status update functionality
  */
 import { getDashboardApiService } from '@/pages/dashboardApiService';
+import { createOrderTrackingEvent } from './trackOrder';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Updates the status of an existing order
@@ -15,6 +17,23 @@ export const updateOrderStatus = async (orderId: string, status: string): Promis
     // Update through dashboard API
     const dashboardApi = getDashboardApiService();
     const response = await dashboardApi.updateOrderStatus(orderId, status);
+    
+    // Create a tracking event for this status update
+    try {
+      await createOrderTrackingEvent(orderId, status);
+      
+      // Also update the status in the orders_new table if it exists
+      const { error } = await supabase
+        .from('orders_new')
+        .update({ action: status })
+        .eq('order_id', orderId);
+        
+      if (error) {
+        console.error('Error updating order status in orders_new table:', error);
+      }
+    } catch (trackingError) {
+      console.error('Error creating tracking event:', trackingError);
+    }
     
     // Update local storage if present
     const savedOrder = localStorage.getItem("currentOrder");
@@ -32,3 +51,4 @@ export const updateOrderStatus = async (orderId: string, status: string): Promis
     throw error;
   }
 };
+

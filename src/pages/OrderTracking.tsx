@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -9,6 +10,7 @@ import useBackNavigation from "@/hooks/useBackNavigation";
 import { useToast } from "@/components/ui/use-toast";
 import { motion } from "framer-motion";
 import { getOrderTracking } from "@/services/orders/trackOrder";
+import OrderStatusTimeline from "@/components/order/OrderStatusTimeline";
 
 interface Order {
   id: string;
@@ -129,6 +131,11 @@ const OrderTracking = () => {
                   <span>Items</span>
                   <span className="font-medium text-white">{activeOrder.items.length}</span>
                 </div>
+              </div>
+              
+              {/* Add the OrderStatusTimeline for a compact view */}
+              <div className="mt-4">
+                <OrderStatusTimeline orderId={activeOrder.id} compact={true} />
               </div>
               
               <Separator className="my-4 bg-white/10" />

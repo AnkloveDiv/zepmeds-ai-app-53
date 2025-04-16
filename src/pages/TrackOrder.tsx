@@ -6,12 +6,12 @@ import { useToast } from "@/components/ui/use-toast";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
 import OrderItems from "@/components/order/OrderItems";
-import DeliveryStatus from "@/components/order/DeliveryStatus";
 import DeliveryPartner from "@/components/order/DeliveryPartner";
 import OrderHeader from "@/components/order/OrderHeader";
 import OrderLoadingState from "@/components/order/OrderLoadingState";
 import OrderErrorState from "@/components/order/OrderErrorState";
 import OrderHelp from "@/components/order/OrderHelp";
+import OrderStatusTimeline from "@/components/order/OrderStatusTimeline";
 
 const TrackOrder = () => {
   const { orderId } = useParams<{ orderId: string }>();
@@ -76,10 +76,8 @@ const TrackOrder = () => {
         />
         
         <div className="mt-6 space-y-6">
-          <DeliveryStatus 
-            status={orderData.status} 
-            estimatedDelivery={orderData.estimatedDelivery}
-          />
+          {/* Replace DeliveryStatus with our new OrderStatusTimeline component */}
+          <OrderStatusTimeline orderId={orderData.id} />
           
           <DeliveryPartner 
             name={orderData.deliveryRider.name}
