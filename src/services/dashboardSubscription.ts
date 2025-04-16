@@ -51,11 +51,15 @@ export const useDashboardSubscription = () => {
     }
 
     // Realtime subscription to profile changes
-    supabase
-      .channel('public:customers') // Changed from 'public:profiles'
+    const channel = supabase.channel('public:customers')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'customers', filter: `phone=eq.${phoneNumber}` }, // Changed from 'profiles'
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'customers',
+          filter: `phone=eq.${phoneNumber}` 
+        },
         (payload) => {
           console.log('Profile change received!', payload);
           toast({
@@ -72,7 +76,7 @@ export const useDashboardSubscription = () => {
     try {
       // Update emergency-related queries to use the correct tables
       const { data: emergencyData, error: emergencyError } = await supabase
-        .from('orders')  // Changed from 'emergency_requests'
+        .from('orders_new')  // Using orders_new table
         .select('*')
         .eq('customer', phoneNumber)
         .order('created_at', { ascending: false })
@@ -100,11 +104,15 @@ export const useDashboardSubscription = () => {
     }
 
     // Realtime subscription to emergency request changes
-    supabase
-      .channel('public:orders') // Changed from 'public:emergency_requests'
+    const channel = supabase.channel('public:orders_new')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders', filter: `customer=eq.${phoneNumber}` }, // Changed from 'emergency_requests'
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'orders_new',
+          filter: `customer=eq.${phoneNumber}` 
+        },
         (payload) => {
           console.log('Emergency request change received!', payload);
           toast({
