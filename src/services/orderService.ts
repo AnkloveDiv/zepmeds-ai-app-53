@@ -1,3 +1,4 @@
+
 /**
  * Order Service
  * Handles order creation and tracking functionality
@@ -123,6 +124,28 @@ export const getOrderTracking = async (orderId: string): Promise<any> => {
       if (error) {
         console.error('Error fetching order from database:', error);
       } else if (data) {
+        // Parse items from JSON string if available
+        let parsedItems = [];
+        try {
+          if (data.items) {
+            parsedItems = JSON.parse(data.items);
+          } else {
+            // Create a default item if no items found
+            parsedItems = [{
+              name: "Unknown Medicine",
+              quantity: 1,
+              price: data.amount
+            }];
+          }
+        } catch (parseError) {
+          console.error('Error parsing items JSON:', parseError);
+          parsedItems = [{
+            name: "Unknown Medicine",
+            quantity: 1,
+            price: data.amount
+          }];
+        }
+
         // Transform to match expected format - handle the different schema of orders_new
         return {
           id: orderId,
@@ -135,10 +158,10 @@ export const getOrderTracking = async (orderId: string): Promise<any> => {
             eta: "15 minutes",
             profileImage: "https://source.unsplash.com/random/100x100/?face"
           },
-          items: [], // Would need to fetch items from order_items table
+          items: parsedItems, // Use parsed items from JSON
           totalAmount: data.amount, // Map from amount field
           deliveryAddress: "Customer address", // This doesn't exist in orders_new
-          placedAt: data.created_at
+          placedAt: data.created_at || data.date
         };
       }
     } catch (dbError) {
@@ -163,7 +186,6 @@ export const getOrderTracking = async (orderId: string): Promise<any> => {
           name: "Paracetamol",
           image: "https://source.unsplash.com/random/100x100/?medicine",
           quantity: 2,
-          stripQuantity: 10,
           price: 25
         }
       ],

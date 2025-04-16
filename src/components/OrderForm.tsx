@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Plus, X } from 'lucide-react';
 
 // Define the form validation schema
 const formSchema = z.object({
@@ -23,6 +25,12 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
+interface MedicineItem {
+  name: string;
+  quantity: number;
+  price: number;
+}
+
 const generateOrderId = () => {
   return `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 };
@@ -30,6 +38,10 @@ const generateOrderId = () => {
 const OrderForm = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [medicineItems, setMedicineItems] = useState<MedicineItem[]>([]);
+  const [newMedicineName, setNewMedicineName] = useState('');
+  const [newMedicineQuantity, setNewMedicineQuantity] = useState(1);
+  const [newMedicinePrice, setNewMedicinePrice] = useState(0);
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -41,6 +53,42 @@ const OrderForm = () => {
     },
   });
 
+  const addMedicineItem = () => {
+    if (!newMedicineName) {
+      toast({
+        title: "Error",
+        description: "Medicine name is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newItem: MedicineItem = {
+      name: newMedicineName,
+      quantity: newMedicineQuantity,
+      price: newMedicinePrice
+    };
+
+    setMedicineItems([...medicineItems, newItem]);
+    setNewMedicineName('');
+    setNewMedicineQuantity(1);
+    setNewMedicinePrice(0);
+    
+    // Update total amount
+    const totalAmount = medicineItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) + (newMedicinePrice * newMedicineQuantity);
+    form.setValue('amount', totalAmount);
+  };
+
+  const removeMedicineItem = (index: number) => {
+    const updatedItems = [...medicineItems];
+    updatedItems.splice(index, 1);
+    setMedicineItems(updatedItems);
+    
+    // Update total amount
+    const totalAmount = updatedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    form.setValue('amount', totalAmount);
+  };
+
   const onSubmit = async (data: FormData) => {
     setLoading(true);
     
@@ -48,14 +96,15 @@ const OrderForm = () => {
       // Generate a unique order ID
       const orderId = generateOrderId();
       
-      // Create the order record
+      // Create the order record with medicines as JSON
       const orderData = {
         order_id: orderId,
         customer: data.customerName,
         date: data.date,
         amount: data.amount,
         setup_prescription: data.prescription || null,
-        action: "View Details"
+        action: "View Details",
+        items: JSON.stringify(medicineItems)  // Store medicine items as JSON
       };
       
       console.log('Creating order in Supabase:', orderData);
@@ -83,6 +132,10 @@ const OrderForm = () => {
         amount: 0,
         prescription: '',
       });
+      
+      // Reset medicine items
+      setMedicineItems([]);
+      
     } catch (err) {
       console.error('Error creating order:', err);
       
@@ -130,12 +183,85 @@ const OrderForm = () => {
             )}
           />
           
+          {/* Medicine Items Section */}
+          <div className="border p-4 rounded-md">
+            <h3 className="text-lg font-medium mb-3">Medicine Items</h3>
+            
+            {medicineItems.length > 0 && (
+              <Table className="mb-4">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Quantity</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead>Total</TableHead>
+                    <TableHead></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {medicineItems.map((item, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{item.name}</TableCell>
+                      <TableCell>{item.quantity}</TableCell>
+                      <TableCell>₹{item.price.toFixed(2)}</TableCell>
+                      <TableCell>₹{(item.quantity * item.price).toFixed(2)}</TableCell>
+                      <TableCell>
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => removeMedicineItem(index)}
+                        >
+                          <X size={16} />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+
+            <div className="grid grid-cols-4 gap-2 mb-4">
+              <Input 
+                placeholder="Medicine name" 
+                value={newMedicineName}
+                onChange={e => setNewMedicineName(e.target.value)}
+                className="col-span-2"
+              />
+              <Input 
+                type="number" 
+                placeholder="Qty" 
+                min="1"
+                value={newMedicineQuantity}
+                onChange={e => setNewMedicineQuantity(parseInt(e.target.value) || 1)}
+              />
+              <Input 
+                type="number" 
+                placeholder="Price" 
+                min="0" 
+                step="0.01"
+                value={newMedicinePrice}
+                onChange={e => setNewMedicinePrice(parseFloat(e.target.value) || 0)}
+              />
+            </div>
+            
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="sm" 
+              onClick={addMedicineItem} 
+              className="w-full"
+            >
+              <Plus size={16} className="mr-2" /> Add Medicine
+            </Button>
+          </div>
+          
           <FormField
             control={form.control}
             name="amount"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Amount</FormLabel>
+                <FormLabel>Total Amount</FormLabel>
                 <FormControl>
                   <Input 
                     type="number" 
@@ -143,6 +269,7 @@ const OrderForm = () => {
                     placeholder="Enter amount"
                     min="0"
                     step="0.01"
+                    readOnly
                   />
                 </FormControl>
                 <FormMessage />
