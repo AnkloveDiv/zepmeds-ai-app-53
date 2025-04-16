@@ -1,3 +1,4 @@
+
 /**
  * Emergency Service
  * Handles emergency-related API operations
@@ -7,6 +8,8 @@ import { supabase } from '@/lib/supabase';
 import { ApiClient } from './apiClient';
 import { EmergencyRequestPayload, ApiResponse } from './types';
 import { useAuth } from '@/contexts/AuthContext';
+import { useState, useCallback } from 'react';
+import { useToast } from '@/components/ui/use-toast';
 
 // Function to generate a unique order ID
 const generateOrderId = () => {
@@ -69,3 +72,149 @@ export class EmergencyService {
     }
   }
 }
+
+// Create a hook for using emergency service
+export const useEmergencyService = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [ambulance, setAmbulance] = useState<any | null>(null);
+  const [eta, setEta] = useState<number | null>(null);
+
+  const apiClient = new ApiClient('https://api.zepmeds.com/v1');
+  const emergencyService = new EmergencyService(apiClient);
+
+  // Request emergency service
+  const requestEmergencyService = useCallback(async (emergencyData: EmergencyRequestPayload) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+      
+      // Generate a unique emergency ID
+      const emergencyId = generateOrderId();
+      
+      // Create emergency record in Supabase
+      const { data, error: supabaseError } = await supabase
+        .from('orders')
+        .insert([
+          {
+            order_id: emergencyId,
+            customer: user.phoneNumber,
+            amount: 0, // Emergency services might be free or have a fixed cost
+            status: 'requested',
+            order_number: emergencyId,
+            setup_prescription: emergencyData.description
+          }
+        ])
+        .select()
+        .single();
+
+      if (supabaseError) {
+        throw new Error(supabaseError.message);
+      }
+
+      // Simulate API call to emergency services
+      // In a real app, this would actually call a real emergency service
+      setTimeout(() => {
+        setAmbulance({
+          id: 'AMB-12345',
+          driver: 'John Medic',
+          vehicle: 'ZEP-4321',
+          phone: '+911234567890'
+        });
+        setEta(Math.floor(Math.random() * 10) + 5); // Random ETA between 5-15 minutes
+      }, 1500);
+
+      setLoading(false);
+      toast({
+        title: "Emergency Services Requested",
+        description: "Help is on the way!",
+      });
+      
+      return data;
+    } catch (err) {
+      console.error("Error requesting emergency service:", err);
+      
+      setLoading(false);
+      let errorMessage = "Failed to request emergency services.";
+      
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      
+      return null;
+    }
+  }, [user, toast]);
+
+  // Cancel emergency request
+  const cancelEmergencyRequest = useCallback(async (requestId: string) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Update status in Supabase
+      const { error: supabaseError } = await supabase
+        .from('orders')
+        .update({ status: 'cancelled' })
+        .eq('order_id', requestId);
+
+      if (supabaseError) {
+        throw new Error(supabaseError.message);
+      }
+
+      // Reset states
+      setAmbulance(null);
+      setEta(null);
+      
+      setLoading(false);
+      
+      toast({
+        title: "Emergency Request Cancelled",
+        description: "Your emergency request has been cancelled.",
+      });
+      
+      return true;
+    } catch (err) {
+      console.error("Error cancelling emergency request:", err);
+      
+      setLoading(false);
+      let errorMessage = "Failed to cancel emergency request.";
+      
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      
+      return false;
+    }
+  }, [toast]);
+
+  return {
+    requestEmergencyService,
+    cancelEmergencyRequest,
+    loading,
+    error,
+    ambulance,
+    eta
+  };
+};

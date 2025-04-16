@@ -1,3 +1,4 @@
+
 import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,25 +9,25 @@ export const useDashboardSubscription = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (user?.id) {
-      subscribeToProfileChanges(user.id);
-      subscribeToEmergencyRequestChanges(user.id);
+    if (user?.phoneNumber) {
+      subscribeToProfileChanges(user.phoneNumber);
+      subscribeToEmergencyRequestChanges(user.phoneNumber);
     }
 
     // Cleanup function (optional)
     return () => {
       // Any cleanup logic here
     };
-  }, [user?.id]);
+  }, [user?.phoneNumber]);
 
-  const subscribeToProfileChanges = async (userId: string) => {
+  const subscribeToProfileChanges = async (phoneNumber: string) => {
     // Initial fetch of profile data
     try {
       // Replace the problematic queries with the correct table names
       const { data: profileData, error: profileError } = await supabase
         .from('customers')  // Changed from 'profiles'
         .select('*')
-        .eq('id', userId)
+        .eq('phone', phoneNumber)
         .single();
 
       if (profileError) {
@@ -54,7 +55,7 @@ export const useDashboardSubscription = () => {
       .channel('public:customers') // Changed from 'public:profiles'
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'customers', filter: `id=eq.${userId}` }, // Changed from 'profiles'
+        { event: '*', schema: 'public', table: 'customers', filter: `phone=eq.${phoneNumber}` }, // Changed from 'profiles'
         (payload) => {
           console.log('Profile change received!', payload);
           toast({
@@ -66,14 +67,16 @@ export const useDashboardSubscription = () => {
       .subscribe();
   };
 
-  const subscribeToEmergencyRequestChanges = async (userId: string) => {
+  const subscribeToEmergencyRequestChanges = async (phoneNumber: string) => {
     // Initial fetch of emergency request data
     try {
       // Update emergency-related queries to use the correct tables
       const { data: emergencyData, error: emergencyError } = await supabase
         .from('orders')  // Changed from 'emergency_requests'
         .select('*')
-        .eq('id', userId)
+        .eq('customer', phoneNumber)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .single();
 
       if (emergencyError) {
@@ -101,7 +104,7 @@ export const useDashboardSubscription = () => {
       .channel('public:orders') // Changed from 'public:emergency_requests'
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders', filter: `user_id=eq.${userId}` }, // Changed from 'emergency_requests'
+        { event: '*', schema: 'public', table: 'orders', filter: `customer=eq.${phoneNumber}` }, // Changed from 'emergency_requests'
         (payload) => {
           console.log('Emergency request change received!', payload);
           toast({
@@ -112,4 +115,12 @@ export const useDashboardSubscription = () => {
       )
       .subscribe();
   };
+};
+
+// Export a function to initialize dashboard sync
+export const initializeDashboardSync = () => {
+  console.log('Initializing dashboard synchronization...');
+  // This function doesn't need to do anything yet,
+  // it's just a placeholder to satisfy the import in main.tsx
+  return true;
 };
