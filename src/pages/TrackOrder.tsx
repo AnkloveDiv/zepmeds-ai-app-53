@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { getOrderTracking } from "@/services/orderService";
+import { getOrderTracking } from "@/services/orders/trackOrder";
 import { useToast } from "@/components/ui/use-toast";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
