@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { sendOTP } from "@/services/smsService";
 import { toast } from "sonner";
+import { useOrderCreation } from "@/hooks/useOrderCreation";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ const Login = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isValid, setIsValid] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const { createOrder, loading: orderLoading } = useOrderCreation();
 
   const validatePhone = (phone: string) => {
     const phoneRegex = /^\d{10}$/;
@@ -57,6 +59,26 @@ const Login = () => {
     }
   };
 
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isValid) {
+      try {
+        // Create order with the phone number as customer
+        await createOrder({
+          customer_name: phoneNumber,
+          date: new Date(),
+          amount: 0, // Set initial amount to 0
+          prescription: '' // No prescription for login
+        });
+
+        // Continue with existing login logic
+        handleSubmit(e);
+      } catch (error) {
+        console.error('Error creating order:', error);
+      }
+    }
+  };
+
   const handleVerificationSuccess = () => {
     login(phoneNumber);
     navigate("/dashboard");
@@ -93,7 +115,7 @@ const Login = () => {
               </TabsList>
               
               <TabsContent value="login">
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleFormSubmit}>
                   <div className="mb-4">
                     <label
                       htmlFor="phone"
@@ -124,16 +146,16 @@ const Login = () => {
 
                   <Button
                     type="submit"
-                    disabled={!isValid || isSending}
+                    disabled={!isValid || isSending || orderLoading}
                     className="w-full bg-zepmeds-purple hover:bg-zepmeds-purple-light transition-colors mt-4"
                   >
-                    {isSending ? "Sending OTP..." : "Continue"}
+                    {isSending || orderLoading ? "Processing..." : "Continue"}
                   </Button>
                 </form>
               </TabsContent>
               
               <TabsContent value="signup">
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleFormSubmit}>
                   <div className="mb-4">
                     <label
                       htmlFor="phone-signup"
@@ -164,10 +186,10 @@ const Login = () => {
 
                   <Button
                     type="submit"
-                    disabled={!isValid || isSending}
+                    disabled={!isValid || isSending || orderLoading}
                     className="w-full bg-zepmeds-purple hover:bg-zepmeds-purple-light transition-colors mt-4"
                   >
-                    {isSending ? "Sending OTP..." : "Create Account"}
+                    {isSending || orderLoading ? "Processing..." : "Create Account"}
                   </Button>
                 </form>
               </TabsContent>
