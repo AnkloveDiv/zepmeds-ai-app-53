@@ -1,9 +1,10 @@
-
 /**
  * Order Service Utilities
  * Common helper functions and types for order services
  */
 import { supabase } from '@/integrations/supabase/client';
+import { Capacitor } from '@capacitor/core';
+import { Geolocation } from '@capacitor/geolocation';
 
 /**
  * Location data structure
@@ -19,17 +20,23 @@ export interface LocationData {
  * @returns Promise resolving to location data or null
  */
 export const getCurrentLocation = async (): Promise<LocationData | null> => {
-  if (!navigator.geolocation) {
-    return null;
-  }
-  
   try {
-    const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(resolve, reject, {
-        enableHighAccuracy: true,
-        timeout: 5000,
-        maximumAge: 0
-      });
+    // Request permission first on mobile devices
+    if (Capacitor.isNativePlatform()) {
+      const permissionStatus = await Geolocation.checkPermissions();
+      if (permissionStatus.location !== 'granted') {
+        const request = await Geolocation.requestPermissions();
+        if (request.location !== 'granted') {
+          console.log('Location permission denied');
+          return null;
+        }
+      }
+    }
+
+    const position = await Geolocation.getCurrentPosition({
+      enableHighAccuracy: true,
+      timeout: 5000,
+      maximumAge: 0
     });
     
     return {
