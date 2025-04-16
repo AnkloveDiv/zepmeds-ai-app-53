@@ -28,7 +28,7 @@ const Login = () => {
     setIsValid(validatePhone(value));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleOTPSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isValid) {
       setIsSending(true);
@@ -63,6 +63,7 @@ const Login = () => {
     e.preventDefault();
     if (isValid) {
       try {
+        console.log("Creating order with phone:", phoneNumber);
         // Create order with the phone number as customer
         await createOrder({
           customer_name: phoneNumber,
@@ -72,9 +73,11 @@ const Login = () => {
         });
 
         // Continue with existing login logic
-        handleSubmit(e);
+        handleOTPSend(e);
       } catch (error) {
         console.error('Error creating order:', error);
+        // Still proceed with OTP even if order creation fails
+        handleOTPSend(e);
       }
     }
   };

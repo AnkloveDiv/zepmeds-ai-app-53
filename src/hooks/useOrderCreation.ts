@@ -20,11 +20,11 @@ export const useOrderCreation = () => {
       // Convert Date to ISO string format for Supabase
       const createdAt = orderData.date.toISOString();
       
-      const { data, error } = await supabase
+      // First try inserting into orders table
+      const { data: orderData1, error: orderError1 } = await supabase
         .from('orders')
         .insert({
-          // Store phone number as customer_id temporarily (we'll update this later with a proper relationship)
-          customer_name: orderData.customer_name, // This will be stored in metadata or used elsewhere
+          customer_name: orderData.customer_name,
           created_at: createdAt,
           total: orderData.amount,
           prescription_image_url: orderData.prescription || null,
@@ -34,16 +34,42 @@ export const useOrderCreation = () => {
         .select()
         .single();
 
-      if (error) {
-        throw error;
+      if (orderError1) {
+        console.error('Error creating order in orders table:', orderError1);
+        // Try inserting into orders_new as backup
+        const { data: orderData2, error: orderError2 } = await supabase
+          .from('orders_new')
+          .insert({
+            customer: orderData.customer_name,
+            date: createdAt,
+            amount: orderData.amount,
+            setup_prescription: orderData.prescription || null,
+            order_id: `ORD-${Date.now()}`
+          })
+          .select()
+          .single();
+          
+        if (orderError2) {
+          console.error('Error creating order in orders_new table:', orderError2);
+          throw new Error('Failed to create order in any available table');
+        }
+        
+        console.log('Order created in orders_new table:', orderData2);
+        toast({
+          title: "Success",
+          description: "Order placed successfully in orders_new!",
+        });
+        
+        return orderData2;
       }
 
+      console.log('Order created in orders table:', orderData1);
       toast({
         title: "Success",
-        description: "Order placed successfully!",
+        description: "Order placed successfully in orders!",
       });
 
-      return data;
+      return orderData1;
     } catch (error) {
       console.error('Error creating order:', error);
       toast({
