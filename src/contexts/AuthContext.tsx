@@ -41,6 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // First, set up the auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
+        console.log("Auth state change event:", event);
         setSession(newSession);
         setSupabaseUser(newSession?.user ?? null);
         
@@ -64,6 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const checkSession = async () => {
       try {
         const { data } = await supabase.auth.getSession();
+        console.log("Auth session check:", data.session ? "Found session" : "No session");
         
         setSession(data.session);
         setSupabaseUser(data.session?.user ?? null);
@@ -86,7 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     checkSession();
 
-    // Also check localStorage for legacy user data (for backward compatibility)
+    // Also check localStorage for user data (for backward compatibility)
     const storedIsLoggedIn = localStorage.getItem("isLoggedIn");
     const storedUser = localStorage.getItem("user");
     

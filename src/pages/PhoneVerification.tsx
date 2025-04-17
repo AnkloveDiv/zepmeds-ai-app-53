@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { useBackNavigation } from '@/hooks/useBackNavigation';
 import { verifyOTP, sendOTP } from '@/services/smsService';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const formSchema = z.object({
   otp: z.string().min(6, {
@@ -22,7 +23,7 @@ const formSchema = z.object({
 const PhoneVerification = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, isLoggedIn } = useAuth();
   const [isVerifying, setIsVerifying] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [isResending, setIsResending] = useState(false);
@@ -40,11 +41,24 @@ const PhoneVerification = () => {
   useBackNavigation();
 
   useEffect(() => {
+    // Check if user is already logged in, redirect to dashboard if so
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      
+      if (isLoggedIn || data.session) {
+        console.log("User already logged in, redirecting to dashboard");
+        navigate('/dashboard');
+        return;
+      }
+    };
+    
+    checkAuth();
+    
     // Extract phone number from the state passed by the Login page
     if (location.state && location.state.phoneNumber) {
       setPhoneNumber(location.state.phoneNumber);
     }
-  }, [location.state]);
+  }, [location.state, isLoggedIn, navigate]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;

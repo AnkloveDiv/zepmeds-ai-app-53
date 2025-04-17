@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
 
 interface CartItem {
   id: string;
@@ -23,25 +24,18 @@ interface CartItem {
 
 const Cart = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
-  const { isLoggedIn, isLoading } = useAuth();
+  const { isLoggedIn } = useAuth();
+  const auth = useAuthGuard();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check authentication status
-    const checkAuth = async () => {
-      // Skip if we already know the auth state from context
-      if (!isLoading && !isLoggedIn) {
-        toast({
-          title: "Please log in",
-          description: "You need to be logged in to access your cart",
-        });
-        navigate('/login');
-      }
-    };
-    
-    checkAuth();
+    // Skip auth check on login page
+    if (location.pathname === '/login' || location.pathname === '/verify') {
+      return;
+    }
     
     // Load cart items and check if any need prescriptions
     const loadCartItems = async () => {
@@ -91,7 +85,7 @@ const Cart = () => {
     };
     
     loadCartItems();
-  }, [toast, navigate, isLoggedIn, isLoading]);
+  }, [toast, navigate, isLoggedIn, location.pathname]);
 
   const updateQuantity = (id: string, newQuantity: number) => {
     if (newQuantity < 1) return;
@@ -150,7 +144,7 @@ const Cart = () => {
     navigate("/checkout");
   };
 
-  if (isLoading) {
+  if (auth.isAuthLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin h-10 w-10 border-4 border-zepmeds-purple border-t-transparent rounded-full"></div>

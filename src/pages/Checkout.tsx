@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { useBackNavigation } from "@/hooks/useBackNavigation";
 import OrderForSomeoneElse from "@/components/checkout/OrderForSomeoneElse";
 import DateTimePicker from "@/components/checkout/DateTimePicker";
@@ -41,8 +42,10 @@ import {
 
 const Checkout = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
-  const { user, isLoggedIn, isLoading } = useAuth();
+  const { user, isLoggedIn } = useAuth();
+  const auth = useAuthGuard();
   const { ExitConfirmDialog } = useBackNavigation();
   
   const [cartItems, setCartItems] = useState<any[]>([]);
@@ -80,30 +83,20 @@ const Checkout = () => {
   const [loading, setLoading] = useState(false);
   
   useEffect(() => {
-    if (!isLoading && !isLoggedIn) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to proceed with checkout.",
-        variant: "destructive"
-      });
-      navigate("/login");
+    if (location.pathname === '/login' || location.pathname === '/verify') {
       return;
     }
-    
+
     const checkUserAuth = async () => {
       const { data } = await supabase.auth.getSession();
-      if (!data.session) {
-        toast({
-          title: "Authentication Required",
-          description: "Please log in to proceed with checkout.",
-          variant: "destructive"
-        });
+      if (!data.session && !isLoggedIn) {
+        console.log("No auth session found, redirecting to login");
         navigate("/login");
       }
     };
     
     checkUserAuth();
-  }, [navigate, toast, isLoggedIn, isLoading]);
+  }, [navigate, toast, isLoggedIn, location.pathname]);
   
   useEffect(() => {
     const savedCart = localStorage.getItem("cart");
@@ -428,7 +421,7 @@ const Checkout = () => {
   const walletAmountToUse = useWallet ? Math.min(walletBalance, totalAmount) : 0;
   const finalAmount = Math.max(0, totalAmount - walletAmountToUse);
   
-  if (isLoading) {
+  if (auth.isAuthLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin h-10 w-10 border-4 border-zepmeds-purple border-t-transparent rounded-full"></div>
