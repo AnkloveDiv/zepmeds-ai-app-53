@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
 interface UserData {
-  phoneNumber: string;
+  phoneNumber?: string;
   name?: string;
   address?: string;
 }
@@ -15,7 +15,7 @@ interface AuthContextType {
   session: Session | null;
   isLoggedIn: boolean;
   isLoading: boolean;
-  login: (phoneNumber: string) => void;
+  login: (phoneNumber: string, supabaseUser?: User, session?: Session | null) => void;
   completeProfile: (name: string, address: string) => void;
   logout: () => void;
 }
@@ -88,24 +88,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     checkSession();
 
-    // Also check localStorage for user data (for backward compatibility)
-    const storedIsLoggedIn = localStorage.getItem("isLoggedIn");
-    const storedUser = localStorage.getItem("user");
-    
-    if (storedUser && storedIsLoggedIn === "true" && !isLoggedIn) {
-      setUser(JSON.parse(storedUser));
-      setIsLoggedIn(true);
-    }
-
     return () => {
       subscription.unsubscribe();
     };
   }, []);
 
-  const login = (phoneNumber: string) => {
-    const newUser = { phoneNumber };
+  const login = (phoneNumber: string, supabaseUser?: User, session?: Session | null) => {
+    console.log("Login called with:", { phoneNumber, supabaseUser });
+    
+    const newUser = { 
+      phoneNumber,
+      email: supabaseUser?.email
+    };
+    
     setUser(newUser);
     setIsLoggedIn(true);
+    
+    if (supabaseUser) {
+      setSupabaseUser(supabaseUser);
+    }
+    
+    if (session) {
+      setSession(session);
+    }
+    
     localStorage.setItem("user", JSON.stringify(newUser));
     localStorage.setItem("isLoggedIn", "true");
   };

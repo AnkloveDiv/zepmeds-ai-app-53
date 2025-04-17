@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -99,11 +100,49 @@ const PhoneVerification = () => {
           setIsVerified(true);
           toast.success("OTP verified successfully");
           
-          login(phoneNumber);
-          
-          // Redirect to the appropriate page after login
-          const redirectPath = location.state?.redirectAfterLogin || '/dashboard';
-          navigate(redirectPath);
+          try {
+            // Sign up user with Supabase using phone as email (temporary solution)
+            const tempEmail = `${phoneNumber}@example.com`;
+            const tempPassword = `${phoneNumber}${values.otp}`; // Using phone+OTP as temp password
+            
+            console.log("Attempting to sign up with Supabase:", tempEmail);
+            const { data, error } = await supabase.auth.signUp({
+              email: tempEmail,
+              password: tempPassword,
+            });
+            
+            if (error && error.message !== "User already registered") {
+              console.error("Error signing up with Supabase:", error);
+              toast.error("Failed to register. Please try again.");
+            } else {
+              // Try to sign in if user already exists
+              if (error && error.message === "User already registered") {
+                console.log("User already exists, signing in");
+                const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+                  email: tempEmail,
+                  password: tempPassword,
+                });
+                
+                if (signInError) {
+                  console.error("Error signing in:", signInError);
+                  toast.error("Failed to login. Please try again.");
+                } else {
+                  console.log("Sign in successful:", signInData);
+                  login(phoneNumber, signInData.user, signInData.session);
+                }
+              } else if (data.user) {
+                console.log("Sign up successful:", data);
+                login(phoneNumber, data.user, data.session);
+              }
+              
+              // Redirect to the appropriate page after login
+              const redirectPath = location.state?.redirectAfterLogin || '/dashboard';
+              navigate(redirectPath);
+            }
+          } catch (authError: any) {
+            console.error("Auth error:", authError);
+            toast.error("Authentication failed. Please try again.");
+          }
         } else {
           toast.error("Invalid OTP. Please try again.");
         }

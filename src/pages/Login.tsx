@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from "framer-motion";
@@ -14,6 +15,8 @@ const Login = () => {
   const location = useLocation();
   const { login, isLoggedIn } = useAuth();
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isValid, setIsValid] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
@@ -36,6 +39,11 @@ const Login = () => {
   const validatePhone = (phone: string) => {
     const phoneRegex = /^\d{10}$/;
     return phoneRegex.test(phone);
+  };
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -74,6 +82,87 @@ const Login = () => {
       } finally {
         setIsSending(false);
       }
+    }
+  };
+
+  const handleEmailSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateEmail(email) || !password || password.length < 6) {
+      toast.error("Please enter a valid email and password (min 6 characters)");
+      return;
+    }
+    
+    setIsSending(true);
+    
+    try {
+      console.log("Attempting to sign up with email:", email);
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: window.location.origin
+        }
+      });
+      
+      if (error) {
+        console.error("Supabase signup error:", error);
+        toast.error(error.message || "Failed to sign up. Please try again.");
+      } else if (data.user) {
+        console.log("Supabase signup successful:", data);
+        toast.success("Account created successfully! You can now log in.");
+        
+        // Auto-login after signup
+        await login(phoneNumber, data.user, data.session);
+        
+        // Redirect to appropriate page
+        const redirectPath = location.state?.redirectAfterLogin || '/dashboard';
+        navigate(redirectPath);
+      }
+    } catch (error: any) {
+      console.error("Error during email signup:", error);
+      toast.error(error?.message || "An unexpected error occurred. Please try again.");
+    } finally {
+      setIsSending(false);
+    }
+  };
+  
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateEmail(email) || !password) {
+      toast.error("Please enter a valid email and password");
+      return;
+    }
+    
+    setIsSending(true);
+    
+    try {
+      console.log("Attempting to sign in with email:", email);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (error) {
+        console.error("Supabase login error:", error);
+        toast.error(error.message || "Invalid email or password");
+      } else if (data.user) {
+        console.log("Supabase login successful:", data);
+        toast.success("Login successful!");
+        
+        // Update auth context
+        await login(phoneNumber, data.user, data.session);
+        
+        // Redirect to appropriate page
+        const redirectPath = location.state?.redirectAfterLogin || '/dashboard';
+        navigate(redirectPath);
+      }
+    } catch (error: any) {
+      console.error("Error during email login:", error);
+      toast.error(error?.message || "An unexpected error occurred");
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -116,78 +205,90 @@ const Login = () => {
               </TabsList>
               
               <TabsContent value="login">
-                <form onSubmit={handleFormSubmit}>
+                <form onSubmit={handleEmailLogin}>
                   <div className="mb-4">
                     <label
-                      htmlFor="phone"
+                      htmlFor="email-login"
                       className="block text-sm font-medium text-gray-300 mb-1"
                     >
-                      Phone Number
+                      Email
                     </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <span className="text-gray-400">+91</span>
-                      </div>
-                      <Input
-                        id="phone"
-                        type="tel"
-                        className="pl-12 bg-black/20 border-white/10 text-white"
-                        placeholder="Enter your 10-digit phone number"
-                        value={phoneNumber}
-                        onChange={handlePhoneChange}
-                        maxLength={10}
-                      />
-                    </div>
-                    {phoneNumber && !isValid && (
-                      <p className="mt-1 text-xs text-red-500">
-                        Please enter a valid 10-digit phone number
-                      </p>
-                    )}
+                    <Input
+                      id="email-login"
+                      type="email"
+                      className="bg-black/20 border-white/10 text-white"
+                      placeholder="Enter your email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label
+                      htmlFor="password-login"
+                      className="block text-sm font-medium text-gray-300 mb-1"
+                    >
+                      Password
+                    </label>
+                    <Input
+                      id="password-login"
+                      type="password"
+                      className="bg-black/20 border-white/10 text-white"
+                      placeholder="Enter your password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
                   </div>
 
                   <Button
                     type="submit"
-                    disabled={!isValid || isSending}
+                    disabled={isSending}
                     className="w-full bg-zepmeds-purple hover:bg-zepmeds-purple-light transition-colors mt-4"
                   >
-                    {isSending ? "Processing..." : "Continue"}
+                    {isSending ? "Processing..." : "Login"}
                   </Button>
                 </form>
               </TabsContent>
               
               <TabsContent value="signup">
-                <form onSubmit={handleFormSubmit}>
+                <form onSubmit={handleEmailSignup}>
                   <div className="mb-4">
                     <label
-                      htmlFor="phone-signup"
+                      htmlFor="email-signup"
                       className="block text-sm font-medium text-gray-300 mb-1"
                     >
-                      Phone Number
+                      Email
                     </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <span className="text-gray-400">+91</span>
-                      </div>
-                      <Input
-                        id="phone-signup"
-                        type="tel"
-                        className="pl-12 bg-black/20 border-white/10 text-white"
-                        placeholder="Enter your 10-digit phone number"
-                        value={phoneNumber}
-                        onChange={handlePhoneChange}
-                        maxLength={10}
-                      />
-                    </div>
-                    {phoneNumber && !isValid && (
-                      <p className="mt-1 text-xs text-red-500">
-                        Please enter a valid 10-digit phone number
-                      </p>
-                    )}
+                    <Input
+                      id="email-signup"
+                      type="email"
+                      className="bg-black/20 border-white/10 text-white"
+                      placeholder="Enter your email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label
+                      htmlFor="password-signup"
+                      className="block text-sm font-medium text-gray-300 mb-1"
+                    >
+                      Password
+                    </label>
+                    <Input
+                      id="password-signup"
+                      type="password"
+                      className="bg-black/20 border-white/10 text-white"
+                      placeholder="Create a password (min 6 characters)"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
                   </div>
 
                   <Button
                     type="submit"
-                    disabled={!isValid || isSending}
+                    disabled={isSending}
                     className="w-full bg-zepmeds-purple hover:bg-zepmeds-purple-light transition-colors mt-4"
                   >
                     {isSending ? "Processing..." : "Create Account"}
