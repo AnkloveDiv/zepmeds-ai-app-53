@@ -28,17 +28,26 @@ export const getUserAddresses = async (): Promise<Address[]> => {
 };
 
 export const saveUserAddress = async (address: Omit<Address, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<Address> => {
+  // Get the current user
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+  
   // If this is the first address or is_default is true, make sure all other addresses are not default
   if (address.is_default) {
     await supabase
       .from('addresses')
       .update({ is_default: false })
-      .not('id', 'eq', address.id);
+      .eq('user_id', user.id);
   }
 
   const { data, error } = await supabase
     .from('addresses')
-    .insert(address)
+    .insert({
+      ...address,
+      user_id: user.id
+    })
     .select()
     .single();
 
@@ -53,10 +62,15 @@ export const saveUserAddress = async (address: Omit<Address, 'id' | 'user_id' | 
 export const updateUserAddress = async (addressId: string, address: Partial<Omit<Address, 'id' | 'user_id' | 'created_at' | 'updated_at'>>): Promise<Address> => {
   // If setting this address as default, update other addresses
   if (address.is_default) {
-    await supabase
-      .from('addresses')
-      .update({ is_default: false })
-      .not('id', 'eq', addressId);
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (user) {
+      await supabase
+        .from('addresses')
+        .update({ is_default: false })
+        .eq('user_id', user.id)
+        .not('id', 'eq', addressId);
+    }
   }
 
   const { data, error } = await supabase
