@@ -18,7 +18,11 @@ export const useAuthGuard = (redirectPath = '/login') => {
         description: "Please log in to access this page",
         variant: "destructive"
       });
-      navigate(redirectPath);
+      
+      // Save the current path to redirect back after login
+      navigate(redirectPath, { 
+        state: { redirectAfterLogin: location.pathname }
+      });
     }
   }, [isLoggedIn, isLoading, navigate, redirectPath, toast, location.pathname]);
 

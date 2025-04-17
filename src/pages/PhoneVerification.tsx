@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -41,13 +40,14 @@ const PhoneVerification = () => {
   useBackNavigation();
 
   useEffect(() => {
-    // Check if user is already logged in, redirect to dashboard if so
+    // Check if user is already logged in, redirect to appropriate page if so
     const checkAuth = async () => {
       const { data } = await supabase.auth.getSession();
       
       if (isLoggedIn || data.session) {
-        console.log("User already logged in, redirecting to dashboard");
-        navigate('/dashboard');
+        console.log("User already logged in");
+        const redirectPath = location.state?.redirectAfterLogin || '/dashboard';
+        navigate(redirectPath);
         return;
       }
     };
@@ -100,7 +100,10 @@ const PhoneVerification = () => {
           toast.success("OTP verified successfully");
           
           login(phoneNumber);
-          navigate("/dashboard");
+          
+          // Redirect to the appropriate page after login
+          const redirectPath = location.state?.redirectAfterLogin || '/dashboard';
+          navigate(redirectPath);
         } else {
           toast.error("Invalid OTP. Please try again.");
         }

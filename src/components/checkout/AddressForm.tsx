@@ -6,6 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Address, saveUserAddress } from '@/services/addressService';
 import { useToast } from '@/components/ui/use-toast';
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 interface AddressFormProps {
   onAddressAdded: (address: Address) => void;
@@ -14,6 +17,8 @@ interface AddressFormProps {
 
 const AddressForm = ({ onAddressAdded, onCancel }: AddressFormProps) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { isLoggedIn } = useAuth();
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
@@ -32,10 +37,29 @@ const AddressForm = ({ onAddressAdded, onCancel }: AddressFormProps) => {
       });
       return;
     }
+
+    // Check if user is logged in
+    if (!isLoggedIn) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to save an address",
+        variant: "destructive"
+      });
+      navigate('/login', { state: { redirectAfterLogin: window.location.pathname } });
+      return;
+    }
     
     setLoading(true);
     
     try {
+      // Get current session to retrieve user ID
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      
+      if (!userId) {
+        throw new Error("User ID not found. Please log in again.");
+      }
+      
       const newAddress = await saveUserAddress({
         address,
         city,

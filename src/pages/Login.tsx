@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from "framer-motion";
@@ -24,13 +23,15 @@ const Login = () => {
       const { data } = await supabase.auth.getSession();
       
       if (isLoggedIn || data.session) {
-        console.log("User already logged in, redirecting to dashboard");
-        navigate('/dashboard');
+        console.log("User already logged in");
+        // Get the redirect path from location state or default to dashboard
+        const redirectPath = location.state?.redirectAfterLogin || '/dashboard';
+        navigate(redirectPath);
       }
     };
     
     checkAuth();
-  }, [isLoggedIn, navigate]);
+  }, [isLoggedIn, navigate, location.state]);
 
   const validatePhone = (phone: string) => {
     const phoneRegex = /^\d{10}$/;
@@ -58,7 +59,12 @@ const Login = () => {
               duration: 10000,
             });
           }
-          navigate("/verify", { state: { phoneNumber } });
+          navigate("/verify", { 
+            state: { 
+              phoneNumber,
+              redirectAfterLogin: location.state?.redirectAfterLogin 
+            } 
+          });
         } else {
           toast.error("Failed to send OTP. Please try again.");
         }

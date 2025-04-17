@@ -14,9 +14,17 @@ export interface Address {
 }
 
 export const getUserAddresses = async (): Promise<Address[]> => {
+  // Get the current user
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) {
+    console.error('No authenticated user found');
+    return [];
+  }
+
   const { data: addresses, error } = await supabase
     .from('addresses')
     .select('*')
+    .eq('user_id', session.user.id)
     .order('is_default', { ascending: false });
 
   if (error) {
@@ -29,8 +37,8 @@ export const getUserAddresses = async (): Promise<Address[]> => {
 
 export const saveUserAddress = async (address: Omit<Address, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<Address> => {
   // Get the current user
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) {
     throw new Error('User not authenticated');
   }
   
@@ -39,14 +47,14 @@ export const saveUserAddress = async (address: Omit<Address, 'id' | 'user_id' | 
     await supabase
       .from('addresses')
       .update({ is_default: false })
-      .eq('user_id', user.id);
+      .eq('user_id', session.user.id);
   }
 
   const { data, error } = await supabase
     .from('addresses')
     .insert({
       ...address,
-      user_id: user.id
+      user_id: session.user.id
     })
     .select()
     .single();
@@ -60,23 +68,26 @@ export const saveUserAddress = async (address: Omit<Address, 'id' | 'user_id' | 
 };
 
 export const updateUserAddress = async (addressId: string, address: Partial<Omit<Address, 'id' | 'user_id' | 'created_at' | 'updated_at'>>): Promise<Address> => {
+  // Get the current user
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) {
+    throw new Error('User not authenticated');
+  }
+  
   // If setting this address as default, update other addresses
   if (address.is_default) {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (user) {
-      await supabase
-        .from('addresses')
-        .update({ is_default: false })
-        .eq('user_id', user.id)
-        .not('id', 'eq', addressId);
-    }
+    await supabase
+      .from('addresses')
+      .update({ is_default: false })
+      .eq('user_id', session.user.id)
+      .not('id', 'eq', addressId);
   }
 
   const { data, error } = await supabase
     .from('addresses')
     .update(address)
     .eq('id', addressId)
+    .eq('user_id', session.user.id) // Ensure user can only update their own addresses
     .select()
     .single();
 
@@ -89,10 +100,17 @@ export const updateUserAddress = async (addressId: string, address: Partial<Omit
 };
 
 export const deleteUserAddress = async (addressId: string): Promise<void> => {
+  // Get the current user
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) {
+    throw new Error('User not authenticated');
+  }
+
   const { error } = await supabase
     .from('addresses')
     .delete()
-    .eq('id', addressId);
+    .eq('id', addressId)
+    .eq('user_id', session.user.id); // Ensure user can only delete their own addresses
 
   if (error) {
     console.error('Error deleting address:', error);
