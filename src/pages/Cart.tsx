@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -9,6 +8,7 @@ import { Minus, Plus, Trash2, ArrowRight, FileText } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface CartItem {
   id: string;
@@ -24,18 +24,20 @@ interface CartItem {
 const Cart = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isLoggedIn, isLoading } = useAuth();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Check authentication status
     const checkAuth = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) {
+      // Skip if we already know the auth state from context
+      if (!isLoading && !isLoggedIn) {
         toast({
           title: "Please log in",
           description: "You need to be logged in to access your cart",
         });
+        navigate('/login');
       }
     };
     
@@ -89,7 +91,7 @@ const Cart = () => {
     };
     
     loadCartItems();
-  }, [toast]);
+  }, [toast, navigate, isLoggedIn, isLoading]);
 
   const updateQuantity = (id: string, newQuantity: number) => {
     if (newQuantity < 1) return;
@@ -134,9 +136,8 @@ const Cart = () => {
   const hasPrescriptionItems = cartItems.some(item => item.prescription_required);
 
   const handleCheckout = async () => {
-    // Check if user is logged in
-    const { data } = await supabase.auth.getSession();
-    if (!data.session) {
+    // Check if user is logged in from the context
+    if (!isLoggedIn) {
       toast({
         title: "Login required",
         description: "Please log in to proceed with checkout",
@@ -148,6 +149,14 @@ const Cart = () => {
     
     navigate("/checkout");
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin h-10 w-10 border-4 border-zepmeds-purple border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20">

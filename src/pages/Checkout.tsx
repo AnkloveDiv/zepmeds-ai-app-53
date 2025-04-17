@@ -4,18 +4,8 @@ import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { 
-  MapPin, CreditCard, Clock, Truck, Wallet, Tag, 
-  Plus, Check, Calendar, DollarSign, Server, Shield,
-  Smartphone, IndianRupee
-} from "lucide-react";
-import useBackNavigation from "@/hooks/useBackNavigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { useBackNavigation } from "@/hooks/useBackNavigation";
 import OrderForSomeoneElse from "@/components/checkout/OrderForSomeoneElse";
 import DateTimePicker from "@/components/checkout/DateTimePicker";
 import { isPrescriptionRequired } from "@/services/prescriptionService";
@@ -23,39 +13,14 @@ import { getUserAddresses, Address } from "@/services/addressService";
 import AddressForm from "@/components/checkout/AddressForm";
 import PrescriptionUpload from "@/components/checkout/PrescriptionUpload";
 import { createOrder } from "@/services/orders/createOrder";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import type { OrderDataPayload } from "@/pages/dashboardApiService";
+import { UPI_PROVIDERS, BNPL_PROVIDERS, VALID_COUPONS } from "@/constants";
 import { getDashboardApiService } from "@/pages/dashboardApiService";
-
-const UPI_PROVIDERS = [
-  { id: "googlepay", name: "Google Pay", iconBg: "bg-blue-500" },
-  { id: "phonepe", name: "PhonePe", iconBg: "bg-purple-600" },
-  { id: "paytm", name: "Paytm", iconBg: "bg-blue-400" },
-  { id: "amazonpay", name: "Amazon Pay", iconBg: "bg-orange-500" },
-  { id: "mobikwik", name: "MobiKwik", iconBg: "bg-red-500" },
-  { id: "fampay", name: "FamPay", iconBg: "bg-yellow-500" },
-];
-
-const BNPL_PROVIDERS = [
-  { id: "simpl", name: "Simpl", iconBg: "bg-indigo-600" },
-  { id: "lazypay", name: "LazyPay", iconBg: "bg-green-600" },
-  { id: "zestmoney", name: "ZestMoney", iconBg: "bg-teal-500" },
-  { id: "kredpay", name: "KredPay", iconBg: "bg-red-600" },
-];
-
-const VALID_COUPONS = [
-  { code: "WELCOME10", discount: 10, type: "percent", maxDiscount: 100 },
-  { code: "FLAT50", discount: 50, type: "flat" },
-  { code: "ZEPMEDS20", discount: 20, type: "percent", maxDiscount: 200 },
-  { code: "TESTING", discount: 0, type: "flat" }
-];
 
 const Checkout = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isLoggedIn, isLoading } = useAuth();
   const { ExitConfirmDialog } = useBackNavigation();
-  const { user } = useAuth();
   
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [subTotal, setSubTotal] = useState(0);
@@ -92,6 +57,16 @@ const Checkout = () => {
   const [loading, setLoading] = useState(false);
   
   useEffect(() => {
+    if (!isLoading && !isLoggedIn) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to proceed with checkout.",
+        variant: "destructive"
+      });
+      navigate("/login");
+      return;
+    }
+    
     const checkUserAuth = async () => {
       const { data } = await supabase.auth.getSession();
       if (!data.session) {
@@ -105,7 +80,7 @@ const Checkout = () => {
     };
     
     checkUserAuth();
-  }, [navigate, toast]);
+  }, [navigate, toast, isLoggedIn, isLoading]);
   
   useEffect(() => {
     const savedCart = localStorage.getItem("cart");
@@ -430,6 +405,14 @@ const Checkout = () => {
   const walletAmountToUse = useWallet ? Math.min(walletBalance, totalAmount) : 0;
   const finalAmount = Math.max(0, totalAmount - walletAmountToUse);
   
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin h-10 w-10 border-4 border-zepmeds-purple border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <Header showBackButton title="Checkout" />
