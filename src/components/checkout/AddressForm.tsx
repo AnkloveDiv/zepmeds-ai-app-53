@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +18,7 @@ const AddressForm = ({ onAddressAdded, onCancel }: AddressFormProps) => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const { isLoggedIn, user } = useAuth();
+  const { isLoggedIn } = useAuth();
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
@@ -27,22 +26,17 @@ const AddressForm = ({ onAddressAdded, onCancel }: AddressFormProps) => {
   const [isDefault, setIsDefault] = useState(true);
   const [loading, setLoading] = useState(false);
 
-  // Check authentication status when component mounts
-  useEffect(() => {
-    const checkAuthStatus = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) {
-        console.log("No authenticated session found in AddressForm");
-      }
-    };
-    
-    checkAuthStatus();
-  }, []);
+  const validateForm = () => {
+    return address.trim() && 
+           city.trim() && 
+           state.trim() && 
+           zipcode.trim();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!address || !city || !state || !zipcode) {
+    if (!validateForm()) {
       toast({
         title: "Incomplete Address",
         description: "Please fill in all fields",
@@ -51,7 +45,6 @@ const AddressForm = ({ onAddressAdded, onCancel }: AddressFormProps) => {
       return;
     }
 
-    // Check if user is logged in
     const { data } = await supabase.auth.getSession();
     if (!data.session) {
       toast({
@@ -66,12 +59,11 @@ const AddressForm = ({ onAddressAdded, onCancel }: AddressFormProps) => {
     setLoading(true);
     
     try {
-      // Save the address to Supabase
       const newAddress = await saveUserAddress({
-        address,
-        city,
-        state,
-        zipcode,
+        address: address.trim(),
+        city: city.trim(),
+        state: state.trim(),
+        zipcode: zipcode.trim(),
         is_default: isDefault
       });
       
@@ -84,7 +76,6 @@ const AddressForm = ({ onAddressAdded, onCancel }: AddressFormProps) => {
     } catch (error) {
       console.error('Error saving address:', error);
       
-      // Check if the error is due to authentication
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) {
         toast({
@@ -105,6 +96,17 @@ const AddressForm = ({ onAddressAdded, onCancel }: AddressFormProps) => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        console.log("No authenticated session found in AddressForm");
+      }
+    };
+    
+    checkAuthStatus();
+  }, []);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
