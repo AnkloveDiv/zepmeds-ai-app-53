@@ -42,6 +42,11 @@ export const saveUserAddress = async (address: Omit<Address, 'id' | 'user_id' | 
     throw new Error('User not authenticated');
   }
   
+  console.log("Data being sent to Supabase:", {
+    ...address,
+    user_id: session.user.id
+  });
+  
   // If this is the first address or is_default is true, make sure all other addresses are not default
   if (address.is_default) {
     try {
@@ -55,10 +60,19 @@ export const saveUserAddress = async (address: Omit<Address, 'id' | 'user_id' | 
     }
   }
 
+  // Make sure all string fields are properly trimmed
+  const sanitizedAddress = {
+    address: address.address.trim(),
+    city: address.city.trim(),
+    state: address.state.trim(),
+    zipcode: address.zipcode.trim(),
+    is_default: address.is_default
+  };
+
   const { data, error } = await supabase
     .from('addresses')
-    .insert([{  // Note: Wrap the object in an array for proper insert format
-      ...address,
+    .insert([{  
+      ...sanitizedAddress,
       user_id: session.user.id
     }])
     .select()

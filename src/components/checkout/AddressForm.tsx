@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,10 +28,16 @@ const AddressForm = ({ onAddressAdded, onCancel }: AddressFormProps) => {
   const [loading, setLoading] = useState(false);
 
   const validateForm = () => {
-    return address.trim() && 
-           city.trim() && 
-           state.trim() && 
-           zipcode.trim();
+    const trimmedAddress = address.trim();
+    const trimmedCity = city.trim();
+    const trimmedState = state.trim();
+    const trimmedZipcode = zipcode.trim();
+    
+    if (!trimmedAddress || !trimmedCity || !trimmedState || !trimmedZipcode) {
+      return false;
+    }
+    
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,6 +51,9 @@ const AddressForm = ({ onAddressAdded, onCancel }: AddressFormProps) => {
       });
       return;
     }
+    
+    console.log("Form is valid, proceeding with submission");
+    console.log("Form data:", { address, city, state, zipcode, isDefault });
 
     const { data } = await supabase.auth.getSession();
     if (!data.session) {
@@ -59,13 +69,18 @@ const AddressForm = ({ onAddressAdded, onCancel }: AddressFormProps) => {
     setLoading(true);
     
     try {
-      const newAddress = await saveUserAddress({
+      const addressData = {
         address: address.trim(),
         city: city.trim(),
         state: state.trim(),
         zipcode: zipcode.trim(),
         is_default: isDefault
-      });
+      };
+      
+      console.log("Sending address data:", addressData);
+      
+      const newAddress = await saveUserAddress(addressData);
+      console.log("Response from saveUserAddress:", newAddress);
       
       toast({
         title: "Address Saved",
@@ -102,6 +117,8 @@ const AddressForm = ({ onAddressAdded, onCancel }: AddressFormProps) => {
       const { data } = await supabase.auth.getSession();
       if (!data.session) {
         console.log("No authenticated session found in AddressForm");
+      } else {
+        console.log("User is authenticated in AddressForm, session:", data.session.user.id);
       }
     };
     
