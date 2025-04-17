@@ -38,60 +38,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // First, set up the auth state listener
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
         console.log("Auth state change event:", event);
-        setSession(newSession);
-        setSupabaseUser(newSession?.user ?? null);
-        
-        if (newSession?.user) {
-          // Only perform synchronous state updates here
-          setIsLoggedIn(true);
-          
-          // Then get user data (async) from localStorage
-          const storedUser = localStorage.getItem("user");
-          if (storedUser) {
-            setUser(JSON.parse(storedUser));
-          }
-        } else {
-          setIsLoggedIn(false);
-          setUser(null);
-        }
+        updateAuthState(newSession);
       }
     );
 
-    // Then check for an existing session
-    const checkSession = async () => {
-      try {
-        const { data } = await supabase.auth.getSession();
-        console.log("Auth session check:", data.session ? "Found session" : "No session");
-        
-        setSession(data.session);
-        setSupabaseUser(data.session?.user ?? null);
-        
-        if (data.session?.user) {
-          setIsLoggedIn(true);
-          
-          // Load user data from localStorage
-          const storedUser = localStorage.getItem("user");
-          if (storedUser) {
-            setUser(JSON.parse(storedUser));
-          }
-        }
-      } catch (error) {
-        console.error("Error checking session:", error);
-      } finally {
-        setIsLoading(false);
-      }
+    // Initial session check
+    const checkInitialSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      updateAuthState(data.session);
+      setIsLoading(false);
     };
-    
-    checkSession();
+
+    checkInitialSession();
 
     return () => {
       subscription.unsubscribe();
     };
   }, []);
+
+  const updateAuthState = (newSession: Session | null) => {
+    setSession(newSession);
+    setSupabaseUser(newSession?.user ?? null);
+    setIsLoggedIn(!!newSession?.user);
+
+    if (newSession?.user) {
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
+    } else {
+      setUser(null);
+    }
+  };
 
   const login = (phoneNumber: string, supabaseUser?: User, session?: Session | null) => {
     console.log("Login called with:", { phoneNumber, supabaseUser });
@@ -104,13 +86,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(newUser);
     setIsLoggedIn(true);
     
-    if (supabaseUser) {
-      setSupabaseUser(supabaseUser);
-    }
-    
-    if (session) {
-      setSession(session);
-    }
+    if (supabaseUser) setSupabaseUser(supabaseUser);
+    if (session) setSession(session);
     
     localStorage.setItem("user", JSON.stringify(newUser));
     localStorage.setItem("isLoggedIn", "true");
