@@ -15,13 +15,15 @@ import PaymentMethods from "@/components/checkout/PaymentMethods";
 import OrderSummary from "@/components/checkout/OrderSummary";
 import PrescriptionSection from "@/components/checkout/PrescriptionSection";
 import { useCheckout } from "@/hooks/useCheckout";
+import { useToast } from "@/components/ui/use-toast";
 
 const Checkout = () => {
   const auth = useAuthGuard();
   const { ExitConfirmDialog } = useBackNavigation();
   const checkout = useCheckout();
+  const { toast } = useToast(); // Get toast directly from useToast hook
   
-  if (auth.isAuthLoading || checkout.isAuthLoading || (!checkout.authChecked && !auth.isLoggedIn)) {
+  if (auth.isAuthLoading || checkout.isAuthLoading || (!checkout.authChecked && !auth.isAuthenticated)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin h-10 w-10 border-4 border-zepmeds-purple border-t-transparent rounded-full"></div>
@@ -43,7 +45,7 @@ const Checkout = () => {
             onAddressAdded={checkout.handleAddressAdded}
             onCancel={() => {
               if (checkout.needsAddress) {
-                checkout.toast({
+                toast({
                   title: "Address Required",
                   description: "You need to add at least one address to proceed.",
                   variant: "destructive"

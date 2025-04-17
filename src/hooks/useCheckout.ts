@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -340,11 +339,9 @@ export const useCheckout = () => {
   const finalAmount = Math.max(0, totalAmount - walletAmountToUse);
   
   return {
-    // Authentication
     isAuthLoading,
     authChecked,
     
-    // Cart and pricing
     cartItems,
     subTotal: subTotalAmount,
     deliveryFee: deliveryFeeAmount,
@@ -354,7 +351,6 @@ export const useCheckout = () => {
     walletAmountToUse,
     finalAmount,
     
-    // Address
     addresses,
     selectedAddress,
     setSelectedAddress,
@@ -364,12 +360,10 @@ export const useCheckout = () => {
     setNeedsAddress,
     handleAddressAdded,
     
-    // Prescription
     requiresPrescription,
     prescriptionUrl,
     handlePrescriptionUploaded,
     
-    // Delivery
     deliveryTime,
     setDeliveryTime,
     scheduledDate,
@@ -377,27 +371,22 @@ export const useCheckout = () => {
     scheduledTime,
     setScheduledTime,
     
-    // Coupon
     couponCode, 
     setCouponCode,
     appliedCoupon,
     setAppliedCoupon,
     setCouponDiscount,
     
-    // Wallet
     walletBalance,
     useWallet,
     setUseWallet,
     
-    // Recipient
     recipientDetails,
     handleRecipientDetailsChange,
     
-    // Payment
     paymentMethod,
     setPaymentMethod,
     
-    // Card details
     cardNumber,
     setCardNumber,
     cardName,
@@ -409,19 +398,16 @@ export const useCheckout = () => {
     showCardDetails,
     setShowCardDetails,
     
-    // BNPL details
     bnplProvider,
     setBnplProvider,
     showBnplDetails,
     setShowBnplDetails,
     
-    // UPI details
     upiProvider,
     setUpiProvider,
     showUpiDetails,
     setShowUpiDetails,
     
-    // Order placement
     loading,
     handlePlaceOrder,
   };
