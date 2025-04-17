@@ -18,6 +18,23 @@ export const getOrderTracking = async (orderId: string): Promise<any> => {
     if (savedOrder) {
       const parsedOrder = JSON.parse(savedOrder);
       if (parsedOrder.id === orderId || parsedOrder.orderId === orderId) {
+        // Get address information if we have a delivery_address
+        if (parsedOrder.delivery_address) {
+          try {
+            const { data: addressData } = await supabase
+              .from('addresses')
+              .select('*')
+              .eq('id', parsedOrder.delivery_address)
+              .single();
+              
+            if (addressData) {
+              parsedOrder.deliveryAddress = `${addressData.address}, ${addressData.city}, ${addressData.state} ${addressData.zipcode}`;
+            }
+          } catch (error) {
+            console.error('Error fetching address:', error);
+          }
+        }
+        
         return parsedOrder;
       }
     }
@@ -26,7 +43,7 @@ export const getOrderTracking = async (orderId: string): Promise<any> => {
     try {
       const { data, error } = await supabase
         .from('orders_new')
-        .select('*')
+        .select('*, addresses:delivery_address(*)')
         .eq('order_id', orderId)
         .single();
       
@@ -70,6 +87,12 @@ export const getOrderTracking = async (orderId: string): Promise<any> => {
         } catch (locError) {
           console.error('Error parsing location data:', locError);
         }
+        
+        // Get address data if available
+        let deliveryAddress = "Customer address";
+        if (data.addresses) {
+          deliveryAddress = `${data.addresses.address}, ${data.addresses.city}, ${data.addresses.state} ${data.addresses.zipcode}`;
+        }
 
         // Transform to match expected format - handle the different schema of orders_new
         return {
@@ -85,9 +108,10 @@ export const getOrderTracking = async (orderId: string): Promise<any> => {
           },
           items: parsedItems, // Use parsed items
           totalAmount: data.amount, // Map from amount field
-          deliveryAddress: "Customer address", // This doesn't exist in orders_new
+          deliveryAddress: deliveryAddress,
           placedAt: data.created_at || data.date,
-          location: location // Add location data
+          location: location, // Add location data
+          prescription_url: data.prescription_url // Add prescription URL
         };
       }
     } catch (dbError) {

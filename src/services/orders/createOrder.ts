@@ -1,88 +1,58 @@
 
-/**
- * Order Creation Service
- * Handles order creation functionality
- */
-import { getDashboardApiService } from '@/pages/dashboardApiService';
-import { OrderDataPayload } from '@/pages/dashboardApiService';
 import { supabase } from '@/integrations/supabase/client';
-import { getCurrentLocation, LocationData } from './utils';
+import { Address } from '../addressService';
 
-/**
- * Creates a new order and sends it to both the local storage and admin dashboard
- */
-export const createOrder = async (orderData: OrderDataPayload): Promise<any> => {
-  console.log('Creating new order:', orderData);
-  
+interface CreateOrderParams {
+  items: any[];
+  totalAmount: number;
+  deliveryAddressId: string;
+  prescriptionUrl?: string;
+  paymentMethod: string;
+}
+
+export const createOrder = async (orderData: CreateOrderParams): Promise<any> => {
   try {
-    // Send to dashboard API
-    const dashboardApi = getDashboardApiService();
+    // Get the current user
+    const { data: { user } } = await supabase.auth.getUser();
     
-    // Log attempt to ensure we're calling the API
-    console.log('Sending order to admin dashboard:', {
-      orderId: orderData.orderId,
-      orderNumber: orderData.orderNumber,
-      customerInfo: orderData.customerInfo,
-      items: orderData.items?.length || 0,
-      totalAmount: orderData.totalAmount
-    });
-    
-    const response = await dashboardApi.sendOrderData(orderData);
-    console.log('Order successfully sent to admin dashboard:', response);
-    
-    // Also attempt to store in Supabase directly (as a backup)
-    try {
-      console.log('Attempting to store order directly in database...');
-      
-      // Get location data if available
-      const location = await getCurrentLocation();
-      
-      const orderRecord = {
-        order_id: orderData.orderId,
-        order_number: orderData.orderNumber,
-        customer_name: orderData.customerInfo.name,
-        customer_phone: orderData.customerInfo.phone || '',
-        customer_address: orderData.customerInfo.address,
-        status: orderData.status,
-        total_amount: orderData.totalAmount,
-        payment_method: orderData.paymentMethod,
-        items: JSON.stringify(orderData.items),
-        created_at: orderData.createdAt,
-        location: location ? JSON.stringify(location) : null
-      };
-      
-      const { data, error } = await supabase
-        .from('admin_dashboard_orders')
-        .insert(orderRecord);
-      
-      if (error) {
-        console.error('Failed to store order directly in database:', error);
-        console.error('Error details:', JSON.stringify(error));
-      } else {
-        console.log('Order stored directly in database:', data);
-        
-        // Create an initial tracking event for this order
-        try {
-          await dashboardApi.createOrderTrackingEvent(
-            orderData.orderId, 
-            orderData.status, 
-            `Order created with status: ${orderData.status}`
-          );
-        } catch (trackingError) {
-          console.error('Error creating tracking event:', trackingError);
-        }
-      }
-    } catch (dbError) {
-      console.error('Database operation failed:', dbError);
-      // Continue execution even if database operation fails
+    if (!user) {
+      throw new Error('User not authenticated');
     }
+
+    // Generate a unique order ID
+    const orderId = `ZM${Math.floor(Math.random() * 10000)}`;
     
-    // Store in localStorage for order tracking
-    localStorage.setItem('currentOrder', JSON.stringify({
-      ...orderData,
-      id: orderData.orderId,
-      placedAt: orderData.createdAt,
-      estimatedDelivery: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+    // Create the order in Supabase
+    const { data, error } = await supabase
+      .from('orders_new')
+      .insert({
+        order_id: orderId,
+        user_id: user.id,
+        customer: user.email || 'Guest Customer',
+        amount: orderData.totalAmount,
+        items: JSON.stringify(orderData.items),
+        delivery_address: orderData.deliveryAddressId,
+        prescription_url: orderData.prescriptionUrl || null,
+        action: "processing",
+        date: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating order:', error);
+      throw error;
+    }
+
+    // Save to localStorage for tracking
+    const order = {
+      id: orderId,
+      status: "confirmed",
+      items: orderData.items,
+      totalAmount: orderData.totalAmount,
+      paymentMethod: orderData.paymentMethod,
+      placedAt: new Date().toISOString(),
+      estimatedDelivery: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
       deliveryRider: {
         name: "Rahul Singh",
         rating: 4.8,
@@ -90,14 +60,15 @@ export const createOrder = async (orderData: OrderDataPayload): Promise<any> => 
         eta: "15 minutes",
         profileImage: "https://source.unsplash.com/random/100x100/?face"
       },
-      address: {
-        address: orderData.customerInfo.address
-      }
-    }));
+    };
     
-    return response;
+    localStorage.setItem("currentOrder", JSON.stringify(order));
+    localStorage.setItem("cart", JSON.stringify([]));
+    
+    return { orderId, orderData: data };
+    
   } catch (error) {
-    console.error('Failed to create order:', error);
+    console.error('Error in createOrder:', error);
     throw error;
   }
 };

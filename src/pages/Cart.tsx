@@ -5,8 +5,10 @@ import { motion } from "framer-motion";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
 import { Button } from "@/components/ui/button";
-import { Minus, Plus, Trash2, ArrowRight } from "lucide-react";
+import { Minus, Plus, Trash2, ArrowRight, FileText } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CartItem {
   id: string;
@@ -16,6 +18,7 @@ interface CartItem {
   discountPrice?: number;
   quantity: number;
   stripQuantity: number;
+  prescription_required?: boolean;
 }
 
 const Cart = () => {
@@ -25,13 +28,68 @@ const Cart = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // In a real app, this would fetch from an API or localStorage
-    const savedCart = localStorage.getItem("cart");
-    if (savedCart) {
-      setCartItems(JSON.parse(savedCart));
-    }
-    setLoading(false);
-  }, []);
+    // Check authentication status
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        toast({
+          title: "Please log in",
+          description: "You need to be logged in to access your cart",
+        });
+      }
+    };
+    
+    checkAuth();
+    
+    // Load cart items and check if any need prescriptions
+    const loadCartItems = async () => {
+      const savedCart = localStorage.getItem("cart");
+      if (savedCart) {
+        try {
+          const parsedItems = JSON.parse(savedCart);
+          
+          // Fetch products from database to check which ones need prescriptions
+          if (parsedItems.length > 0) {
+            try {
+              // Try to get the prescription_required field for each product
+              const productIds = parsedItems.map((item: any) => item.id);
+              const { data: products } = await supabase
+                .from('products')
+                .select('id, prescription_required')
+                .in('id', productIds);
+              
+              if (products && products.length > 0) {
+                // Mark items that require prescriptions
+                const updatedItems = parsedItems.map((item: any) => {
+                  const matchingProduct = products.find((p) => p.id === item.id);
+                  return {
+                    ...item,
+                    prescription_required: matchingProduct ? matchingProduct.prescription_required : false
+                  };
+                });
+                
+                setCartItems(updatedItems);
+                localStorage.setItem("cart", JSON.stringify(updatedItems));
+              } else {
+                setCartItems(parsedItems);
+              }
+            } catch (err) {
+              console.error("Error checking prescription requirements:", err);
+              setCartItems(parsedItems);
+            }
+          } else {
+            setCartItems(parsedItems);
+          }
+        } catch (e) {
+          console.error("Error parsing cart data:", e);
+          setCartItems([]);
+        }
+      }
+      setLoading(false);
+    };
+    
+    loadCartItems();
+  }, [toast]);
 
   const updateQuantity = (id: string, newQuantity: number) => {
     if (newQuantity < 1) return;
@@ -72,8 +130,22 @@ const Cart = () => {
       return total + (itemPrice * item.quantity * item.stripQuantity);
     }, 0);
   };
+  
+  const hasPrescriptionItems = cartItems.some(item => item.prescription_required);
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
+    // Check if user is logged in
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) {
+      toast({
+        title: "Login required",
+        description: "Please log in to proceed with checkout",
+        variant: "destructive"
+      });
+      navigate("/login");
+      return;
+    }
+    
     navigate("/checkout");
   };
 
@@ -114,7 +186,14 @@ const Cart = () => {
                   
                   <div className="flex-1">
                     <div className="flex justify-between">
-                      <h3 className="text-white font-medium">{item.name}</h3>
+                      <div>
+                        <h3 className="text-white font-medium">{item.name}</h3>
+                        {item.prescription_required && (
+                          <Badge className="bg-amber-900/50 text-amber-400 border-amber-800/50 mt-1">
+                            <FileText className="h-3 w-3 mr-1" /> Prescription Required
+                          </Badge>
+                        )}
+                      </div>
                       <button 
                         className="text-gray-400 hover:text-red-500 transition-colors"
                         onClick={() => removeItem(item.id)}
@@ -177,6 +256,15 @@ const Cart = () => {
                 </motion.div>
               ))}
             </div>
+            
+            {hasPrescriptionItems && (
+              <div className="bg-amber-900/20 border border-amber-800/50 rounded-lg p-3 mb-6 flex items-center">
+                <FileText className="text-amber-400 h-5 w-5 mr-2 flex-shrink-0" />
+                <p className="text-sm text-amber-300">
+                  Some items in your cart require a valid prescription. You will need to upload it during checkout.
+                </p>
+              </div>
+            )}
             
             <div className="glass-morphism rounded-xl p-4 mb-6">
               <div className="flex justify-between text-gray-400 mb-2">

@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { 
   MapPin, CreditCard, Clock, Truck, Wallet, Tag, 
   Plus, Check, Calendar, DollarSign, Server, Shield,
@@ -17,7 +18,13 @@ import {
 import useBackNavigation from "@/hooks/useBackNavigation";
 import OrderForSomeoneElse from "@/components/checkout/OrderForSomeoneElse";
 import DateTimePicker from "@/components/checkout/DateTimePicker";
+import { isPrescriptionRequired } from "@/services/prescriptionService";
+import { getUserAddresses, Address } from "@/services/addressService";
+import AddressForm from "@/components/checkout/AddressForm";
+import PrescriptionUpload from "@/components/checkout/PrescriptionUpload";
+import { createOrder } from "@/services/orders/createOrder";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import type { OrderDataPayload } from "@/pages/dashboardApiService";
 import { getDashboardApiService } from "@/pages/dashboardApiService";
 
@@ -61,32 +68,17 @@ const Checkout = () => {
   const [appliedCoupon, setAppliedCoupon] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [upiProvider, setUpiProvider] = useState("");
-  const [addresses, setAddresses] = useState([
-    {
-      id: 1,
-      type: "Home",
-      address: "123 Main Street, Apartment 4B",
-      city: "New York",
-      state: "NY",
-      zipCode: "10001",
-      isDefault: true
-    },
-    {
-      id: 2,
-      type: "Work",
-      address: "456 Business Ave, Suite 200",
-      city: "New York",
-      state: "NY",
-      zipCode: "10002",
-      isDefault: false
-    }
-  ]);
-  const [selectedAddress, setSelectedAddress] = useState<number | null>(null);
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [needsAddress, setNeedsAddress] = useState(false);
   const [deliveryTime, setDeliveryTime] = useState("express");
   const [recipientDetails, setRecipientDetails] = useState<any>(null);
   const [showCardDetails, setShowCardDetails] = useState(false);
   const [showBnplDetails, setShowBnplDetails] = useState(false);
   const [showUpiDetails, setShowUpiDetails] = useState(false);
+  const [requiresPrescription, setRequiresPrescription] = useState(false);
+  const [prescriptionUrl, setPrescriptionUrl] = useState<string | null>(null);
   
   const [scheduledDate, setScheduledDate] = useState<Date | undefined>(undefined);
   const [scheduledTime, setScheduledTime] = useState("");
@@ -97,6 +89,23 @@ const Checkout = () => {
   const [cardCvv, setCvv] = useState("");
   
   const [bnplProvider, setBnplProvider] = useState("simpl");
+  const [loading, setLoading] = useState(false);
+  
+  useEffect(() => {
+    const checkUserAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to proceed with checkout.",
+          variant: "destructive"
+        });
+        navigate("/login");
+      }
+    };
+    
+    checkUserAuth();
+  }, [navigate, toast]);
   
   useEffect(() => {
     const savedCart = localStorage.getItem("cart");
@@ -111,15 +120,35 @@ const Checkout = () => {
       
       setSubTotal(total);
       
-      const defaultAddress = addresses.find(addr => addr.isDefault);
-      if (defaultAddress) {
-        setSelectedAddress(defaultAddress.id);
-      }
+      setRequiresPrescription(isPrescriptionRequired(parsedCart));
     } else {
       navigate("/cart");
     }
-  }, []);
+  }, [navigate]);
   
+  useEffect(() => {
+    const loadAddresses = async () => {
+      try {
+        const userAddresses = await getUserAddresses();
+        setAddresses(userAddresses);
+        
+        const defaultAddress = userAddresses.find(addr => addr.is_default);
+        if (defaultAddress) {
+          setSelectedAddress(defaultAddress.id);
+        } else if (userAddresses.length > 0) {
+          setSelectedAddress(userAddresses[0].id);
+        } else {
+          setNeedsAddress(true);
+          setShowAddressForm(true);
+        }
+      } catch (error) {
+        console.error('Error loading addresses:', error);
+      }
+    };
+    
+    loadAddresses();
+  }, []);
+
   useEffect(() => {
     if (paymentMethod !== "card") {
       setShowCardDetails(false);
@@ -141,6 +170,17 @@ const Checkout = () => {
     }
   }, [deliveryTime]);
   
+  const handleAddressAdded = (newAddress: Address) => {
+    setAddresses(prev => [...prev, newAddress]);
+    setSelectedAddress(newAddress.id);
+    setShowAddressForm(false);
+    setNeedsAddress(false);
+  };
+  
+  const handlePrescriptionUploaded = (url: string) => {
+    setPrescriptionUrl(url);
+  };
+
   const handleApplyCoupon = () => {
     if (!couponCode.trim()) {
       toast({
@@ -225,11 +265,20 @@ const Checkout = () => {
     return v;
   };
   
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (!selectedAddress) {
       toast({
         title: "Address required",
         description: "Please select a delivery address to continue.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (requiresPrescription && !prescriptionUrl) {
+      toast({
+        title: "Prescription required",
+        description: "Please upload a prescription for the medications that require it.",
         variant: "destructive"
       });
       return;
@@ -311,112 +360,65 @@ const Checkout = () => {
       return;
     }
     
-    let estimatedDelivery;
-    let deliveryDetails;
-    
-    if (deliveryTime === "express") {
-      estimatedDelivery = new Date(Date.now() + 15 * 60000).toISOString();
-      deliveryDetails = { type: "express", eta: "15 minutes" };
-    } else if (deliveryTime === "standard") {
-      estimatedDelivery = new Date(Date.now() + 120 * 60000).toISOString();
-      deliveryDetails = { type: "standard", eta: "2 hours" };
-    } else if (deliveryTime === "scheduled") {
-      if (scheduledDate && scheduledTime) {
-        const [hourMinute, period] = scheduledTime.split(' ');
-        const [hour, minute] = hourMinute.split(':').map(Number);
-        
-        let hour24 = hour;
-        if (period.toUpperCase() === 'PM' && hour !== 12) {
-          hour24 += 12;
-        } else if (period.toUpperCase() === 'AM' && hour === 12) {
-          hour24 = 0;
-        }
-        
-        const scheduledDateTime = new Date(scheduledDate);
-        scheduledDateTime.setHours(hour24, minute, 0, 0);
-        
-        estimatedDelivery = scheduledDateTime.toISOString();
-        deliveryDetails = { 
-          type: "scheduled", 
-          scheduledDate: scheduledDate.toISOString(),
-          scheduledTime: scheduledTime
-        };
-      }
-    }
-    
-    const orderId = `ZM${Math.floor(Math.random() * 10000)}`;
-    const selectedAddressData = addresses.find(addr => addr.id === selectedAddress);
-    
-    const order = {
-      id: orderId,
-      items: cartItems,
-      subTotal,
-      deliveryFee,
-      discount,
-      couponDiscount,
-      walletAmountUsed: useWallet ? Math.min(walletBalance, Math.max(0, total)) : 0,
-      total: Math.max(0, total),
-      paymentMethod,
-      paymentDetails: paymentMethod === "card" ? {
-        cardNumber: `**** **** **** ${cardNumber.slice(-4)}`,
-        cardName,
-        cardExpiry
-      } : (paymentMethod === "bnpl" ? { provider: bnplProvider } : 
-           paymentMethod === "upi" ? { provider: upiProvider } : null),
-      address: selectedAddressData,
-      deliveryTime,
-      deliveryDetails,
-      status: "confirmed",
-      placedAt: new Date().toISOString(),
-      estimatedDelivery,
-      deliveryRider: {
-        name: "Rahul Singh",
-        rating: 4.8,
-        phone: "+91 98765 43210",
-        eta: deliveryTime === "express" ? "15 minutes" : (deliveryTime === "standard" ? "2 hours" : "As scheduled")
-      },
-    };
-    
-    localStorage.setItem("currentOrder", JSON.stringify(order));
-    localStorage.setItem("cart", JSON.stringify([]));
+    setLoading(true);
     
     try {
-      const dashboardOrderData: OrderDataPayload = {
-        orderId: order.id,
-        orderNumber: order.id,
-        customerInfo: {
-          name: recipientDetails ? recipientDetails.name : user?.name || "Guest Customer",
-          phone: recipientDetails ? recipientDetails.phone : user?.phoneNumber || "Not provided",
-          address: selectedAddressData ? `${selectedAddressData.address}, ${selectedAddressData.city}, ${selectedAddressData.state}` : "Address not provided"
-        },
-        items: cartItems.map(item => ({
-          id: item.id || `item-${Math.random().toString(36).substring(2, 9)}`,
-          name: item.name,
-          quantity: item.quantity || 1,
-          price: item.discountPrice || item.price
-        })),
-        status: "confirmed",
-        totalAmount: order.total,
-        paymentMethod: order.paymentMethod,
-        createdAt: order.placedAt
-      };
-      
-      console.log("Sending order to admin dashboard:", dashboardOrderData);
-      getDashboardApiService().sendOrderData(dashboardOrderData).then(response => {
-        console.log("Order successfully sent to admin dashboard:", response);
-      }).catch(error => {
-        console.error("Failed to send order to admin dashboard:", error);
+      const finalAmount = Math.max(0, total);
+      const result = await createOrder({
+        items: cartItems,
+        totalAmount: finalAmount,
+        deliveryAddressId: selectedAddress,
+        prescriptionUrl: prescriptionUrl || undefined,
+        paymentMethod
       });
-    } catch (err) {
-      console.error("Error sending order to admin dashboard:", err);
+      
+      try {
+        const selectedAddressData = addresses.find(addr => addr.id === selectedAddress);
+        
+        const dashboardOrderData: OrderDataPayload = {
+          orderId: result.orderId,
+          orderNumber: result.orderId,
+          customerInfo: {
+            name: recipientDetails ? recipientDetails.name : user?.name || "Guest Customer",
+            phone: recipientDetails ? recipientDetails.phone : user?.phoneNumber || "Not provided",
+            address: selectedAddressData ? `${selectedAddressData.address}, ${selectedAddressData.city}, ${selectedAddressData.state}` : "Address not provided"
+          },
+          items: cartItems.map(item => ({
+            id: item.id || `item-${Math.random().toString(36).substring(2, 9)}`,
+            name: item.name,
+            quantity: item.quantity || 1,
+            price: item.discountPrice || item.price
+          })),
+          status: "confirmed",
+          totalAmount: finalAmount,
+          paymentMethod: paymentMethod,
+          createdAt: new Date().toISOString()
+        };
+        
+        console.log("Sending order to admin dashboard:", dashboardOrderData);
+        getDashboardApiService().sendOrderData(dashboardOrderData).catch(error => {
+          console.error("Failed to send order to admin dashboard:", error);
+        });
+      } catch (err) {
+        console.error("Error sending order to admin dashboard:", err);
+      }
+      
+      toast({
+        title: "Order placed successfully!",
+        description: `Your order #${result.orderId} has been placed successfully.`,
+      });
+      
+      navigate(`/track-order/${result.orderId}`);
+    } catch (error) {
+      console.error('Error placing order:', error);
+      toast({
+        title: "Order Failed",
+        description: "Failed to place your order. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
-    
-    toast({
-      title: "Order placed successfully!",
-      description: `Your order #${order.id} has been placed successfully.`,
-    });
-    
-    navigate(`/track-order/${order.id}`);
   };
   
   const subTotalAmount = parseFloat(subTotal.toString()) || 0;
@@ -433,6 +435,28 @@ const Checkout = () => {
       <Header showBackButton title="Checkout" />
       <ExitConfirmDialog />
       
+      <Dialog open={showAddressForm} onOpenChange={setShowAddressForm}>
+        <DialogContent className="sm:max-w-md bg-gray-900 text-white">
+          <DialogHeader>
+            <DialogTitle>Add New Address</DialogTitle>
+          </DialogHeader>
+          <AddressForm 
+            onAddressAdded={handleAddressAdded}
+            onCancel={() => {
+              if (needsAddress) {
+                toast({
+                  title: "Address Required",
+                  description: "You need to add at least one address to proceed.",
+                  variant: "destructive"
+                });
+              } else {
+                setShowAddressForm(false);
+              }
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+      
       <div className="fixed bottom-20 left-0 right-0 p-4 glass-morphism border-t border-white/10 backdrop-blur-lg z-20 shadow-lg">
         <div className="flex justify-between items-center">
           <div>
@@ -442,8 +466,9 @@ const Checkout = () => {
           <Button
             className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white px-8 shadow-md"
             onClick={handlePlaceOrder}
+            disabled={loading || !selectedAddress || (requiresPrescription && !prescriptionUrl)}
           >
-            Place Order
+            {loading ? "Processing..." : "Place Order"}
           </Button>
         </div>
       </div>
@@ -460,64 +485,92 @@ const Checkout = () => {
             <MapPin className="mr-2 text-blue-400" size={20} />
             Delivery Address
           </h2>
-          <RadioGroup 
-            value={selectedAddress?.toString() || ""} 
-            onValueChange={(value) => setSelectedAddress(parseInt(value))}
-            className="space-y-3"
-          >
-            {addresses.map(address => (
-              <div 
-                key={address.id}
-                className={`p-4 rounded-xl transition-all ${
-                  selectedAddress === address.id 
-                    ? "border-blue-500 glass-morphism shadow-md" 
-                    : "border-gray-700 bg-black/40"
-                }`}
-                onClick={() => setSelectedAddress(address.id)}
-              >
-                <div className="flex justify-between">
-                  <div className="flex items-start">
-                    <div className="mr-3 mt-1">
-                      <RadioGroupItem 
-                        value={address.id.toString()} 
-                        id={`address-${address.id}`} 
-                        className="text-blue-400"
-                      />
-                    </div>
-                    <div>
-                      <div className="flex items-center">
-                        <h3 className="text-white font-medium">{address.type}</h3>
-                        {address.isDefault && (
-                          <Badge variant="outline" className="ml-2 text-xs px-2 py-0 h-5 bg-green-900/30 text-green-400 border-green-800">
-                            Default
-                          </Badge>
-                        )}
+          
+          {addresses.length > 0 ? (
+            <RadioGroup 
+              value={selectedAddress || ""} 
+              onValueChange={(value) => setSelectedAddress(value)}
+              className="space-y-3"
+            >
+              {addresses.map(address => (
+                <div 
+                  key={address.id}
+                  className={`p-4 rounded-xl transition-all ${
+                    selectedAddress === address.id 
+                      ? "border-blue-500 glass-morphism shadow-md" 
+                      : "border-gray-700 bg-black/40"
+                  }`}
+                  onClick={() => setSelectedAddress(address.id)}
+                >
+                  <div className="flex justify-between">
+                    <div className="flex items-start">
+                      <div className="mr-3 mt-1">
+                        <RadioGroupItem 
+                          value={address.id} 
+                          id={`address-${address.id}`} 
+                          className="text-blue-400"
+                        />
                       </div>
-                      <p className="text-gray-400 text-sm">{address.address}</p>
-                      <p className="text-gray-400 text-sm">{address.city}, {address.state} {address.zipCode}</p>
+                      <div>
+                        <div className="flex items-center">
+                          <h3 className="text-white font-medium">{address.address}</h3>
+                          {address.is_default && (
+                            <Badge variant="outline" className="ml-2 text-xs px-2 py-0 h-5 bg-green-900/30 text-green-400 border-green-800">
+                              Default
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-gray-400 text-sm">{address.city}, {address.state} {address.zipcode}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </RadioGroup>
+              ))}
+            </RadioGroup>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-gray-400 mb-2">No addresses found</p>
+              {!showAddressForm && (
+                <Button 
+                  variant="outline" 
+                  className="text-blue-400 border-blue-800"
+                  onClick={() => setShowAddressForm(true)}
+                >
+                  Add New Address
+                </Button>
+              )}
+            </div>
+          )}
           
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="mt-3 text-blue-400 border-blue-800 hover:bg-blue-900/30"
-            onClick={() => navigate("/addresses")}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add New Address
-          </Button>
+          {!showAddressForm && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-3 text-blue-400 border-blue-800 hover:bg-blue-900/30"
+              onClick={() => setShowAddressForm(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add New Address
+            </Button>
+          )}
         </div>
+        
+        {requiresPrescription && (
+          <div>
+            <h2 className="text-lg font-bold text-white mb-4 flex items-center">
+              <Shield className="mr-2 text-red-400" size={20} />
+              Prescription Required
+            </h2>
+            <PrescriptionUpload onPrescriptionUploaded={handlePrescriptionUploaded} />
+          </div>
+        )}
         
         <div>
           <h2 className="text-lg font-bold text-white mb-4 flex items-center">
             <Truck className="mr-2 text-green-400" size={20} />
             Delivery Time
           </h2>
+          
           <RadioGroup value={deliveryTime} onValueChange={setDeliveryTime} className="space-y-3">
             <div className={`p-4 rounded-xl transition-all ${
               deliveryTime === "express" 
