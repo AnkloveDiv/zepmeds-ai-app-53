@@ -24,6 +24,7 @@ const AudioCall = ({ token, channelName, consultationId, onEndCall, doctorName }
   const agoraClient = useRef<IAgoraRTCClient | null>(null);
   const { toast } = useToast();
   const timerRef = useRef<number | null>(null);
+  const volumeDetectionInterval = useRef<number | null>(null);
 
   // Initialize Agora client
   useEffect(() => {
@@ -36,16 +37,25 @@ const AudioCall = ({ token, channelName, consultationId, onEndCall, doctorName }
       if (mediaType === 'audio') {
         user.audioTrack?.play();
         
-        // Animation for when doctor is speaking
-        user.audioTrack?.on('audio-volume', (volume) => {
-          setTalkingDoctor(volume > 5);
-        });
+        // Set up volume detection using an interval instead of an event listener
+        if (user.audioTrack) {
+          volumeDetectionInterval.current = window.setInterval(() => {
+            const volume = user.audioTrack?.getVolumeLevel() || 0;
+            setTalkingDoctor(volume > 0.05);
+          }, 200);
+        }
       }
     });
 
     agoraClient.current.on('user-unpublished', (user, mediaType) => {
       if (mediaType === 'audio') {
         user.audioTrack?.stop();
+        
+        // Clear volume detection interval
+        if (volumeDetectionInterval.current) {
+          clearInterval(volumeDetectionInterval.current);
+          volumeDetectionInterval.current = null;
+        }
       }
     });
     
@@ -75,6 +85,9 @@ const AudioCall = ({ token, channelName, consultationId, onEndCall, doctorName }
       leaveChannel();
       if (timerRef.current) {
         clearInterval(timerRef.current);
+      }
+      if (volumeDetectionInterval.current) {
+        clearInterval(volumeDetectionInterval.current);
       }
     };
   }, []);

@@ -38,9 +38,11 @@ export const useConsultation = () => {
         
         // If doctor ended the call while we're in a consultation
         if (currentConsultation && 
+            payload.new && 
+            payload.old &&
             payload.new.id === currentConsultation.id && 
             payload.new.status === 'completed' &&
-            payload.old?.status === 'in_progress') {
+            payload.old.status === 'in_progress') {
           toast({
             title: "Call Ended",
             description: "Doctor has ended the consultation.",
@@ -68,7 +70,8 @@ export const useConsultation = () => {
         throw error;
       }
 
-      setConsultations(data || []);
+      // Cast the data to the Consultation type
+      setConsultations((data || []) as Consultation[]);
     } catch (error) {
       console.error('Error fetching consultations:', error);
       toast({
@@ -86,9 +89,16 @@ export const useConsultation = () => {
       setLoading(true);
       const roomName = `consultation-${Date.now()}`;
       
+      // Get current user ID from Supabase auth
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      
       const { data, error } = await supabase
         .from('doctor_consultations')
         .insert({
+          user_id: user.id,
           doctor_id: doctorId,
           consultation_type: consultationType,
           status: 'booked',
@@ -161,11 +171,11 @@ export const useConsultation = () => {
         throw new Error(response.error);
       }
       
-      setCurrentConsultation(consultation);
+      setCurrentConsultation(consultation as Consultation);
       setAgoraToken(response.data.token);
       
       return {
-        consultation,
+        consultation: consultation as Consultation,
         token: response.data.token
       };
     } catch (error) {

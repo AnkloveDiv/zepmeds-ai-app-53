@@ -1,4 +1,3 @@
-
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -8,6 +7,7 @@ import { motion } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
 import { useConsultation } from '@/hooks/useConsultation';
 import ConsultationCallModal from './ConsultationCallModal';
+import { supabase } from "@/integrations/supabase/client";
 
 interface Doctor {
   name: string;
@@ -51,11 +51,9 @@ const ConsultationModal = ({
   const handleSendMessage = () => {
     if (!message.trim()) return;
     
-    // Add user message to chat
     setChatHistory(prev => [...prev, {sender: 'You', text: message}]);
     setMessage("");
     
-    // Simulate doctor response after delay
     setTimeout(() => {
       setChatHistory(prev => [...prev, {
         sender: doctor.name, 
@@ -66,7 +64,6 @@ const ConsultationModal = ({
   
   const handleStartChat = () => {
     setShowChat(true);
-    // Add initial message from doctor
     setChatHistory([{
       sender: doctor.name,
       text: `Hello! I'm Dr. ${doctor.name}. How can I help you today?`
@@ -100,7 +97,6 @@ const ConsultationModal = ({
     if (!bookingComplete || !consultationType) return;
     
     try {
-      // Find the most recent consultation with this doctor
       const { data: consultations, error } = await supabase
         .from('doctor_consultations')
         .select('*')
@@ -117,8 +113,8 @@ const ConsultationModal = ({
       
       if (result) {
         setCallData(result);
-        onOpenChange(false); // Close booking modal
-        setShowCallModal(true); // Open call modal
+        onOpenChange(false);
+        setShowCallModal(true);
       } else {
         throw new Error('Could not start consultation');
       }

@@ -43,7 +43,7 @@ const ConsultationCallModal = ({
   
   return (
     <Dialog open={open} onOpenChange={handleCloseAttempt}>
-      <DialogContent className="bg-background border-gray-800 text-white sm:max-w-3xl h-[90vh]" closeButton={false}>
+      <DialogContent className="bg-background border-gray-800 text-white sm:max-w-3xl h-[90vh]">
         {consultation.consultation_type === 'video' && (
           <VideoCall 
             token={token}
