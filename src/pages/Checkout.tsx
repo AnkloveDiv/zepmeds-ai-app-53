@@ -846,4 +846,118 @@ const Checkout = () => {
               )}
             </div>
             
-            <div className={`rounded
+            <div className={`rounded-xl transition-all ${
+              paymentMethod === "bnpl" 
+                ? "border-purple-500 bg-purple-900/30" 
+                : "border-gray-700 bg-black/40"
+            }`}>
+              <div className="p-4" onClick={() => {
+                setPaymentMethod("bnpl");
+                setShowBnplDetails(true);
+              }}>
+                <div className="flex items-center">
+                  <RadioGroupItem value="bnpl" id="bnpl" className="text-purple-400 mr-3" />
+                  <div className="flex items-center">
+                    <Server className="h-5 w-5 text-purple-400 mr-2" />
+                    <Label htmlFor="bnpl" className="text-white font-medium">Buy Now Pay Later</Label>
+                  </div>
+                </div>
+              </div>
+              
+              {paymentMethod === "bnpl" && showBnplDetails && (
+                <div className="p-4 pt-0 space-y-3">
+                  <Separator className="bg-blue-800/50 my-3" />
+                  
+                  <div>
+                    <Label htmlFor="bnplProvider" className="text-gray-400 text-sm">Select Provider</Label>
+                    <RadioGroup value={bnplProvider} onValueChange={setBnplProvider} className="space-y-2">
+                      {BNPL_PROVIDERS.map(provider => (
+                        <RadioGroupItem value={provider} key={provider}>
+                          <div className="flex items-center">
+                            <div className="mr-3">
+                              <RadioGroupItem 
+                                value={provider} 
+                                id={`bnpl-provider-${provider}`} 
+                                className="text-purple-400"
+                              />
+                            </div>
+                            <div>
+                              <div className="flex items-center">
+                                <div className="mr-2">
+                                  <Server className="h-5 w-5 text-purple-400" />
+                                </div>
+                                <div>
+                                  <h3 className="text-white font-medium">{provider}</h3>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </RadioGroupItem>
+                      ))}
+                    </RadioGroup>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className={`rounded-xl transition-all ${
+              paymentMethod === "upi" 
+                ? "border-green-500 bg-green-900/30" 
+                : "border-gray-700 bg-black/40"
+            }`}>
+              <div className="p-4" onClick={() => {
+                setPaymentMethod("upi");
+                setShowUpiDetails(true);
+              }}>
+                <div className="flex items-center">
+                  <RadioGroupItem value="upi" id="upi" className="text-green-400 mr-3" />
+                  <div className="flex items-center">
+                    <Wallet className="h-5 w-5 text-green-400 mr-2" />
+                    <Label htmlFor="upi" className="text-white font-medium">UPI Payment</Label>
+                  </div>
+                </div>
+              </div>
+              
+              {paymentMethod === "upi" && showUpiDetails && (
+                <div className="p-4 pt-0 space-y-3">
+                  <Separator className="bg-blue-800/50 my-3" />
+                  
+                  <div>
+                    <Label htmlFor="upiProvider" className="text-gray-400 text-sm">Select Provider</Label>
+                    <RadioGroup value={upiProvider} onValueChange={setUpiProvider} className="space-y-2">
+                      {UPI_PROVIDERS.map(provider => (
+                        <RadioGroupItem value={provider} key={provider}>
+                          <div className="flex items-center">
+                            <div className="mr-3">
+                              <RadioGroupItem 
+                                value={provider} 
+                                id={`upi-provider-${provider}`} 
+                                className="text-green-400"
+                              />
+                            </div>
+                            <div>
+                              <div className="flex items-center">
+                                <div className="mr-2">
+                                  <Wallet className="h-5 w-5 text-green-400" />
+                                </div>
+                                <div>
+                                  <h3 className="text-white font-medium">{provider}</h3>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </RadioGroupItem>
+                      ))}
+                    </RadioGroup>
+                  </div>
+                </div>
+              )}
+            </div>
+          </RadioGroup>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default Checkout;
