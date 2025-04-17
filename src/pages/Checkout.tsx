@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Header from "@/components/Header";
@@ -871,28 +872,26 @@ const Checkout = () => {
                   <div>
                     <Label htmlFor="bnplProvider" className="text-gray-400 text-sm">Select Provider</Label>
                     <RadioGroup value={bnplProvider} onValueChange={setBnplProvider} className="space-y-2">
-                      {BNPL_PROVIDERS.map(provider => (
-                        <RadioGroupItem value={provider} key={provider}>
-                          <div className="flex items-center">
-                            <div className="mr-3">
-                              <RadioGroupItem 
-                                value={provider} 
-                                id={`bnpl-provider-${provider}`} 
-                                className="text-purple-400"
-                              />
-                            </div>
-                            <div>
-                              <div className="flex items-center">
-                                <div className="mr-2">
-                                  <Server className="h-5 w-5 text-purple-400" />
-                                </div>
-                                <div>
-                                  <h3 className="text-white font-medium">{provider}</h3>
-                                </div>
+                      {BNPL_PROVIDERS.map((provider: string) => (
+                        <div key={provider} className="flex items-center">
+                          <div className="mr-3">
+                            <RadioGroupItem 
+                              value={provider} 
+                              id={`bnpl-provider-${provider}`} 
+                              className="text-purple-400"
+                            />
+                          </div>
+                          <div>
+                            <div className="flex items-center">
+                              <div className="mr-2">
+                                <Server className="h-5 w-5 text-purple-400" />
+                              </div>
+                              <div>
+                                <h3 className="text-white font-medium">{provider}</h3>
                               </div>
                             </div>
                           </div>
-                        </RadioGroupItem>
+                        </div>
                       ))}
                     </RadioGroup>
                   </div>
@@ -925,28 +924,26 @@ const Checkout = () => {
                   <div>
                     <Label htmlFor="upiProvider" className="text-gray-400 text-sm">Select Provider</Label>
                     <RadioGroup value={upiProvider} onValueChange={setUpiProvider} className="space-y-2">
-                      {UPI_PROVIDERS.map(provider => (
-                        <RadioGroupItem value={provider} key={provider}>
-                          <div className="flex items-center">
-                            <div className="mr-3">
-                              <RadioGroupItem 
-                                value={provider} 
-                                id={`upi-provider-${provider}`} 
-                                className="text-green-400"
-                              />
-                            </div>
-                            <div>
-                              <div className="flex items-center">
-                                <div className="mr-2">
-                                  <Wallet className="h-5 w-5 text-green-400" />
-                                </div>
-                                <div>
-                                  <h3 className="text-white font-medium">{provider}</h3>
-                                </div>
+                      {UPI_PROVIDERS.map((provider: string) => (
+                        <div key={provider} className="flex items-center">
+                          <div className="mr-3">
+                            <RadioGroupItem 
+                              value={provider} 
+                              id={`upi-provider-${provider}`} 
+                              className="text-green-400"
+                            />
+                          </div>
+                          <div>
+                            <div className="flex items-center">
+                              <div className="mr-2">
+                                <Wallet className="h-5 w-5 text-green-400" />
+                              </div>
+                              <div>
+                                <h3 className="text-white font-medium">{provider}</h3>
                               </div>
                             </div>
                           </div>
-                        </RadioGroupItem>
+                        </div>
                       ))}
                     </RadioGroup>
                   </div>
