@@ -6,6 +6,8 @@ import { Star, Video, Phone, MessageSquare } from "lucide-react";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
+import { useConsultation } from '@/hooks/useConsultation';
+import ConsultationCallModal from './ConsultationCallModal';
 
 interface Doctor {
   name: string;
@@ -31,9 +33,18 @@ const ConsultationModal = ({
   onStartConsultation 
 }: ConsultationModalProps) => {
   const { toast } = useToast();
+  const { bookConsultation, startConsultation, endConsultation } = useConsultation();
   const [showChat, setShowChat] = useState(false);
   const [message, setMessage] = useState("");
   const [chatHistory, setChatHistory] = useState<Array<{sender: string, text: string}>>([]);
+  const [isBooking, setIsBooking] = useState(false);
+  const [bookingComplete, setBookingComplete] = useState(false);
+  const [consultationType, setConsultationType] = useState<'video' | 'audio' | 'chat' | null>(null);
+  const [callData, setCallData] = useState<{
+    consultation: any;
+    token: string;
+  } | null>(null);
+  const [showCallModal, setShowCallModal] = useState(false);
   
   if (!doctor) return null;
 
@@ -62,13 +73,72 @@ const ConsultationModal = ({
     }]);
   };
   
-  const handleCallOrVideo = (type: "video" | "audio") => {
-    toast({
-      title: `Starting ${type} consultation`,
-      description: `Connecting you with Dr. ${doctor.name}...`,
-    });
-    onStartConsultation(type);
-    onOpenChange(false);
+  const handleBookConsultation = async (type: 'video' | 'audio' | 'chat') => {
+    setIsBooking(true);
+    setConsultationType(type);
+    
+    try {
+      const booked = await bookConsultation(doctor.name, type);
+      
+      if (booked) {
+        setBookingComplete(true);
+      } else {
+        throw new Error('Booking failed');
+      }
+    } catch (error) {
+      toast({
+        title: "Booking failed",
+        description: "Could not book the consultation. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsBooking(false);
+    }
+  };
+  
+  const handleStartCall = async () => {
+    if (!bookingComplete || !consultationType) return;
+    
+    try {
+      // Find the most recent consultation with this doctor
+      const { data: consultations, error } = await supabase
+        .from('doctor_consultations')
+        .select('*')
+        .eq('doctor_id', doctor.name)
+        .eq('status', 'booked')
+        .order('created_at', { ascending: false })
+        .limit(1);
+        
+      if (error || !consultations || consultations.length === 0) {
+        throw new Error('Could not find consultation');
+      }
+      
+      const result = await startConsultation(consultations[0].id);
+      
+      if (result) {
+        setCallData(result);
+        onOpenChange(false); // Close booking modal
+        setShowCallModal(true); // Open call modal
+      } else {
+        throw new Error('Could not start consultation');
+      }
+    } catch (error) {
+      toast({
+        title: "Connection failed",
+        description: "Could not start the consultation. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const handleEndCall = async () => {
+    if (!callData?.consultation?.id) return;
+    
+    await endConsultation(callData.consultation.id);
+    setShowCallModal(false);
+    setCallData(null);
+    setBookingComplete(false);
+    setConsultationType(null);
   };
 
   if (showChat) {
@@ -132,69 +202,146 @@ const ConsultationModal = ({
     );
   }
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-background border-gray-800 text-white sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-xl">Consult with {doctor.name}</DialogTitle>
-        </DialogHeader>
-        
-        <div className="py-4">
-          <div className="flex items-center gap-4 mb-4">
-            <Avatar className="h-14 w-14 rounded-lg">
-              <AvatarFallback className="rounded-lg bg-zepmeds-purple/20 text-zepmeds-purple">
-                {doctor.name.split(" ").map((n: string) => n[0]).join("")}
-              </AvatarFallback>
-            </Avatar>
+  if (bookingComplete) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="bg-background border-gray-800 text-white sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Consultation Booked!</DialogTitle>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4 mb-6">
+              <h3 className="font-medium text-green-400 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                  <polyline points="22 4 12 14.01 9 11.01" />
+                </svg>
+                Consultation booked successfully
+              </h3>
+              <p className="text-sm text-gray-300 mt-2">
+                Your {consultationType} consultation with Dr. {doctor.name} is ready to start.
+              </p>
+            </div>
             
-            <div>
-              <h3 className="font-medium">{doctor.name}</h3>
-              <p className="text-sm text-gray-400">{doctor.specialty}</p>
-              <div className="flex items-center mt-1">
-                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 mr-1" />
-                <span className="text-xs">{doctor.rating}</span>
+            <div className="flex items-center gap-4 mb-6">
+              <Avatar className="h-14 w-14 rounded-lg">
+                <AvatarFallback className="rounded-lg bg-zepmeds-purple/20 text-zepmeds-purple">
+                  {doctor.name.split(" ").map((n: string) => n[0]).join("")}
+                </AvatarFallback>
+              </Avatar>
+              
+              <div>
+                <h3 className="font-medium">{doctor.name}</h3>
+                <p className="text-sm text-gray-400">{doctor.specialty}</p>
+                <div className="flex items-center mt-1">
+                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 mr-1" />
+                  <span className="text-xs">{doctor.rating}</span>
+                </div>
               </div>
             </div>
-          </div>
-          
-          <div className="mb-4 p-3 bg-black/20 rounded-lg">
-            <h4 className="font-medium mb-1">About Doctor</h4>
-            <p className="text-sm text-gray-400">{doctor.bio}</p>
-          </div>
-          
-          <div className="mb-6">
-            <h4 className="font-medium mb-2">Consultation Fee</h4>
-            <p className="text-zepmeds-purple font-bold text-xl">₹{doctor.price}</p>
-          </div>
-          
-          <div className="space-y-2">
+            
             <Button 
+              onClick={handleStartCall}
               className="w-full bg-zepmeds-purple hover:bg-zepmeds-purple/90 flex justify-center items-center gap-2"
-              onClick={() => handleCallOrVideo("video")}
             >
-              <Video size={16} />
-              <span>Video Call</span>
-            </Button>
-            
-            <Button 
-              className="w-full bg-green-600 hover:bg-green-700 flex justify-center items-center gap-2"
-              onClick={() => handleCallOrVideo("audio")}
-            >
-              <Phone size={16} />
-              <span>Voice Call</span>
-            </Button>
-            
-            <Button 
-              className="w-full bg-blue-600 hover:bg-blue-700 flex justify-center items-center gap-2"
-              onClick={handleStartChat}
-            >
-              <MessageSquare size={16} />
-              <span>Chat</span>
+              {consultationType === 'video' && <Video size={16} />}
+              {consultationType === 'audio' && <Phone size={16} />}
+              {consultationType === 'chat' && <MessageSquare size={16} />}
+              <span>Start {consultationType} consultation</span>
             </Button>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="bg-background border-gray-800 text-white sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Consult with {doctor.name}</DialogTitle>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <div className="flex items-center gap-4 mb-4">
+              <Avatar className="h-14 w-14 rounded-lg">
+                <AvatarFallback className="rounded-lg bg-zepmeds-purple/20 text-zepmeds-purple">
+                  {doctor.name.split(" ").map((n: string) => n[0]).join("")}
+                </AvatarFallback>
+              </Avatar>
+              
+              <div>
+                <h3 className="font-medium">{doctor.name}</h3>
+                <p className="text-sm text-gray-400">{doctor.specialty}</p>
+                <div className="flex items-center mt-1">
+                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 mr-1" />
+                  <span className="text-xs">{doctor.rating}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mb-4 p-3 bg-black/20 rounded-lg">
+              <h4 className="font-medium mb-1">About Doctor</h4>
+              <p className="text-sm text-gray-400">{doctor.bio}</p>
+            </div>
+            
+            <div className="mb-6">
+              <h4 className="font-medium mb-2">Consultation Fee</h4>
+              <p className="text-zepmeds-purple font-bold text-xl">₹{doctor.price}</p>
+            </div>
+            
+            <div className="space-y-2">
+              <Button 
+                className="w-full bg-zepmeds-purple hover:bg-zepmeds-purple/90 flex justify-center items-center gap-2"
+                onClick={() => handleBookConsultation('video')}
+                disabled={isBooking}
+              >
+                <Video size={16} />
+                <span>Video Call</span>
+                {isBooking && consultationType === 'video' && (
+                  <span className="ml-2 animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                )}
+              </Button>
+              
+              <Button 
+                className="w-full bg-green-600 hover:bg-green-700 flex justify-center items-center gap-2"
+                onClick={() => handleBookConsultation('audio')}
+                disabled={isBooking}
+              >
+                <Phone size={16} />
+                <span>Voice Call</span>
+                {isBooking && consultationType === 'audio' && (
+                  <span className="ml-2 animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                )}
+              </Button>
+              
+              <Button 
+                className="w-full bg-blue-600 hover:bg-blue-700 flex justify-center items-center gap-2"
+                onClick={() => handleBookConsultation('chat')}
+                disabled={isBooking}
+              >
+                <MessageSquare size={16} />
+                <span>Chat</span>
+                {isBooking && consultationType === 'chat' && (
+                  <span className="ml-2 animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      <ConsultationCallModal
+        open={showCallModal}
+        onOpenChange={setShowCallModal}
+        consultation={callData?.consultation || null}
+        token={callData?.token || null}
+        doctorName={doctor.name}
+        onEndCall={handleEndCall}
+      />
+    </>
   );
 };
 

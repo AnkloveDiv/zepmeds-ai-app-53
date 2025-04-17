@@ -15,6 +15,8 @@ import AudioConsultationOption from "@/components/doctor/AudioConsultationOption
 import SpecialtiesSection from "@/components/doctor/SpecialtiesSection";
 import ConsultationModal from "@/components/doctor/ConsultationModal";
 import AppointmentModal from "@/components/doctor/AppointmentModal";
+import { useConsultation } from "@/hooks/useConsultation";
+import { supabase } from "@/integrations/supabase/client";
 
 const DoctorConsultation = () => {
   const [activeCategory, setActiveCategory] = useState("All");
@@ -25,6 +27,7 @@ const DoctorConsultation = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [selectedTime, setSelectedTime] = useState<string>("");
   const { toast } = useToast();
+  const { bookConsultation } = useConsultation();
   
   // Use the custom back navigation hook
   useBackNavigation();
@@ -62,8 +65,8 @@ const DoctorConsultation = () => {
     }
   };
 
-  const handleConfirmAppointment = () => {
-    if (!selectedDate || !selectedTime) {
+  const handleConfirmAppointment = async () => {
+    if (!selectedDate || !selectedTime || !selectedDoctor) {
       toast({
         title: "Error",
         description: "Please select both date and time for your appointment",
@@ -72,13 +75,40 @@ const DoctorConsultation = () => {
       return;
     }
 
-    toast({
-      title: "Appointment Booked",
-      description: `Your appointment with ${selectedDoctor?.name || "the doctor"} is confirmed for ${selectedDate.toDateString()} at ${selectedTime}`,
-      duration: 5000,
-    });
-    
-    setIsAppointmentModalOpen(false);
+    try {
+      // Save appointment to database
+      const appointmentDate = new Date(selectedDate);
+      const [hours, minutes] = selectedTime.split(':').map(Number);
+      const isPM = selectedTime.includes('PM');
+      
+      if (hours < 12 && isPM) {
+        appointmentDate.setHours(hours + 12);
+      } else {
+        appointmentDate.setHours(hours);
+      }
+      appointmentDate.setMinutes(minutes);
+      
+      // Book appointment as scheduled consultation
+      const booked = await bookConsultation(selectedDoctor.name, "video");
+      
+      if (booked) {
+        toast({
+          title: "Appointment Booked",
+          description: `Your appointment with ${selectedDoctor?.name} is confirmed for ${selectedDate.toDateString()} at ${selectedTime}`,
+          duration: 5000,
+        });
+      } else {
+        throw new Error("Failed to book appointment");
+      }
+    } catch (error) {
+      toast({
+        title: "Booking Failed",
+        description: "Could not book your appointment. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsAppointmentModalOpen(false);
+    }
   };
 
   const startConsultation = (type: "video" | "chat" | "audio") => {
@@ -92,7 +122,7 @@ const DoctorConsultation = () => {
     
     setIsConsultModalOpen(false);
     
-    // In a real app, this would initiate the actual consultation
+    // The actual consultation handling is now in ConsultationModal component
   };
   
   return (

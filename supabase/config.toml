@@ -42,3 +42,7 @@ port = 54325
 [[functions.function]]
 name = "emergency-service"
 verify_jwt = true
+
+[[functions.function]]
+name = "generate-agora-token"
+verify_jwt = true

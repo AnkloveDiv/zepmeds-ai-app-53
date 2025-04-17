@@ -162,6 +162,45 @@ export type Database = {
         }
         Relationships: []
       }
+      doctor_consultations: {
+        Row: {
+          consultation_type: string
+          created_at: string
+          doctor_id: string
+          ended_at: string | null
+          id: string
+          room_name: string
+          started_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          consultation_type: string
+          created_at?: string
+          doctor_id: string
+          ended_at?: string | null
+          id?: string
+          room_name: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          consultation_type?: string
+          created_at?: string
+          doctor_id?: string
+          ended_at?: string | null
+          id?: string
+          room_name?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       emergency_requests: {
         Row: {
           ambulance_id: string | null
@@ -549,7 +588,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_agora_token: {
+        Args: { p_channel_name: string; p_uid: string; p_role: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
