@@ -15,11 +15,34 @@ import PrescriptionUpload from "@/components/checkout/PrescriptionUpload";
 import { createOrder } from "@/services/orders/createOrder";
 import { UPI_PROVIDERS, BNPL_PROVIDERS, VALID_COUPONS } from "@/constants";
 import { getDashboardApiService } from "@/pages/dashboardApiService";
+import { OrderDataPayload } from "@/types/order";
+import { supabase } from "@/integrations/supabase/client";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  MapPin,
+  Plus,
+  Shield,
+  Truck,
+  Tag,
+  Wallet,
+  CreditCard,
+  DollarSign,
+  Smartphone,
+  IndianRupee,
+  Clock,
+  Server,
+  Calendar
+} from "lucide-react";
 
 const Checkout = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isLoggedIn, isLoading } = useAuth();
+  const { user, isLoggedIn, isLoading } = useAuth();
   const { ExitConfirmDialog } = useBackNavigation();
   
   const [cartItems, setCartItems] = useState<any[]>([]);
