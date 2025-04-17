@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +8,7 @@ import { Address, saveUserAddress } from '@/services/addressService';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface AddressFormProps {
   onAddressAdded: (address: Address) => void;
@@ -18,13 +18,26 @@ interface AddressFormProps {
 const AddressForm = ({ onAddressAdded, onCancel }: AddressFormProps) => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { isLoggedIn } = useAuth();
+  const location = useLocation();
+  const { isLoggedIn, user } = useAuth();
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [zipcode, setZipcode] = useState('');
   const [isDefault, setIsDefault] = useState(true);
   const [loading, setLoading] = useState(false);
+
+  // Check authentication status when component mounts
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        console.log("No authenticated session found in AddressForm");
+      }
+    };
+    
+    checkAuthStatus();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,27 +52,21 @@ const AddressForm = ({ onAddressAdded, onCancel }: AddressFormProps) => {
     }
 
     // Check if user is logged in
-    if (!isLoggedIn) {
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) {
       toast({
         title: "Authentication Required",
         description: "Please log in to save an address",
         variant: "destructive"
       });
-      navigate('/login', { state: { redirectAfterLogin: window.location.pathname } });
+      navigate('/login', { state: { redirectAfterLogin: location.pathname } });
       return;
     }
     
     setLoading(true);
     
     try {
-      // Get current session to retrieve user ID
-      const { data: { session } } = await supabase.auth.getSession();
-      const userId = session?.user?.id;
-      
-      if (!userId) {
-        throw new Error("User ID not found. Please log in again.");
-      }
-      
+      // Save the address to Supabase
       const newAddress = await saveUserAddress({
         address,
         city,
@@ -76,11 +83,24 @@ const AddressForm = ({ onAddressAdded, onCancel }: AddressFormProps) => {
       onAddressAdded(newAddress);
     } catch (error) {
       console.error('Error saving address:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save address. Please try again.",
-        variant: "destructive"
-      });
+      
+      // Check if the error is due to authentication
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        toast({
+          title: "Authentication Required",
+          description: "Your login session has expired. Please log in again.",
+          variant: "destructive"
+        });
+        navigate('/login', { state: { redirectAfterLogin: location.pathname } });
+        return;
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to save address. Please try again.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setLoading(false);
     }

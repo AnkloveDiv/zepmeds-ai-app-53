@@ -44,24 +44,33 @@ export const saveUserAddress = async (address: Omit<Address, 'id' | 'user_id' | 
   
   // If this is the first address or is_default is true, make sure all other addresses are not default
   if (address.is_default) {
-    await supabase
-      .from('addresses')
-      .update({ is_default: false })
-      .eq('user_id', session.user.id);
+    try {
+      await supabase
+        .from('addresses')
+        .update({ is_default: false })
+        .eq('user_id', session.user.id);
+    } catch (error) {
+      console.error('Error updating existing addresses:', error);
+      // Continue with the insert even if this fails
+    }
   }
 
   const { data, error } = await supabase
     .from('addresses')
-    .insert({
+    .insert([{  // Note: Wrap the object in an array for proper insert format
       ...address,
       user_id: session.user.id
-    })
+    }])
     .select()
     .single();
 
   if (error) {
     console.error('Error saving address:', error);
     throw error;
+  }
+
+  if (!data) {
+    throw new Error('No data returned from address insert');
   }
 
   return data;
