@@ -243,30 +243,51 @@ export type Database = {
       }
       orders: {
         Row: {
+          amount: number | null
           assigned_rider_id: string | null
           created_at: string
+          customer_name: string | null
+          customer_phone: string | null
+          delivery_location: string | null
+          earning: number | null
           id: string
+          items: Json | null
           order_id: string
+          pickup_location: string | null
           prescription_image_url: string | null
           rider_id: string | null
           status: string
           updated_at: string
         }
         Insert: {
+          amount?: number | null
           assigned_rider_id?: string | null
           created_at?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          delivery_location?: string | null
+          earning?: number | null
           id?: string
+          items?: Json | null
           order_id: string
+          pickup_location?: string | null
           prescription_image_url?: string | null
           rider_id?: string | null
           status?: string
           updated_at?: string
         }
         Update: {
+          amount?: number | null
           assigned_rider_id?: string | null
           created_at?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          delivery_location?: string | null
+          earning?: number | null
           id?: string
+          items?: Json | null
           order_id?: string
+          pickup_location?: string | null
           prescription_image_url?: string | null
           rider_id?: string | null
           status?: string
@@ -474,34 +495,52 @@ export type Database = {
       }
       riders: {
         Row: {
+          aadhaar_url: string | null
           created_at: string
+          current_location: string | null
           email: string
           id: string
           is_online: boolean | null
+          kyc_verified: boolean | null
+          license_url: string | null
           name: string
+          pan_url: string | null
           phone: string
           status: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
+          aadhaar_url?: string | null
           created_at?: string
+          current_location?: string | null
           email: string
           id?: string
           is_online?: boolean | null
+          kyc_verified?: boolean | null
+          license_url?: string | null
           name: string
+          pan_url?: string | null
           phone: string
           status?: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
+          aadhaar_url?: string | null
           created_at?: string
+          current_location?: string | null
           email?: string
           id?: string
           is_online?: boolean | null
+          kyc_verified?: boolean | null
+          license_url?: string | null
           name?: string
+          pan_url?: string | null
           phone?: string
           status?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
