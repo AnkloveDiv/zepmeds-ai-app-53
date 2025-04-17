@@ -19,13 +19,38 @@ const AddressForm = ({ onAddressAdded, onCancel }: AddressFormProps) => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, isLoading } = useAuth();
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [zipcode, setZipcode] = useState('');
   const [isDefault, setIsDefault] = useState(true);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Check authentication status when component mounts
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      
+      if (!data.session) {
+        console.log("No authenticated session found in AddressForm");
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to save an address",
+          variant: "destructive"
+        });
+        
+        // Save the current path to redirect back after login
+        navigate('/login', { 
+          state: { redirectAfterLogin: location.pathname }
+        });
+      } else {
+        console.log("User is authenticated in AddressForm, session:", data.session.user.id);
+      }
+    };
+    
+    checkAuth();
+  }, [navigate, toast, location.pathname]);
 
   const validateForm = () => {
     const trimmedAddress = address.trim();
@@ -55,6 +80,7 @@ const AddressForm = ({ onAddressAdded, onCancel }: AddressFormProps) => {
     console.log("Form is valid, proceeding with submission");
     console.log("Form data:", { address, city, state, zipcode, isDefault });
 
+    // Check authentication status right before submission
     const { data } = await supabase.auth.getSession();
     if (!data.session) {
       toast({
@@ -78,6 +104,7 @@ const AddressForm = ({ onAddressAdded, onCancel }: AddressFormProps) => {
       };
       
       console.log("Sending address data:", addressData);
+      console.log("Current user ID:", data.session.user.id);
       
       const newAddress = await saveUserAddress(addressData);
       console.log("Response from saveUserAddress:", newAddress);
@@ -88,22 +115,27 @@ const AddressForm = ({ onAddressAdded, onCancel }: AddressFormProps) => {
       });
       
       onAddressAdded(newAddress);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving address:', error);
       
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
+      // Check if authentication error
+      if (error.message === "User not authenticated" || error.code === "PGRST301") {
         toast({
           title: "Authentication Required",
           description: "Your login session has expired. Please log in again.",
           variant: "destructive"
         });
         navigate('/login', { state: { redirectAfterLogin: location.pathname } });
-        return;
+      } else if (error.code === "42501") { // Permission denied error
+        toast({
+          title: "Permission Denied",
+          description: "You don't have permission to save addresses.",
+          variant: "destructive"
+        });
       } else {
         toast({
           title: "Error",
-          description: "Failed to save address. Please try again.",
+          description: error.message || "Failed to save address. Please try again.",
           variant: "destructive"
         });
       }
@@ -111,19 +143,6 @@ const AddressForm = ({ onAddressAdded, onCancel }: AddressFormProps) => {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    const checkAuthStatus = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) {
-        console.log("No authenticated session found in AddressForm");
-      } else {
-        console.log("User is authenticated in AddressForm, session:", data.session.user.id);
-      }
-    };
-    
-    checkAuthStatus();
-  }, []);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">

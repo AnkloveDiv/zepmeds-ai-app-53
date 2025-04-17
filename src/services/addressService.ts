@@ -14,80 +14,96 @@ export interface Address {
 }
 
 export const getUserAddresses = async (): Promise<Address[]> => {
-  // Get the current user
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.user) {
-    console.error('No authenticated user found');
+  try {
+    // Get the current user
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      console.error('No authenticated user found');
+      return [];
+    }
+
+    console.log('Fetching addresses for user:', session.user.id);
+    
+    const { data: addresses, error } = await supabase
+      .from('addresses')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .order('is_default', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching addresses:', error);
+      throw error;
+    }
+
+    return addresses || [];
+  } catch (error) {
+    console.error('Error in getUserAddresses:', error);
     return [];
   }
-
-  const { data: addresses, error } = await supabase
-    .from('addresses')
-    .select('*')
-    .eq('user_id', session.user.id)
-    .order('is_default', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching addresses:', error);
-    throw error;
-  }
-
-  return addresses || [];
 };
 
 export const saveUserAddress = async (address: Omit<Address, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<Address> => {
-  // Get the current user
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.user) {
-    throw new Error('User not authenticated');
-  }
-  
-  console.log("Data being sent to Supabase:", {
-    ...address,
-    user_id: session.user.id
-  });
-  
-  // If this is the first address or is_default is true, make sure all other addresses are not default
-  if (address.is_default) {
-    try {
-      await supabase
-        .from('addresses')
-        .update({ is_default: false })
-        .eq('user_id', session.user.id);
-    } catch (error) {
-      console.error('Error updating existing addresses:', error);
-      // Continue with the insert even if this fails
+  try {
+    // Get the current user session
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      console.error('User not authenticated when saving address');
+      throw new Error('User not authenticated');
     }
-  }
-
-  // Make sure all string fields are properly trimmed
-  const sanitizedAddress = {
-    address: address.address.trim(),
-    city: address.city.trim(),
-    state: address.state.trim(),
-    zipcode: address.zipcode.trim(),
-    is_default: address.is_default
-  };
-
-  const { data, error } = await supabase
-    .from('addresses')
-    .insert([{  
-      ...sanitizedAddress,
+    
+    console.log("Data being sent to Supabase:", {
+      ...address,
       user_id: session.user.id
-    }])
-    .select()
-    .single();
+    });
+    
+    // If this is the first address or is_default is true, make sure all other addresses are not default
+    if (address.is_default) {
+      try {
+        await supabase
+          .from('addresses')
+          .update({ is_default: false })
+          .eq('user_id', session.user.id);
+      } catch (error) {
+        console.error('Error updating existing addresses:', error);
+        // Continue with the insert even if this fails
+      }
+    }
 
-  if (error) {
-    console.error('Error saving address:', error);
+    // Make sure all string fields are properly trimmed
+    const sanitizedAddress = {
+      address: address.address.trim(),
+      city: address.city.trim(),
+      state: address.state.trim(),
+      zipcode: address.zipcode.trim(),
+      is_default: address.is_default
+    };
+
+    // Explicitly insert with the user_id from the session
+    const { data, error } = await supabase
+      .from('addresses')
+      .insert([{  
+        ...sanitizedAddress,
+        user_id: session.user.id
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error saving address:', error);
+      console.error('Error details:', error.details, error.hint, error.message);
+      throw error;
+    }
+
+    if (!data) {
+      throw new Error('No data returned from address insert');
+    }
+
+    console.log('Address saved successfully:', data);
+    return data;
+  } catch (error) {
+    console.error('Error in saveUserAddress:', error);
     throw error;
   }
-
-  if (!data) {
-    throw new Error('No data returned from address insert');
-  }
-
-  return data;
 };
 
 export const updateUserAddress = async (addressId: string, address: Partial<Omit<Address, 'id' | 'user_id' | 'created_at' | 'updated_at'>>): Promise<Address> => {

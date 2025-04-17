@@ -4,11 +4,12 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export const useAuthGuard = (redirectPath = '/login') => {
   const { isLoggedIn, isLoading } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
   const location = useLocation();
   const [authChecked, setAuthChecked] = useState(false);
 
@@ -20,11 +21,18 @@ export const useAuthGuard = (redirectPath = '/login') => {
     }
 
     const checkAuth = async () => {
+      console.log("Checking auth in useAuthGuard");
       // Get the current session directly from Supabase
-      const { data } = await supabase.auth.getSession();
+      const { data, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error("Error checking auth session:", error);
+        toast.error("Authentication error. Please try logging in again.");
+      }
       
       if (!data.session && !isLoggedIn) {
-        toast({
+        console.log("No auth session found, redirecting to login");
+        uiToast({
           title: "Authentication Required",
           description: "Please log in to access this page",
           variant: "destructive"
@@ -34,6 +42,8 @@ export const useAuthGuard = (redirectPath = '/login') => {
         navigate(redirectPath, { 
           state: { redirectAfterLogin: location.pathname }
         });
+      } else {
+        console.log("Auth session found:", data.session?.user?.id);
       }
       
       setAuthChecked(true);
@@ -42,10 +52,12 @@ export const useAuthGuard = (redirectPath = '/login') => {
     if (!isLoading) {
       checkAuth();
     }
-  }, [isLoggedIn, isLoading, navigate, redirectPath, toast, location.pathname]);
+  }, [isLoggedIn, isLoading, navigate, redirectPath, uiToast, location.pathname]);
 
   return {
     isAuthenticated: isLoggedIn,
     isAuthLoading: isLoading || !authChecked
   };
 };
+
+export default useAuthGuard;
