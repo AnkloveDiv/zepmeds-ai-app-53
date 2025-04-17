@@ -51,6 +51,9 @@ export const saveUserAddress = async (address: Omit<Address, 'id' | 'user_id' | 
       throw new Error('User not authenticated');
     }
     
+    // Ensure we're using a fresh auth token
+    await supabase.auth.refreshSession();
+    
     console.log("Data being sent to Supabase:", {
       ...address,
       user_id: session.user.id

@@ -19,38 +19,39 @@ const AddressForm = ({ onAddressAdded, onCancel }: AddressFormProps) => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const { isLoggedIn, isLoading } = useAuth();
+  const { isLoggedIn, session } = useAuth();
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [zipcode, setZipcode] = useState('');
   const [isDefault, setIsDefault] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
-    // Check authentication status when component mounts
+    // Check authentication only once when component mounts
     const checkAuth = async () => {
-      const { data } = await supabase.auth.getSession();
+      if (authChecked) return;
       
-      if (!data.session) {
-        console.log("No authenticated session found in AddressForm");
-        toast({
-          title: "Authentication Required",
-          description: "Please log in to save an address",
-          variant: "destructive"
-        });
+      try {
+        const { data } = await supabase.auth.getSession();
         
-        // Save the current path to redirect back after login
-        navigate('/login', { 
-          state: { redirectAfterLogin: location.pathname }
-        });
-      } else {
-        console.log("User is authenticated in AddressForm, session:", data.session.user.id);
+        if (!data.session && !isLoggedIn) {
+          console.log("No authenticated session found in AddressForm");
+          setAuthChecked(true);
+          // We don't redirect here to prevent loops - we'll handle this during form submission
+        } else {
+          console.log("User authenticated in AddressForm:", data.session?.user?.id);
+          setAuthChecked(true);
+        }
+      } catch (error) {
+        console.error("Error checking auth:", error);
+        setAuthChecked(true);
       }
     };
     
     checkAuth();
-  }, [navigate, toast, location.pathname]);
+  }, [isLoggedIn, authChecked]);
 
   const validateForm = () => {
     const trimmedAddress = address.trim();
@@ -80,7 +81,7 @@ const AddressForm = ({ onAddressAdded, onCancel }: AddressFormProps) => {
     console.log("Form is valid, proceeding with submission");
     console.log("Form data:", { address, city, state, zipcode, isDefault });
 
-    // Check authentication status right before submission
+    // Check authentication right before submission
     const { data } = await supabase.auth.getSession();
     if (!data.session) {
       toast({

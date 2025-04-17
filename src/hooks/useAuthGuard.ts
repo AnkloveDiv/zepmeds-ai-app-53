@@ -12,6 +12,7 @@ export const useAuthGuard = (redirectPath = '/login') => {
   const { toast: uiToast } = useToast();
   const location = useLocation();
   const [authChecked, setAuthChecked] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     // Check if already on the login page to prevent infinite redirect loops
@@ -19,6 +20,9 @@ export const useAuthGuard = (redirectPath = '/login') => {
       setAuthChecked(true);
       return;
     }
+
+    // Avoid duplicate checks
+    if (authChecked) return;
 
     const checkAuth = async () => {
       console.log("Checking auth in useAuthGuard");
@@ -42,8 +46,10 @@ export const useAuthGuard = (redirectPath = '/login') => {
         navigate(redirectPath, { 
           state: { redirectAfterLogin: location.pathname }
         });
+        setIsAuthenticated(false);
       } else {
         console.log("Auth session found:", data.session?.user?.id);
+        setIsAuthenticated(true);
       }
       
       setAuthChecked(true);
@@ -52,10 +58,10 @@ export const useAuthGuard = (redirectPath = '/login') => {
     if (!isLoading) {
       checkAuth();
     }
-  }, [isLoggedIn, isLoading, navigate, redirectPath, uiToast, location.pathname]);
+  }, [isLoggedIn, isLoading, navigate, redirectPath, uiToast, location.pathname, authChecked]);
 
   return {
-    isAuthenticated: isLoggedIn,
+    isAuthenticated: isAuthenticated,
     isAuthLoading: isLoading || !authChecked
   };
 };

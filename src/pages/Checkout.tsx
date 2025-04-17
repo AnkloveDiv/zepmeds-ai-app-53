@@ -44,7 +44,7 @@ const Checkout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { user, isLoggedIn } = useAuth();
+  const { user, isLoggedIn, session } = useAuth();
   const auth = useAuthGuard();
   const { ExitConfirmDialog } = useBackNavigation();
   
@@ -81,22 +81,34 @@ const Checkout = () => {
   
   const [bnplProvider, setBnplProvider] = useState("simpl");
   const [loading, setLoading] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
   
   useEffect(() => {
-    if (location.pathname === '/login' || location.pathname === '/verify') {
-      return;
-    }
-
     const checkUserAuth = async () => {
+      if (authChecked) return;
+      
+      console.log("Checking authentication status in Checkout");
       const { data } = await supabase.auth.getSession();
+      
       if (!data.session && !isLoggedIn) {
-        console.log("No auth session found, redirecting to login");
-        navigate("/login");
+        console.log("No auth session found, redirecting to login from Checkout");
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to proceed with checkout",
+          variant: "destructive"
+        });
+        
+        navigate("/login", { 
+          state: { redirectAfterLogin: location.pathname } 
+        });
+      } else {
+        console.log("Auth session found in Checkout:", data.session?.user?.id);
+        setAuthChecked(true);
       }
     };
     
     checkUserAuth();
-  }, [navigate, toast, isLoggedIn, location.pathname]);
+  }, [navigate, toast, isLoggedIn, location.pathname, authChecked]);
   
   useEffect(() => {
     const savedCart = localStorage.getItem("cart");
@@ -118,16 +130,21 @@ const Checkout = () => {
   }, [navigate]);
   
   useEffect(() => {
+    if (!authChecked || !isLoggedIn || !session) return;
+    
     const loadAddresses = async () => {
       try {
+        console.log("Loading addresses for authenticated user");
         const userAddresses = await getUserAddresses();
         setAddresses(userAddresses);
         
-        const defaultAddress = userAddresses.find(addr => addr.is_default);
-        if (defaultAddress) {
-          setSelectedAddress(defaultAddress.id);
-        } else if (userAddresses.length > 0) {
-          setSelectedAddress(userAddresses[0].id);
+        if (userAddresses.length > 0) {
+          const defaultAddress = userAddresses.find(addr => addr.is_default);
+          if (defaultAddress) {
+            setSelectedAddress(defaultAddress.id);
+          } else {
+            setSelectedAddress(userAddresses[0].id);
+          }
         } else {
           setNeedsAddress(true);
           setShowAddressForm(true);
@@ -138,7 +155,7 @@ const Checkout = () => {
     };
     
     loadAddresses();
-  }, []);
+  }, [authChecked, isLoggedIn, session]);
 
   useEffect(() => {
     if (paymentMethod !== "card") {
@@ -351,6 +368,17 @@ const Checkout = () => {
       return;
     }
     
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to place your order",
+        variant: "destructive"
+      });
+      navigate("/login", { state: { redirectAfterLogin: location.pathname } });
+      return;
+    }
+    
     setLoading(true);
     
     try {
@@ -421,7 +449,7 @@ const Checkout = () => {
   const walletAmountToUse = useWallet ? Math.min(walletBalance, totalAmount) : 0;
   const finalAmount = Math.max(0, totalAmount - walletAmountToUse);
   
-  if (auth.isAuthLoading) {
+  if (auth.isAuthLoading || (!authChecked && isLoggedIn === false)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin h-10 w-10 border-4 border-zepmeds-purple border-t-transparent rounded-full"></div>
@@ -722,6 +750,7 @@ const Checkout = () => {
             <CreditCard className="mr-2 text-blue-400" size={20} />
             Payment Method
           </h2>
+          
           <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="space-y-3">
             <div className={`p-4 rounded-xl transition-all ${
               paymentMethod === "cod" 
@@ -817,199 +846,4 @@ const Checkout = () => {
               )}
             </div>
             
-            <div className={`rounded-xl transition-all ${
-              paymentMethod === "upi" 
-                ? "border-green-500 bg-green-900/30" 
-                : "border-gray-700 bg-black/40"
-            }`}>
-              <div className="p-4" onClick={() => {
-                setPaymentMethod("upi");
-                setShowUpiDetails(true);
-              }}>
-                <div className="flex items-center">
-                  <RadioGroupItem value="upi" id="upi" className="text-green-400 mr-3" />
-                  <div className="flex items-center">
-                    <Smartphone className="h-5 w-5 text-green-400 mr-2" />
-                    <Label htmlFor="upi" className="text-white font-medium">UPI / Mobile Payments</Label>
-                  </div>
-                </div>
-              </div>
-              
-              {paymentMethod === "upi" && showUpiDetails && (
-                <div className="p-4 pt-0">
-                  <Separator className="bg-green-800/50 my-3" />
-                  
-                  <RadioGroup value={upiProvider} onValueChange={setUpiProvider} className="grid grid-cols-2 gap-2">
-                    {UPI_PROVIDERS.map(provider => (
-                      <div 
-                        key={provider.id}
-                        className={`p-3 rounded-lg transition-all ${
-                          upiProvider === provider.id 
-                            ? "border-green-500 bg-green-900/40" 
-                            : "border-gray-700 bg-black/40"
-                        }`}
-                      >
-                        <RadioGroupItem 
-                          value={provider.id} 
-                          id={`upi-${provider.id}`}
-                          className="sr-only"
-                        />
-                        <Label 
-                          htmlFor={`upi-${provider.id}`}
-                          className="flex items-center cursor-pointer"
-                        >
-                          <div className={`w-8 h-8 rounded-full ${provider.iconBg} flex items-center justify-center mr-2`}>
-                            <IndianRupee className="h-4 w-4 text-white" />
-                          </div>
-                          <span className="text-white text-sm">{provider.name}</span>
-                        </Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                  
-                  <div className="flex items-center gap-2 mt-4 p-3 rounded-lg bg-green-900/20 border border-green-800/50">
-                    <Smartphone className="h-4 w-4 text-green-400" />
-                    <span className="text-xs text-gray-400">You'll be redirected to complete the payment</span>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            <div className={`rounded-xl transition-all ${
-              paymentMethod === "bnpl" 
-                ? "border-amber-500 bg-amber-900/30" 
-                : "border-gray-700 bg-black/40"
-            }`}>
-              <div className="p-4" onClick={() => {
-                setPaymentMethod("bnpl");
-                setShowBnplDetails(true);
-              }}>
-                <div className="flex items-center">
-                  <RadioGroupItem value="bnpl" id="bnpl" className="text-amber-400 mr-3" />
-                  <div className="flex items-center">
-                    <Clock className="h-5 w-5 text-amber-400 mr-2" />
-                    <Label htmlFor="bnpl" className="text-white font-medium">Buy Now, Pay Later</Label>
-                  </div>
-                </div>
-              </div>
-              
-              {paymentMethod === "bnpl" && showBnplDetails && (
-                <div className="p-4 pt-0">
-                  <Separator className="bg-amber-800/50 my-3" />
-                  
-                  <RadioGroup value={bnplProvider} onValueChange={setBnplProvider} className="grid grid-cols-2 gap-2">
-                    {BNPL_PROVIDERS.map(provider => (
-                      <div 
-                        key={provider.id}
-                        className={`p-3 rounded-lg transition-all ${
-                          bnplProvider === provider.id 
-                            ? "border-amber-500 bg-amber-900/40" 
-                            : "border-gray-700 bg-black/40"
-                        }`}
-                      >
-                        <RadioGroupItem 
-                          value={provider.id} 
-                          id={`bnpl-${provider.id}`}
-                          className="sr-only"
-                        />
-                        <Label 
-                          htmlFor={`bnpl-${provider.id}`}
-                          className="flex items-center cursor-pointer"
-                        >
-                          <div className={`w-8 h-8 rounded-full ${provider.iconBg} flex items-center justify-center mr-2`}>
-                            <Clock className="h-4 w-4 text-white" />
-                          </div>
-                          <span className="text-white text-sm">{provider.name}</span>
-                        </Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                  
-                  <div className="flex items-center gap-2 mt-4 p-3 rounded-lg bg-amber-900/20 border border-amber-800/50">
-                    <Server className="h-4 w-4 text-amber-400" />
-                    <span className="text-xs text-gray-400">Complete authentication to use BNPL service</span>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            <div className={`p-4 rounded-xl transition-all ${
-              paymentMethod === "online" 
-                ? "border-purple-500 bg-purple-900/30" 
-                : "border-gray-700 bg-black/40"
-            }`}>
-              <div className="flex items-center">
-                <RadioGroupItem value="online" id="online" className="text-purple-400 mr-3" />
-                <div className="flex items-center">
-                  <Server className="h-5 w-5 text-purple-400 mr-2" />
-                  <Label htmlFor="online" className="text-white font-medium">Other Payment Methods</Label>
-                </div>
-              </div>
-            </div>
-          </RadioGroup>
-        </div>
-        
-        <div>
-          <h2 className="text-lg font-bold text-white mb-4 flex items-center">
-            <DollarSign className="mr-2 text-purple-400" size={20} />
-            Order Summary
-          </h2>
-          <div className="p-4 rounded-xl border border-gray-700 bg-black/40 backdrop-blur-sm">
-            <div className="space-y-2">
-              <div className="flex justify-between text-gray-400">
-                <span>Subtotal</span>
-                <span>₹{subTotalAmount.toFixed(2)}</span>
-              </div>
-              
-              <div className="flex justify-between text-gray-400">
-                <span>Delivery Fee</span>
-                <span>{deliveryFeeAmount > 0 ? `₹${deliveryFeeAmount.toFixed(2)}` : "FREE"}</span>
-              </div>
-              
-              {discountAmount > 0 && (
-                <div className="flex justify-between text-green-400">
-                  <span>Discount</span>
-                  <span>-₹{discountAmount.toFixed(2)}</span>
-                </div>
-              )}
-              
-              {couponDiscountAmount > 0 && (
-                <div className="flex justify-between text-green-400">
-                  <span>Coupon Discount</span>
-                  <span>-₹{couponDiscountAmount.toFixed(2)}</span>
-                </div>
-              )}
-              
-              <Separator className="bg-gray-700 my-2" />
-              
-              <div className="flex justify-between text-white font-bold">
-                <span>Total</span>
-                <span>₹{totalAmount.toFixed(2)}</span>
-              </div>
-              
-              {useWallet && (
-                <>
-                  <div className="flex justify-between text-green-400">
-                    <span>Wallet Amount</span>
-                    <span>-₹{walletAmountToUse.toFixed(2)}</span>
-                  </div>
-                  
-                  <Separator className="bg-gray-700 my-2" />
-                  
-                  <div className="flex justify-between text-white font-bold">
-                    <span>To Pay</span>
-                    <span>₹{finalAmount.toFixed(2)}</span>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </main>
-      
-      <BottomNavigation />
-    </div>
-  );
-};
-
-export default Checkout;
+            <div className={`rounded
